@@ -1,0 +1,18 @@
+{
+  "name": "@kaliber/eslint-plugin",
+  "scripts": {
+    "test": "mocha '**/test.js'"
+  },
+  "version": "0.0.4",
+  "devDependencies": {
+    "@babel/core": "^7.26.8",
+    "@babel/eslint-parser": "^7.26.8",
+    "eslint": "^7.9.0",
+    "eslint-plugin-import": "^2.22.0",
+    "jsx-ast-utils": "^3.3.5",
+    "mocha": "^8.1.3"
+  },
+  "peerDependencies": {
+    "eslint-plugin-import": "^2.18.2"
+  }
+}
