@@ -117,7 +117,7 @@ module.exports = {
     }
 
     function reportInvalidRootElementClassName(jsxElement, property) {
-      const expectedClassNames = getValidRootElementClassNames(context)
+      const expectedClassNames = getValidRootElementClassNames(context, jsxElement)
 
       const className = getPropertyName(property)
       if (expectedClassNames.includes(className)) {
@@ -176,10 +176,10 @@ module.exports = {
   }
 }
 
-function getValidRootElementClassNames(context) {
+function getValidRootElementClassNames(context, node) {
   const prefix = new RegExp(`^${getBaseFilename(context)}`)
-  const name = getFunctionName(context).replace(prefix, '')
-  const exported = isInExport(context)
+  const name = getFunctionName(context, node).replace(prefix, '')
+  const exported = isInExport(context, node)
   return (
     exported && isApp(context) ? [`app${name}`] :
     exported && isPage(context) ? [`page${name}`] :
