@@ -1,14 +1,14 @@
-import globals from "globals";
-import babelParser from "@babel/eslint-parser";
-import kaliber from "@kaliber/eslint-plugin";
-import imprt from "eslint-plugin-import";
-import jsxA11y from "eslint-plugin-jsx-a11y";
-import n from "eslint-plugin-n";
-import promise from "eslint-plugin-promise";
-import react from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
+const globals = require("globals");
+const babelParser = require("@babel/eslint-parser");
+const kaliber = require("@kaliber/eslint-plugin");
+const imprt = require("eslint-plugin-import");
+const jsxA11y = require("eslint-plugin-jsx-a11y");
+const n = require("eslint-plugin-n");
+const promise = require("eslint-plugin-promise");
+const react = require("eslint-plugin-react");
+const reactHooks = require("eslint-plugin-react-hooks");
 
-export default [
+module.exports = [
   {
     files: ["**/*.js", "**/*.jsx"],
     languageOptions: {

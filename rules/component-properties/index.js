@@ -30,7 +30,7 @@ module.exports = {
 
     function reportNonDestructuredProps(node) {
       const [props] = node.params
-      if (firstLetterLowerCase(node.id.name) || !props || props.type !== 'Identifier') return
+      if (!node.id || firstLetterLowerCase(node.id.name) || !props || props.type !== 'Identifier') return
       context.report({
         message: messages['destructure props'],
         node: props,
