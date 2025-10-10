@@ -50,7 +50,7 @@ module.exports = {
         else
           reportInvalidRootElementClassName(jsxElement, property)
       },
-      [`ExportDefaultDeclaration > FunctionDeclaration`](node) {
+      [`ExportDefaultDeclaration > FunctionDeclaration[id!=null]`](node) {
         reportInvalidFunctionName(node, { suggestFilename: true })
       },
       [`ExportNamedDeclaration > FunctionDeclaration`](node) {
@@ -149,17 +149,17 @@ module.exports = {
     }
 
     function reportInvalidFunctionName(node, { suggestFilename }) {
-      const { name } = node.id
-      if (firstLetterLowerCase(name)) return
+      const name = node.id ? node.id.name : null;
+      if (!name || firstLetterLowerCase(name)) return;
 
-      const expectedPrefix = getBaseFilename(context)
-      if (name.startsWith(expectedPrefix)) return
+      const expectedPrefix = getBaseFilename(context);
+      if (name.startsWith(expectedPrefix)) return;
 
-      const expected = suggestFilename ? expectedPrefix : `${expectedPrefix}${name}`
+      const expected = suggestFilename ? expectedPrefix : `${expectedPrefix}${name}`;
       context.report({
         message: messages['invalid component name'](name, expected),
         node: node.id,
-      })
+      });
     }
 
     function reportInvalidRefName(node) {

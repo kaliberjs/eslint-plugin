@@ -36,7 +36,7 @@ describe('eslint.config.mjs', () => {
     });
 
     it('(@kaliber/no-default-export) should report an error for default exports', async () => {
-      const code = `export default function() {}`;
+      const code = `export default function MyComponent() {}`;
       const result = await lint(code, 'src/Test.js');
       assertHasWarning(result, '@kaliber/no-default-export');
     });
