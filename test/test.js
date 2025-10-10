@@ -15,7 +15,7 @@ function assertHasWarning(result, ruleId) {
   assert.ok(hasWarning, `Should have a warning for ${ruleId}`);
 }
 
-describe('.eslintrc', () => {
+describe('eslint.config.mjs', () => {
   it('(@kaliber/no-relative-parent-import) should report an error for relative parent imports', async () => {
     const code = `import Something from '../Something'\n\nexport default Something\n`;
     const result = await lint(code, path.join(process.cwd(), 'src/components/MyComponent.js'));
@@ -50,5 +50,23 @@ describe('.eslintrc', () => {
     const code = `function MyComponent() { return <img src="foo.jpg" /> }\nconsole.log(MyComponent)\n`;
     const result = await lint(code, 'src/components/MyComponent.js');
     assertHasWarning(result, 'jsx-a11y/alt-text');
+  });
+
+  it('(brace-style) should report an error for invalid brace style', async () => {
+    const code = `if (true) \n{\n}\n`;
+    const result = await lint(code, 'src/components/MyComponent.js');
+    assertHasWarning(result, 'brace-style');
+  });
+
+  it('(indent) should report an error for incorrect indentation', async () => {
+    const code = `function MyComponent() {\n console.log('foo');\n}\nconsole.log(MyComponent)\n`;
+    const result = await lint(code, 'src/components/MyComponent.js');
+    assertHasWarning(result, 'indent');
+  });
+
+  it('(no-unused-vars) should report an error for unused variables', async () => {
+    const code = `const a = 1;\n`;
+    const result = await lint(code, 'src/components/MyComponent.js');
+    assertHasWarning(result, 'no-unused-vars');
   });
 });
