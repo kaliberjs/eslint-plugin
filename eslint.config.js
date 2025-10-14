@@ -93,8 +93,6 @@ module.exports = [
       "no-constant-condition": "warn",
       "no-control-regex": "warn",
       "no-debugger": "warn",
-      "no-delete-var": "warn",
-      "no-dupe-args": "warn",
       "no-dupe-class-members": "warn",
       "no-dupe-keys": "warn",
       "no-duplicate-case": "warn",
@@ -114,7 +112,10 @@ module.exports = [
       "no-implied-eval": "warn",
       "no-invalid-regexp": "warn",
       "no-irregular-whitespace": "warn",
-      "no-iterator": "warn",
+      "no-label-var": "warn",
+      "no-labels": ["warn", { "allowLoop": true, "allowSwitch": false }],
+      "no-label-var": "warn",
+      "no-labels": ["warn", { "allowLoop": true, "allowSwitch": false }],
       "no-label-var": "warn",
       "no-labels": ["warn", { "allowLoop": true, "allowSwitch": false }],
       "no-lone-blocks": "warn",
@@ -141,6 +142,7 @@ module.exports = [
         "warn",
         {
           "groups": [
+            ["+", "-", "*", "/", "%", "**"],
             ["&", "|", "^", "~", "<<", ">>", ">>>"],
             ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
             ["&&", "||"],
@@ -156,7 +158,6 @@ module.exports = [
       "no-new-wrappers": "warn",
       "no-obj-calls": "warn",
       "no-octal": "warn",
-      "no-octal-escape": "warn",
       "no-redeclare": "warn",
       "no-regex-spaces": "warn",
       "no-restricted-globals": ["warn", "addEventListener", "blur", "close", "closed", "confirm", "defaultStatus", "defaultstatus", "event", "external", "find", "focus", "frameElement", "frames", "history", "innerHeight", "innerWidth", "length", "location", "locationbar", "menubar", "moveBy", "moveTo", "name", "onblur", "onwarn", "onfocus", "onload", "onresize", "onunload", "open", "opener", "opera", "outerHeight", "outerWidth", "pageXOffset", "pageYOffset", "parent", "print", "removeEventListener", "resizeBy", "resizeTo", "screen", "screenLeft", "screenTop", "screenX", "screenY", "scroll", "scrollbars", "scrollBy", "scrollTo", "scrollX", "scrollY", "self", "status", "statusbar", "stop", "toolbar", "top"],
@@ -285,7 +286,10 @@ module.exports = [
       "jsx-a11y/no-redundant-roles": "warn",
       "jsx-a11y/role-has-required-aria-props": "warn",
       "jsx-a11y/role-supports-aria-props": "warn",
-      "jsx-a11y/scope": "warn"
+      "jsx-a11y/scope": "warn",
+      "no-path-concat": "warn",
+      "react/jsx-uses-react": "off",
+      "react/react-in-jsx-scope": "off"
     }
   }
 ];
