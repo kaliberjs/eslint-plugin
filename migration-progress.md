@@ -45,9 +45,9 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-delete-var` | `test/no-delete-var.test.js` | :heavy_minus_sign: | Pending (test failing) |
 | `no-dupe-args` | `test/no-dupe-args.test.js` | :heavy_minus_sign: | Pending (test failing) |
 | `no-dupe-class-members` | `test/no-dupe-class-members.test.js` | :white_check_mark: | Implemented |
-| `no-dupe-keys` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-duplicate-case` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-empty-character-class` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-dupe-keys` | `test/no-dupe-keys.test.js` | :white_check_mark: | Implemented |
+| `no-duplicate-case` | `test/no-duplicate-case.test.js` | :white_check_mark: | Implemented |
+| `no-empty-character-class` | `test/no-empty-character-class.test.js` | :heavy_minus_sign: | Pending |
 | `no-empty-pattern` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-eval` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-ex-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
