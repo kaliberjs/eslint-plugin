@@ -59,9 +59,9 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-fallthrough` | `test/no-fallthrough.test.js` | :white_check_mark: | Implemented |
 | `no-floating-decimal` | `test/no-floating-decimal.test.js` | :white_check_mark: | Implemented |
 | `no-func-assign` | `test/no-func-assign.test.js` | :white_check_mark: | Implemented |
-| `no-global-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-implied-eval` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-invalid-regexp` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-global-assign` | `test/no-global-assign.test.js` | :white_check_mark: | Implemented |
+| `no-implied-eval` | `test/no-implied-eval.test.js` | :white_check_mark: | Implemented |
+| `no-invalid-regexp` | `test/no-invalid-regexp.test.js` | :heavy_minus_sign: | Pending |
 | `no-irregular-whitespace` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-iterator` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-label-var` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
