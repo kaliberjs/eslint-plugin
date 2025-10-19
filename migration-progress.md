@@ -54,7 +54,7 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-extend-native` | `test/no-extend-native.test.js` | :white_check_mark: | Implemented |
 | `no-extra-bind` | `test/no-extra-bind.test.js` | :white_check_mark: | Implemented |
 | `no-extra-boolean-cast` | `test/no-extra-boolean-cast.test.js` | :white_check_mark: | Implemented |
-| `no-extra-label` | `test/no-extra-label.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-extra-label` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-extra-parens` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-fallthrough` | `test/no-fallthrough.test.js` | :white_check_mark: | Implemented |
 | `no-floating-decimal` | `test/no-floating-decimal.test.js` | :white_check_mark: | Implemented |
@@ -62,17 +62,17 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-global-assign` | `test/no-global-assign.test.js` | :white_check_mark: | Implemented |
 | `no-implied-eval` | `test/no-implied-eval.test.js` | :white_check_mark: | Implemented |
 | `no-invalid-regexp` | `test/no-invalid-regexp.test.js` | :white_check_mark: | Implemented |
-| `no-irregular-whitespace` | `test/no-irregular-whitespace.test.js` | :heavy_minus_sign: | Pending (test failing) |
-| `no-iterator` | `test/no-iterator.test.js` | :heavy_minus_sign: | Pending (test failing) |
-| `no-label-var` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-labels` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-lone-blocks` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-irregular-whitespace` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-iterator` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-label-var` | `test/no-label-var.test.js` | :white_check_mark: | Implemented |
+| `no-labels` | `test/no-labels.test.js` | :white_check_mark: | Implemented |
+| `no-lone-blocks` | `test/no-lone-blocks.test.js` | :white_check_mark: | Implemented |
 | `no-loop-func` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-mixed-spaces-and-tabs` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-path-concat` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-proto` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-return-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-return-await` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-mixed-spaces-and-tabs` | `test/no-mixed-spaces-and-tabs.test.js` | :white_check_mark: | Implemented |
+| `no-path-concat` | `test/no-path-concat.test.js` | :white_check_mark: | Implemented |
+| `no-proto` | `test/no-proto.test.js` | :white_check_mark: | Implemented |
+| `no-return-assign` | `test/no-return-assign.test.js` | :white_check_mark: | Implemented |
+| `no-return-await` | `test/no-return-await.test.js` | :white_check_mark: | Implemented |
 | `no-trailing-spaces` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-unneeded-ternary` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-unsafe-negation` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
