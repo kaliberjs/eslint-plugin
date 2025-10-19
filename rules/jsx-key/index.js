@@ -1,7 +1,8 @@
 const hasProp = require('jsx-ast-utils/hasProp')
 const propName = require('jsx-ast-utils/propName')
+const { defineRule } = require('oxlint')
 
-module.exports = {
+module.exports = defineRule({
   meta: {
     type: 'problem',
     messages: {
@@ -13,7 +14,7 @@ module.exports = {
     },
   },
 
-  create(context) {
+  createOnce(context) {
     return {
       JSXElement(node) {
         if (
@@ -80,4 +81,4 @@ module.exports = {
       ).keyAfterSpread
     }
   }
-}
+})

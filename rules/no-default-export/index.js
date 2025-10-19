@@ -1,10 +1,11 @@
 const eslintPluginImport = require('eslint-plugin-import')
-const { isApp, isTemplate, getFilename } = require('../../machinery/filename')
+const { isApp, isTemplate, getFilename } = require('../../machinery/filename');
+const { defineRule } = require('oxlint');
 
-module.exports = {
+module.exports = defineRule({
   meta: { type: 'problem' },
 
-  create(context) {
+  createOnce(context) {
     return {
       ExportDefaultDeclaration: (node) => {
         const filename = getFilename(context);
@@ -14,4 +15,4 @@ module.exports = {
       }
     }
   }
-}
+})

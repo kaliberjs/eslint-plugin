@@ -1,3 +1,4 @@
+const { defineRule } = require('oxlint')
 const {
   getPropertyName,
   getFunctionName,
@@ -32,12 +33,12 @@ const messages = {
     `Unexpected ref name '${found}', expected '${exptected}'`,
 }
 
-module.exports = {
+module.exports = defineRule({
   messages,
 
   meta: { type: 'problem' },
 
-  create(context) {
+  createOnce(context) {
     const elementsWithValidRootElementClassName = new Set()
 
     return {
@@ -175,11 +176,12 @@ module.exports = {
       })
     }
   }
-}
+})
 
 function getValidRootElementClassNames(context) {
   const filename = getFilename(context);
 
+  console.log({ a: context, b: context.getScope?.() })
   const prefix = new RegExp(`^${getBaseFilename(filename)}`)
   const name = getFunctionName(context).replace(prefix, '')
   const exported = isInExport(context)

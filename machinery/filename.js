@@ -9,6 +9,7 @@ module.exports = {
 // Compatibility wrapper to accept both ESLint context and Oxlint
 function getFilename(data) {
   if (typeof data.getFilename === 'function') return data.getFilename()
+  else if (typeof data.filename === 'string') return data.filename
   else return data
 }
 
