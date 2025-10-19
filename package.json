@@ -1,7 +1,7 @@
 {
   "name": "@kaliber/eslint-plugin",
   "scripts": {
-    "test": "node --test '**/test.js'"
+    "test": "node --test 'test/**/*.test.js'"
   },
   "version": "1.0.1",
   "dependencies": {
