@@ -80,11 +80,11 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `object-curly-spacing` | `test/object-curly-spacing.test.js` | :white_check_mark: | Implemented |
 | `object-shorthand` | `test/object-shorthand.test.js` | :white_check_mark: | Implemented |
 | `quotes` | `test/quotes.test.js` | :white_check_mark: | Implemented |
-| `semi` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `semi-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `space-before-blocks` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `space-before-function-paren` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `space-infix-ops` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `semi` | `test/semi.test.js` | :white_check_mark: | Implemented |
+| `semi-spacing` | `test/semi-spacing.test.js` | :white_check_mark: | Implemented |
+| `space-before-blocks` | `test/space-before-blocks.test.js` | :white_check_mark: | Implemented |
+| `space-before-function-paren` | `test/space-before-function-paren.test.js` | :white_check_mark: | Implemented |
+| `space-infix-ops` | `test/space-infix-ops.test.js` | :white_check_mark: | Implemented |
 | `space-unary-ops` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `template-tag-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-mixed-operators` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
