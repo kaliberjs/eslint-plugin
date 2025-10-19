@@ -30,21 +30,21 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `dot-location` | `test/dot-location.test.js` | :white_check_mark: | Implemented |
 | `eol-last` | `test/eol-last.test.js` | :white_check_mark: | Implemented |
 | `eqeqeq` | `test/eqeqeq.test.js` | :white_check_mark: | Implemented |
-| `key-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `keyword-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `new-parens` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-array-constructor` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-caller` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-class-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-compare-neg-zero` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-cond-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-const-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-constant-condition` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-control-regex` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-debugger` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-delete-var` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-dupe-args` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-dupe-class-members` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `key-spacing` | `test/key-spacing.test.js` | :white_check_mark: | Implemented |
+| `keyword-spacing` | `test/keyword-spacing.test.js` | :white_check_mark: | Implemented |
+| `new-parens` | `test/new-parens.test.js` | :white_check_mark: | Implemented |
+| `no-array-constructor` | `test/no-array-constructor.test.js` | :white_check_mark: | Implemented |
+| `no-caller` | `test/no-caller.test.js` | :white_check_mark: | Implemented |
+| `no-class-assign` | `test/no-class-assign.test.js` | :white_check_mark: | Implemented |
+| `no-compare-neg-zero` | `test/no-compare-neg-zero.test.js` | :white_check_mark: | Implemented |
+| `no-cond-assign` | `test/no-cond-assign.test.js` | :white_check_mark: | Implemented |
+| `no-const-assign` | `test/no-const-assign.test.js` | :white_check_mark: | Implemented |
+| `no-constant-condition` | `test/no-constant-condition.test.js` | :white_check_mark: | Implemented |
+| `no-control-regex` | `test/no-control-regex.test.js` | :white_check_mark: | Implemented |
+| `no-debugger` | `test/no-debugger.test.js` | :white_check_mark: | Implemented |
+| `no-delete-var` | `test/no-delete-var.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-dupe-args` | `test/no-dupe-args.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-dupe-class-members` | `test/no-dupe-class-members.test.js` | :white_check_mark: | Implemented |
 | `no-dupe-keys` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-duplicate-case` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-empty-character-class` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
