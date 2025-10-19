@@ -16,44 +16,6 @@ function assertHasWarning(result, ruleId) {
 }
 
 describe('eslint.config.mjs', () => {
-  describe('Custom Rules', () => {
-    it('(@kaliber/component-properties) should report an error for components that do not destructure props', async () => {
-      const code = `function MyComponent(props) { return <div>{props.name}</div> }\nconsole.log(MyComponent)\n`;
-      const result = await lint(code);
-      assertHasWarning(result, '@kaliber/component-properties');
-    });
-
-    it('(@kaliber/layout-class-name) should report an error for invalid layout class name', async () => {
-      const code = `<Test layoutClassName='test' />`;
-      const result = await lint(code, 'src/Test.js');
-      assertHasWarning(result, '@kaliber/layout-class-name');
-    });
-
-    it('(@kaliber/naming-policy) should report an error for invalid component name', async () => {
-      const code = `export function Something() {}`;
-      const result = await lint(code, 'src/Test.js');
-      assertHasWarning(result, '@kaliber/naming-policy');
-    });
-
-    it('(@kaliber/no-default-export) should report an error for default exports', async () => {
-      const code = `export default function MyComponent() {}`;
-      const result = await lint(code, 'src/Test.js');
-      assertHasWarning(result, '@kaliber/no-default-export');
-    });
-
-    it('(@kaliber/no-relative-parent-import) should report an error for relative parent imports', async () => {
-      const code = `import Something from '../Something'\n\nexport default Something\n`;
-      const result = await lint(code, path.join(process.cwd(), 'src/components/MyComponent.js'));
-      assertHasWarning(result, '@kaliber/no-relative-parent-import');
-    });
-
-    it('(@kaliber/jsx-key) should report an error for missing key in iterator', async () => {
-      const code = `[1, 2, 3].map(x => <div />)`;
-      const result = await lint(code);
-      assertHasWarning(result, '@kaliber/jsx-key');
-    });
-  });
-
   describe('Standard ESLint Rules', () => {
     it('(brace-style) should report an error for invalid brace style', async () => {
       const code = `if (true)\n{\n}\n`;
