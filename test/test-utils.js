@@ -13,7 +13,13 @@ function assertHasWarning(result, ruleId) {
   assert.ok(hasWarning, `Should have a warning for ${ruleId}`);
 }
 
+function assertHasFatalError(result, messageSubstring) {
+    const hasFatalError = result.messages.some(message => message.fatal && message.message.includes(messageSubstring))
+    assert.ok(hasFatalError, `Should have a fatal error containing "${messageSubstring}"`)
+}
+
 module.exports = {
   lint,
   assertHasWarning,
+  assertHasFatalError
 };

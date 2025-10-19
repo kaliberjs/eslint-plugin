@@ -23,7 +23,7 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `array-callback-return` | `test/array-callback-return.test.js` | :white_check_mark: | Implemented |
 | `arrow-spacing` | `test/arrow-spacing.test.js` | :white_check_mark: | Implemented |
 | `block-spacing` | `test/block-spacing.test.js` | :white_check_mark: | Implemented |
-| `comma-dangle` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `comma-dangle` | `test/comma-dangle.test.js` | :white_check_mark: | Implemented |
 | `comma-spacing` | `test/comma-spacing.test.js` | :white_check_mark: | Implemented |
 | `comma-style` | `test/comma-style.test.js` | :white_check_mark: | Implemented |
 | `default-case` | `test/default-case.test.js` | :white_check_mark: | Implemented |
@@ -42,7 +42,7 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-constant-condition` | `test/no-constant-condition.test.js` | :white_check_mark: | Implemented |
 | `no-control-regex` | `test/no-control-regex.test.js` | :white_check_mark: | Implemented |
 | `no-debugger` | `test/no-debugger.test.js` | :white_check_mark: | Implemented |
-| `no-delete-var` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-delete-var` | `test/no-delete-var.test.js` | :white_check_mark: | Implemented |
 | `no-dupe-args` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-dupe-class-members` | `test/no-dupe-class-members.test.js` | :white_check_mark: | Implemented |
 | `no-dupe-keys` | `test/no-dupe-keys.test.js` | :white_check_mark: | Implemented |
@@ -73,8 +73,8 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-proto` | `test/no-proto.test.js` | :white_check_mark: | Implemented |
 | `no-return-assign` | `test/no-return-assign.test.js` | :white_check_mark: | Implemented |
 | `no-return-await` | `test/no-return-await.test.js` | :white_check_mark: | Implemented |
-| `no-trailing-spaces` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-unneeded-ternary` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-trailing-spaces` | `test/no-trailing-spaces.test.js` | :white_check_mark: | Implemented |
+| `no-unneeded-ternary` | `test/no-unneeded-ternary.test.js` | :white_check_mark: | Implemented |
 | `no-unsafe-negation` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-useless-return` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `object-curly-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
