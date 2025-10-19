@@ -21,10 +21,10 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `indent` | `test/indent.test.js` | :white_check_mark: | Implemented |
 | `accessor-pairs` | `test/accessor-pairs.test.js` | :white_check_mark: | Implemented |
 | `array-callback-return` | `test/array-callback-return.test.js` | :white_check_mark: | Implemented |
-| `arrow-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `block-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `comma-dangle` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `comma-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `arrow-spacing` | `test/arrow-spacing.test.js` | :white_check_mark: | Implemented |
+| `block-spacing` | `test/block-spacing.test.js` | :white_check_mark: | Implemented |
+| `comma-dangle` | `test/comma-dangle.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `comma-spacing` | `test/comma-spacing.test.js` | :white_check_mark: | Implemented |
 | `comma-style` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `default-case` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `dot-location` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
