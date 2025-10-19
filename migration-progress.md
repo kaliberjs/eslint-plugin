@@ -25,8 +25,8 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `block-spacing` | `test/block-spacing.test.js` | :white_check_mark: | Implemented |
 | `comma-dangle` | `test/comma-dangle.test.js` | :heavy_minus_sign: | Pending (test failing) |
 | `comma-spacing` | `test/comma-spacing.test.js` | :white_check_mark: | Implemented |
-| `comma-style` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `default-case` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `comma-style` | `test/comma-style.test.js` | :white_check_mark: | Implemented |
+| `default-case` | `test/default-case.test.js` | :white_check_mark: | Implemented |
 | `dot-location` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `eol-last` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `eqeqeq` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
