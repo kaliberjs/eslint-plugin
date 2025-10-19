@@ -51,12 +51,12 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-empty-pattern` | `test/no-empty-pattern.test.js` | :white_check_mark: | Implemented |
 | `no-eval` | `test/no-eval.test.js` | :white_check_mark: | Implemented |
 | `no-ex-assign` | `test/no-ex-assign.test.js` | :white_check_mark: | Implemented |
-| `no-extend-native` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-extra-bind` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-extra-boolean-cast` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-extra-label` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-extra-parens` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-fallthrough` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-extend-native` | `test/no-extend-native.test.js` | :white_check_mark: | Implemented |
+| `no-extra-bind` | `test/no-extra-bind.test.js` | :white_check_mark: | Implemented |
+| `no-extra-boolean-cast` | `test/no-extra-boolean-cast.test.js` | :white_check_mark: | Implemented |
+| `no-extra-label` | `test/no-extra-label.test.js` | :white_check_mark: | Implemented |
+| `no-extra-parens` | `test/no-extra-parens.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-fallthrough` | `test/no-fallthrough.test.js` | :white_check_mark: | Implemented |
 | `no-floating-decimal` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-func-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-global-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
