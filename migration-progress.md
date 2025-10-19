@@ -17,10 +17,10 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 
 | Rule | Test File | Status | Notes |
 | --- | --- | --- | --- |
-| `brace-style` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `indent` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `accessor-pairs` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `array-callback-return` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `brace-style` | `test/brace-style.test.js` | :white_check_mark: | Implemented |
+| `indent` | `test/indent.test.js` | :white_check_mark: | Implemented |
+| `accessor-pairs` | `test/accessor-pairs.test.js` | :white_check_mark: | Implemented |
+| `array-callback-return` | `test/array-callback-return.test.js` | :white_check_mark: | Implemented |
 | `arrow-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `block-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `comma-dangle` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
