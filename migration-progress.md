@@ -23,7 +23,7 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `array-callback-return` | `test/array-callback-return.test.js` | :white_check_mark: | Implemented |
 | `arrow-spacing` | `test/arrow-spacing.test.js` | :white_check_mark: | Implemented |
 | `block-spacing` | `test/block-spacing.test.js` | :white_check_mark: | Implemented |
-| `comma-dangle` | `test/comma-dangle.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `comma-dangle` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `comma-spacing` | `test/comma-spacing.test.js` | :white_check_mark: | Implemented |
 | `comma-style` | `test/comma-style.test.js` | :white_check_mark: | Implemented |
 | `default-case` | `test/default-case.test.js` | :white_check_mark: | Implemented |
@@ -42,8 +42,8 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-constant-condition` | `test/no-constant-condition.test.js` | :white_check_mark: | Implemented |
 | `no-control-regex` | `test/no-control-regex.test.js` | :white_check_mark: | Implemented |
 | `no-debugger` | `test/no-debugger.test.js` | :white_check_mark: | Implemented |
-| `no-delete-var` | `test/no-delete-var.test.js` | :heavy_minus_sign: | Pending (test failing) |
-| `no-dupe-args` | `test/no-dupe-args.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-delete-var` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-dupe-args` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-dupe-class-members` | `test/no-dupe-class-members.test.js` | :white_check_mark: | Implemented |
 | `no-dupe-keys` | `test/no-dupe-keys.test.js` | :white_check_mark: | Implemented |
 | `no-duplicate-case` | `test/no-duplicate-case.test.js` | :white_check_mark: | Implemented |
@@ -54,11 +54,11 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-extend-native` | `test/no-extend-native.test.js` | :white_check_mark: | Implemented |
 | `no-extra-bind` | `test/no-extra-bind.test.js` | :white_check_mark: | Implemented |
 | `no-extra-boolean-cast` | `test/no-extra-boolean-cast.test.js` | :white_check_mark: | Implemented |
-| `no-extra-label` | `test/no-extra-label.test.js` | :white_check_mark: | Implemented |
-| `no-extra-parens` | `test/no-extra-parens.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-extra-label` | `test/no-extra-label.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-extra-parens` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-fallthrough` | `test/no-fallthrough.test.js` | :white_check_mark: | Implemented |
-| `no-floating-decimal` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-func-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-floating-decimal` | `test/no-floating-decimal.test.js` | :white_check_mark: | Implemented |
+| `no-func-assign` | `test/no-func-assign.test.js` | :white_check_mark: | Implemented |
 | `no-global-assign` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-implied-eval` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-invalid-regexp` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
