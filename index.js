@@ -1,4 +1,7 @@
 module.exports = {
+  meta: {
+    name: 'kaliber',
+  },
   rules: {
     'component-properties': require('./rules/component-properties'),
     'layout-class-name': require('./rules/layout-class-name'),

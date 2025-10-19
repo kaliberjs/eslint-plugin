@@ -4,7 +4,7 @@ const {
   getParentJSXElement,
   hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
 } = require('../../machinery/ast')
-const { isApp, isPage, getBaseFilename } = require('../../machinery/filename')
+const { isApp, isPage, getBaseFilename, getFilename } = require('../../machinery/filename')
 const { firstLetterLowerCase } = require('../../machinery/word')
 
 const messages = {
@@ -88,8 +88,8 @@ module.exports = {
       const source = node.source.value
       if (!source.endsWith('.css')) return
 
-      const filename = getBaseFilename(context)
-      const mainCss = `./${filename}.css`
+      const filename = getFilename(context)
+      const mainCss = `./${getBaseFilename(filename)}.css`
       if (source !== mainCss) return
 
       const [firstSpecifier] = node.specifiers
@@ -152,7 +152,8 @@ module.exports = {
       const { name } = node.id
       if (firstLetterLowerCase(name)) return
 
-      const expectedPrefix = getBaseFilename(context)
+      const filename = getFilename(context)
+      const expectedPrefix = getBaseFilename(filename)
       if (name.startsWith(expectedPrefix)) return
 
       const expected = suggestFilename ? expectedPrefix : `${expectedPrefix}${name}`
@@ -177,12 +178,15 @@ module.exports = {
 }
 
 function getValidRootElementClassNames(context) {
-  const prefix = new RegExp(`^${getBaseFilename(context)}`)
+  const filename = getFilename(context);
+
+  const prefix = new RegExp(`^${getBaseFilename(filename)}`)
   const name = getFunctionName(context).replace(prefix, '')
   const exported = isInExport(context)
+
   return (
-    exported && isApp(context) ? [`app${name}`] :
-    exported && isPage(context) ? [`page${name}`] :
+    exported && isApp(filename) ? [`app${name}`] :
+    exported && isPage(filename) ? [`page${name}`] :
     [`component${name}`, `component_root${name}`]
   )
 }

@@ -1,0 +1,13 @@
+{
+  "jsPlugins": [
+    "./index.js"
+  ],
+  "rules": {
+    "kaliber/component-properties": "error",
+    "kaliber/layout-class-name": "error",
+    "kaliber/naming-policy": "error",
+    "kaliber/no-default-export": "error",
+    "kaliber/no-relative-parent-import": "error",
+    "kaliber/jsx-key": "error"
+  }
+}
