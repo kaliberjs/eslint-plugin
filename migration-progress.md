@@ -61,9 +61,9 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-func-assign` | `test/no-func-assign.test.js` | :white_check_mark: | Implemented |
 | `no-global-assign` | `test/no-global-assign.test.js` | :white_check_mark: | Implemented |
 | `no-implied-eval` | `test/no-implied-eval.test.js` | :white_check_mark: | Implemented |
-| `no-invalid-regexp` | `test/no-invalid-regexp.test.js` | :heavy_minus_sign: | Pending |
-| `no-irregular-whitespace` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-iterator` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-invalid-regexp` | `test/no-invalid-regexp.test.js` | :white_check_mark: | Implemented |
+| `no-irregular-whitespace` | `test/no-irregular-whitespace.test.js` | :heavy_minus_sign: | Pending (test failing) |
+| `no-iterator` | `test/no-iterator.test.js` | :heavy_minus_sign: | Pending (test failing) |
 | `no-label-var` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-labels` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `no-lone-blocks` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
