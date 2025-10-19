@@ -75,11 +75,11 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-return-await` | `test/no-return-await.test.js` | :white_check_mark: | Implemented |
 | `no-trailing-spaces` | `test/no-trailing-spaces.test.js` | :white_check_mark: | Implemented |
 | `no-unneeded-ternary` | `test/no-unneeded-ternary.test.js` | :white_check_mark: | Implemented |
-| `no-unsafe-negation` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `no-useless-return` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `object-curly-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `object-shorthand` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
-| `quotes` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
+| `no-unsafe-negation` | `test/no-unsafe-negation.test.js` | :white_check_mark: | Implemented |
+| `no-useless-return` | `test/no-useless-return.test.js` | :white_check_mark: | Implemented |
+| `object-curly-spacing` | `test/object-curly-spacing.test.js` | :white_check_mark: | Implemented |
+| `object-shorthand` | `test/object-shorthand.test.js` | :white_check_mark: | Implemented |
+| `quotes` | `test/quotes.test.js` | :white_check_mark: | Implemented |
 | `semi` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `semi-spacing` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
 | `space-before-blocks` | `test/missing-rules.test.js` | :heavy_minus_sign: | Pending |
