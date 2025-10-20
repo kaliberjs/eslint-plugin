@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/jsx-no-target-blank) should report an error for target blank without rel', async () => {
-  const result = await lint(`<a href="http://example.com" target="_blank"></a>`)
-  assertHasWarning(result, 'react/jsx-no-target-blank')
-})
+describe('react/jsx-no-target-blank', () => {
+  it('should warn on target blank without rel', async () => {
+    const result = await lint('<a target="_blank" href="https://example.com"></a>');
+    assertHasWarning(result, 'react/jsx-no-target-blank');
+  });
+});
