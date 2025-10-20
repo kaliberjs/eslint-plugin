@@ -43,7 +43,7 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-control-regex` | `test/no-control-regex.test.js` | :white_check_mark: | Implemented |
 | `no-debugger` | `test/no-debugger.test.js` | :white_check_mark: | Implemented |
 | `no-delete-var` | `test/no-delete-var.test.js` | :white_check_mark: | Implemented |
-| `no-dupe-args` | `test/missing-rules.test.js` | :large_orange_diamond: | Test cases should include: 1. A function declaration with duplicate arguments. 2. A function expression with duplicate arguments. 3. Arrow functions and class methods (which should not trigger the rule). 4. Strict mode, where the parser should catch the error instead of the rule |
+| `no-dupe-args` | `test/missing-rules.test.js` | :warning: | Problematic |
 | `no-dupe-class-members` | `test/no-dupe-class-members.test.js` | :white_check_mark: | Implemented |
 | `no-dupe-keys` | `test/no-dupe-keys.test.js` | :white_check_mark: | Implemented |
 | `no-duplicate-case` | `test/no-duplicate-case.test.js` | :white_check_mark: | Implemented |
@@ -54,16 +54,16 @@ This file tracks the testing status of all custom ESLint rules during the migrat
 | `no-extend-native` | `test/no-extend-native.test.js` | :white_check_mark: | Implemented |
 | `no-extra-bind` | `test/no-extra-bind.test.js` | :white_check_mark: | Implemented |
 | `no-extra-boolean-cast` | `test/no-extra-boolean-cast.test.js` | :white_check_mark: | Implemented |
-| `no-extra-label` | `test/missing-rules.test.js` | :large_orange_diamond: | Test cases should include: 1. A `while` loop with an unnecessary label. 2. A `for` loop with an unnecessary label. 3. A `switch` statement with an unnecessary label. 4. A `while` loop with a necessary label (nested loops). 5. A `switch` statement with a necessary label (nested in a loop). 6. A labeled block statement, which should be ignored |
-| `no-extra-parens` | `test/missing-rules.test.js` | :large_orange_diamond: | Test cases should include: 1. Unnecessary parentheses around various expressions (binary, unary, etc.). 2. Cases where parentheses are required (e.g., IIFEs, regex literals). 3. The `functions` option. 4. Object options like `conditionalAssign` and `nestedBinaryExpressions`. 5. JSX ignoring options. |
+| `no-extra-label` | `test/missing-rules.test.js` | :warning: | Problematic |
+| `no-extra-parens` | `test/missing-rules.test.js` | :warning: | Problematic |
 | `no-fallthrough` | `test/no-fallthrough.test.js` | :white_check_mark: | Implemented |
 | `no-floating-decimal` | `test/no-floating-decimal.test.js` | :white_check_mark: | Implemented |
 | `no-func-assign` | `test/no-func-assign.test.js` | :white_check_mark: | Implemented |
 | `no-global-assign` | `test/no-global-assign.test.js` | :white_check_mark: | Implemented |
 | `no-implied-eval` | `test/no-implied-eval.test.js` | :white_check_mark: | Implemented |
 | `no-invalid-regexp` | `test/no-invalid-regexp.test.js` | :white_check_mark: | Implemented |
-| `no-irregular-whitespace` | `test/missing-rules.test.js` | :large_orange_diamond: | Test cases should include: 1. Various irregular whitespace characters outside of strings, comments, and regexes. 2. Irregular whitespace characters within strings, comments, and regexes (which should be allowed by default). 3. The `skipStrings`, `skipComments`, `skipRegExps`, and `skipTemplates` options set to `false`. |
-| `no-iterator` | `test/missing-rules.test.js` | :large_orange_diamond: | Test cases should include: 1. `Foo.prototype.__iterator__`. 2. `foo.__iterator__`. 3. `foo["__iterator__"]` |
+| `no-irregular-whitespace` | `test/missing-rules.test.js` | :warning: | Problematic |
+| `no-iterator` | `test/no-iterator.test.js` | :white_check_mark: | Implemented |
 | `no-label-var` | `test/no-label-var.test.js` | :white_check_mark: | Implemented |
 | `no-labels` | `test/no-labels.test.js` | :white_check_mark: | Implemented |
 | `no-lone-blocks` | `test/no-lone-blocks.test.js` | :white_check_mark: | Implemented |
