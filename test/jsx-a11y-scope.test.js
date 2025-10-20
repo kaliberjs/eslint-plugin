@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/scope) should report an error for invalid scope', async () => {
-  const result = await lint(`<div scope="row"></div>`)
-  assertHasWarning(result, 'jsx-a11y/scope')
-})
+describe('jsx-a11y/scope', () => {
+  it('should warn on invalid scope', async () => {
+    const result = await lint('<div scope="col" />');
+    assertHasWarning(result, 'jsx-a11y/scope');
+  });
+});

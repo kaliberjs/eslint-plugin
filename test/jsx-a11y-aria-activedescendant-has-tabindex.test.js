@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/aria-activedescendant-has-tabindex) should report an error for missing tabindex', async () => {
-  const result = await lint(`<div aria-activedescendant="id"></div>`)
-  assertHasWarning(result, 'jsx-a11y/aria-activedescendant-has-tabindex')
-})
+describe('jsx-a11y/aria-activedescendant-has-tabindex', () => {
+  it('should warn on aria-activedescendant without tabindex', async () => {
+    const result = await lint('<div aria-activedescendant="foo" />');
+    assertHasWarning(result, 'jsx-a11y/aria-activedescendant-has-tabindex');
+  });
+});

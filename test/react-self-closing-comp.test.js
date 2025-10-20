@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/self-closing-comp) should report an error for not self-closing', async () => {
-  const result = await lint(`<MyComponent></MyComponent>`)
-  assertHasWarning(result, 'react/self-closing-comp')
-})
+describe('react/self-closing-comp', () => {
+  it('should warn on non-self-closing component', async () => {
+    const result = await lint('<MyComponent></MyComponent>');
+    assertHasWarning(result, 'react/self-closing-comp');
+  });
+});

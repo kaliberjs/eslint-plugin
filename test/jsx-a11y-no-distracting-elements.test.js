@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/no-distracting-elements) should report an error for using distracting elements', async () => {
-  const result = await lint(`<marquee></marquee>`)
-  assertHasWarning(result, 'jsx-a11y/no-distracting-elements')
-})
+describe('jsx-a11y/no-distracting-elements', () => {
+  it('should warn on distracting elements', async () => {
+    const result = await lint('<marquee />');
+    assertHasWarning(result, 'jsx-a11y/no-distracting-elements');
+  });
+});

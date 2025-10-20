@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/aria-role) should report an error for invalid aria role', async () => {
-  const result = await lint(`<div role="datepicker"></div>`)
-  assertHasWarning(result, 'jsx-a11y/aria-role')
-})
+describe('jsx-a11y/aria-role', () => {
+  it('should warn on invalid aria role', async () => {
+    const result = await lint('<div role="foo" />');
+    assertHasWarning(result, 'jsx-a11y/aria-role');
+  });
+});

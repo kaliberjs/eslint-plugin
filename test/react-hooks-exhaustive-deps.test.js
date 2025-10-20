@@ -1,17 +1,17 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react-hooks/exhaustive-deps) should report an error for missing dependency', async () => {
-  const result = await lint(`
-    import React, { useEffect, useState } from 'react';
-
-    function MyComponent() {
-      const [a, setA] = useState(0);
-      useEffect(() => {
-        console.log(a);
-      }, []);
-      return <div />;
-    }
-  `)
-  assertHasWarning(result, 'react-hooks/exhaustive-deps')
-})
+describe('react-hooks/exhaustive-deps', () => {
+  it('should warn on missing dependency', async () => {
+    const result = await lint(`
+      import { useEffect } from 'react';
+      function MyComponent() {
+        const [foo, setFoo] = useState();
+        useEffect(() => {
+          console.log(foo);
+        }, []);
+      }
+    `);
+    assertHasWarning(result, 'react-hooks/exhaustive-deps');
+  });
+});

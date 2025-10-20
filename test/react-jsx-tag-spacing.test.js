@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/jsx-tag-spacing) should report an error for invalid tag spacing', async () => {
-  const result = await lint(`< MyComponent />`)
-  assertHasWarning(result, 'react/jsx-tag-spacing')
-})
+describe('react/jsx-tag-spacing', () => {
+  it('should warn on invalid tag spacing', async () => {
+    const result = await lint('< MyComponent />');
+    assertHasWarning(result, 'react/jsx-tag-spacing');
+  });
+});

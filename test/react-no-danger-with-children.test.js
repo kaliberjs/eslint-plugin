@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/no-danger-with-children) should report an error for using children with dangerouslySetInnerHTML', async () => {
-  const result = await lint(`<div dangerouslySetInnerHTML={{ __html: 'hello' }}>hello</div>`)
-  assertHasWarning(result, 'react/no-danger-with-children')
-})
+describe('react/no-danger-with-children', () => {
+  it('should warn on using children with dangerouslySetInnerHTML', async () => {
+    const result = await lint('<div dangerouslySetInnerHTML={{ __html: "foo" }}>bar</div>');
+    assertHasWarning(result, 'react/no-danger-with-children');
+  });
+});

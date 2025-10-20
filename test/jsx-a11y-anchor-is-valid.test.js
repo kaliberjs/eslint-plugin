@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/anchor-is-valid) should report an error for invalid anchor', async () => {
-  const result = await lint(`<a href="#"></a>`)
-  assertHasWarning(result, 'jsx-a11y/anchor-is-valid')
-})
+describe('jsx-a11y/anchor-is-valid', () => {
+  it('should warn on invalid anchor', async () => {
+    const result = await lint('<a href="#" />');
+    assertHasWarning(result, 'jsx-a11y/anchor-is-valid');
+  });
+});

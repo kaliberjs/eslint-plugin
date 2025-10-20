@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/aria-proptypes) should report an error for invalid aria proptype', async () => {
-  const result = await lint(`<div aria-hidden="truee"></div>`)
-  assertHasWarning(result, 'jsx-a11y/aria-proptypes')
-})
+describe('jsx-a11y/aria-proptypes', () => {
+  it('should warn on invalid aria proptype', async () => {
+    const result = await lint('<div aria-hidden="foo" />');
+    assertHasWarning(result, 'jsx-a11y/aria-proptypes');
+  });
+});

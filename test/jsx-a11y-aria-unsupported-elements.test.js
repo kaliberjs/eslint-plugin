@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/aria-unsupported-elements) should report an error for unsupported aria role', async () => {
-  const result = await lint(`<meta charset="UTF-8" role="link" />`)
-  assertHasWarning(result, 'jsx-a11y/aria-unsupported-elements')
-})
+describe('jsx-a11y/aria-unsupported-elements', () => {
+  it('should warn on unsupported aria elements', async () => {
+    const result = await lint('<meta charset="UTF-8" aria-hidden="false" />');
+    assertHasWarning(result, 'jsx-a11y/aria-unsupported-elements');
+  });
+});
