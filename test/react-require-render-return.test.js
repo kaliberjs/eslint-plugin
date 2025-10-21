@@ -1,13 +1,14 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/require-render-return) should report an error for missing render return', async () => {
-  const result = await lint(`
-    import React from 'react';
-
-    class MyComponent extends React.Component {
-      render() {}
-    }
-  `)
-  assertHasWarning(result, 'react/require-render-return')
-})
+describe('react/require-render-return', () => {
+  it('should warn when render does not return', async () => {
+    const result = await lint(`
+      import React from 'react';
+      class MyComponent extends React.Component {
+        render() {}
+      }
+    `);
+    assertHasWarning(result, 'react/require-render-return');
+  });
+});

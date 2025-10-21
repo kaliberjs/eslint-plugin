@@ -1,16 +1,14 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react-hooks/rules-of-hooks) should report an error for invalid hook call', async () => {
-  const result = await lint(`
-    import React, { useState } from 'react';
-
-    function MyComponent() {
+describe('react-hooks/rules-of-hooks', () => {
+  it('should warn on invalid hook call', async () => {
+    const result = await lint(`
+      import { useState } from 'react';
       if (true) {
-        const [a, setA] = useState(0);
+        useState();
       }
-      return <div />;
-    }
-  `)
-  assertHasWarning(result, 'react-hooks/rules-of-hooks')
-})
+    `);
+    assertHasWarning(result, 'react-hooks/rules-of-hooks');
+  });
+});

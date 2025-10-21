@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/alt-text) should report an error for missing alt text', async () => {
-  const result = await lint(`<img src="hello.jpg" />`)
-  assertHasWarning(result, 'jsx-a11y/alt-text')
-})
+describe('jsx-a11y/alt-text', () => {
+  it('should warn on missing alt text', async () => {
+    const result = await lint('<img src="foo.jpg" />');
+    assertHasWarning(result, 'jsx-a11y/alt-text');
+  });
+});

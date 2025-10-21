@@ -1,11 +1,13 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/jsx-wrap-multilines) should report an error for missing parens', async () => {
-  const result = await lint(`
-    const a = <div>
-      <p>hello</p>
-    </div>
-  `)
-  assertHasWarning(result, 'react/jsx-wrap-multilines')
-})
+describe('react/jsx-wrap-multilines', () => {
+  it('should warn on missing parens', async () => {
+    const result = await lint(`
+      const x = <div>
+        <p>foo</p>
+      </div>;
+    `);
+    assertHasWarning(result, 'react/jsx-wrap-multilines');
+  });
+});

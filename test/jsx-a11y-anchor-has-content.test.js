@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/anchor-has-content) should report an error for anchor with no content', async () => {
-  const result = await lint(`<a href="http://example.com"></a>`)
-  assertHasWarning(result, 'jsx-a11y/anchor-has-content')
-})
+describe('jsx-a11y/anchor-has-content', () => {
+  it('should warn on anchor without content', async () => {
+    const result = await lint('<a />');
+    assertHasWarning(result, 'jsx-a11y/anchor-has-content');
+  });
+});

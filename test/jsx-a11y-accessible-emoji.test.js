@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(jsx-a11y/accessible-emoji) should report an error for inaccessible emoji', async () => {
-  const result = await lint(`<span>👍</span>`)
-  assertHasWarning(result, 'jsx-a11y/accessible-emoji')
-})
+describe('jsx-a11y/accessible-emoji', () => {
+  it('should warn on inaccessible emoji', async () => {
+    const result = await lint('<span>👍</span>');
+    assertHasWarning(result, 'jsx-a11y/accessible-emoji');
+  });
+});

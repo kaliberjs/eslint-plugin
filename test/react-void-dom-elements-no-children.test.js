@@ -1,7 +1,9 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/void-dom-elements-no-children) should report an error for children in void elements', async () => {
-  const result = await lint(`<br>hello</br>`)
-  assertHasWarning(result, 'react/void-dom-elements-no-children')
-})
+describe('react/void-dom-elements-no-children', () => {
+  it('should warn on children in void elements', async () => {
+    const result = await lint('<br>foo</br>');
+    assertHasWarning(result, 'react/void-dom-elements-no-children');
+  });
+});

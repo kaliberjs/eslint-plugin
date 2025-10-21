@@ -1,20 +1,18 @@
-const { test } = require('node:test')
-const { lint, assertHasWarning } = require('./test-utils.js')
+const { describe, it } = require('node:test');
+const { lint, assertHasWarning } = require('./test-utils');
 
-test('(react/no-unused-prop-types) should report an error for unused prop types', async () => {
-  const result = await lint(`
-    import React from 'react';
-    import PropTypes from 'prop-types';
-
-    class MyComponent extends React.Component {
-      render() {
-        return <div />;
+describe('react/no-unused-prop-types', () => {
+  it('should warn on unused prop types', async () => {
+    const result = await lint(`
+      import PropTypes from 'prop-types';
+      function MyComponent({ foo }) {
+        return <div>{foo}</div>;
       }
-    }
-
-    MyComponent.propTypes = {
-      a: PropTypes.string,
-    };
-  `)
-  assertHasWarning(result, 'react/no-unused-prop-types')
-})
+      MyComponent.propTypes = {
+        foo: PropTypes.string,
+        bar: PropTypes.string,
+      };
+    `);
+    assertHasWarning(result, 'react/no-unused-prop-types');
+  });
+});
