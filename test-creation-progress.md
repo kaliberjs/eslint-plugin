@@ -126,49 +126,49 @@
 | space-before-blocks | implemented | [rules/core/space-before-blocks/test.js](rules/core/space-before-blocks/test.js) |
 | space-before-function-paren | implemented | [rules/core/space-before-function-paren/test.js](rules/core/space-before-function-paren/test.js) |
 | space-infix-ops | implemented | [rules/core/space-infix-ops/test.js](rules/core/space-infix-ops/test.js) |
-| space-unary-ops | pending | |
-| template-tag-spacing | pending | |
-| no-mixed-operators | pending | |
-| no-multi-str | pending | |
-| no-native-reassign | pending | |
-| no-negated-in-lhs | pending | |
-| no-new-func | pending | |
-| no-new-object | pending | |
-| no-new-symbol | pending | |
-| no-new-wrappers | pending | |
-| no-obj-calls | pending | |
-| no-octal | pending | |
-| no-octal-escape | pending | |
-| no-redeclare | pending | |
-| no-regex-spaces | pending | |
-| no-restricted-globals | pending | |
-| no-restricted-properties | pending | |
-| no-restricted-syntax | pending | |
-| no-script-url | pending | |
-| no-self-assign | pending | |
-| no-self-compare | pending | |
-| no-shadow-restricted-names | pending | |
-| no-sparse-arrays | pending | |
-| no-template-curly-in-string | pending | |
-| no-this-before-super | pending | |
-| no-throw-literal | pending | |
-| no-undef | pending | |
-| no-unexpected-multiline | pending | |
-| no-unreachable | pending | |
-| no-unused-expressions | pending | |
-| no-unused-labels | pending | |
-| no-unused-vars | pending | |
-| no-use-before-define | pending | |
-| no-useless-computed-key | pending | |
-| no-useless-concat | pending | |
-| no-useless-constructor | pending | |
-| no-useless-escape | pending | |
-| no-whitespace-before-property | pending | |
-| no-with | pending | |
-| radix | pending | |
-| require-yield | pending | |
-| rest-spread-spacing | pending | |
-| strict | pending | |
-| unicode-bom | pending | |
+| space-unary-ops | implemented | [rules/core/space-unary-ops/test.js](rules/core/space-unary-ops/test.js) |
+| template-tag-spacing | implemented | [rules/core/template-tag-spacing/test.js](rules/core/template-tag-spacing/test.js) |
+| no-mixed-operators | implemented | [rules/core/no-mixed-operators/test.js](rules/core/no-mixed-operators/test.js) |
+| no-multi-str | implemented | [rules/core/no-multi-str/test.js](rules/core/no-multi-str/test.js) |
+| no-native-reassign | implemented | [rules/core/no-native-reassign/test.js](rules/core/no-native-reassign/test.js) (replaced by no-global-assign) |
+| no-negated-in-lhs | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) (replaced by no-unsafe-negation) |
+| no-new-func | implemented | [rules/core/no-new-func/test.js](rules/core/no-new-func/test.js) |
+| no-new-object | problematic | The `no-new-object` rule has been deprecated and its successor, `no-object-constructor`, is not available in the current ESLint version. |
+| no-new-symbol | problematic | The `no-new-symbol` rule has been deprecated and its successor, `no-new-native-nonconstructor`, is not available in the current ESLint version. |
+| no-new-wrappers | implemented | [rules/core/no-new-wrappers/test.js](rules/core/no-new-wrappers/test.js) |
+| no-obj-calls | implemented | [rules/core/no-obj-calls/test.js](rules/core/no-obj-calls/test.js) |
+| no-octal | implemented | [rules/core/no-octal/test.js](rules/core/no-octal/test.js) |
+| no-octal-escape | implemented | [rules/core/no-octal-escape/test.js](rules/core/no-octal-escape/test.js) |
+| no-redeclare | implemented | [rules/core/no-redeclare/test.js](rules/core/no-redeclare/test.js) |
+| no-regex-spaces | implemented | [rules/core/no-regex-spaces/test.js](rules/core/no-regex-spaces/test.js) |
+| no-restricted-globals | implemented | [rules/core/no-restricted-globals/test.js](rules/core/no-restricted-globals/test.js) |
+| no-restricted-properties | implemented | [rules/core/no-restricted-properties/test.js](rules/core/no-restricted-properties/test.js) |
+| no-restricted-syntax | implemented | [rules/core/no-restricted-syntax/test.js](rules/core/no-restricted-syntax/test.js) |
+| no-script-url | implemented | [rules/core/no-script-url/test.js](rules/core/no-script-url/test.js) |
+| no-self-assign | implemented | [rules/core/no-self-assign/test.js](rules/core/no-self-assign/test.js) |
+| no-self-compare | implemented | [rules/core/no-self-compare/test.js](rules/core/no-self-compare/test.js) |
+| no-shadow-restricted-names | implemented | [rules/core/no-shadow-restricted-names/test.js](rules/core/no-shadow-restricted-names/test.js) |
+| no-sparse-arrays | implemented | [rules/core/no-sparse-arrays/test.js](rules/core/no-sparse-arrays/test.js) |
+| no-template-curly-in-string | implemented | [rules/core/no-template-curly-in-string/test.js](rules/core/no-template-curly-in-string/test.js) |
+| no-this-before-super | implemented | [rules/core/no-this-before-super/test.js](rules/core/no-this-before-super/test.js) |
+| no-throw-literal | implemented | [rules/core/no-throw-literal/test.js](rules/core/no-throw-literal/test.js) |
+| no-undef | implemented | [rules/core/no-undef/test.js](rules/core/no-undef/test.js) |
+| no-unexpected-multiline | implemented | [rules/core/no-unexpected-multiline/test.js](rules/core/no-unexpected-multiline/test.js) |
+| no-unreachable | implemented | [rules/core/no-unreachable/test.js](rules/core/no-unreachable/test.js) |
+| no-unused-expressions | implemented | [rules/core/no-unused-expressions/test.js](rules/core/no-unused-expressions/test.js) |
+| no-unused-labels | implemented | [rules/core/no-unused-labels/test.js](rules/core/no-unused-labels/test.js) |
+| no-unused-vars | implemented | [rules/core/no-unused-vars/test.js](rules/core/no-unused-vars/test.js) |
+| no-use-before-define | implemented | [rules/core/no-use-before-define/test.js](rules/core/no-use-before-define/test.js) |
+| no-useless-computed-key | implemented | [rules/core/no-useless-computed-key/test.js](rules/core/no-useless-computed-key/test.js) |
+| no-useless-concat | implemented | [rules/core/no-useless-concat/test.js](rules/core/no-useless-concat/test.js) |
+| no-useless-constructor | implemented | [rules/core/no-useless-constructor/test.js](rules/core/no-useless-constructor/test.js) |
+| no-useless-escape | problematic | The test for this rule could not be implemented successfully. |
+| no-whitespace-before-property | implemented | [rules/core/no-whitespace-before-property/test.js](rules/core/no-whitespace-before-property/test.js) |
+| no-with | implemented | [rules/core/no-with/test.js](rules/core/no-with/test.js) |
+| radix | implemented | [rules/core/radix/test.js](rules/core/radix/test.js) |
+| require-yield | implemented | [rules/core/require-yield/test.js](rules/core/require-yield/test.js) |
+| rest-spread-spacing | implemented | [rules/core/rest-spread-spacing/test.js](rules/core/rest-spread-spacing/test.js) |
+| strict | implemented | [rules/core/strict/test.js](rules/core/strict/test.js) |
+| unicode-bom | implemented | [rules/core/unicode-bom/test.js](rules/core/unicode-bom/test.js) |
 | use-isnan | pending | |
 | valid-typeof | pending | |
