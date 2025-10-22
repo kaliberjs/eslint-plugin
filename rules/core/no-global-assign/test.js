@@ -1,27 +1,29 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const { Linter } = require('eslint')
+const linter = new Linter()
+const rule = linter.getRules().get('no-global-assign')
 
-const ruleTester = new RuleTester({
-  globals: {
-    window: 'writable',
-  },
-  env: {
-    browser: true,
-  },
-});
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-global-assign', rule, {
   valid: [
-    'window = 1;',
+    { code: 'a = 1;' },
+    { code: 'var a = 1; a = 2;' },
+    { code: 'window = window;' },
   ],
   invalid: [
     {
-      code: 'Object = 1;',
+      code: 'window = {};',
+      errors: [{ message: "Read-only global 'window' should not be modified." }],
+      env: { browser: true },
+    },
+    {
+      code: 'Object = null;',
       errors: [{ message: "Read-only global 'Object' should not be modified." }],
     },
     {
-      code: 'top = 1;',
-      errors: [{ message: "Read-only global 'top' should not be modified." }],
+      code: 'undefined = 1;',
+      errors: [{ message: "Read-only global 'undefined' should not be modified." }],
     },
   ],
-});
+})

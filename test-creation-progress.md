@@ -126,20 +126,20 @@
 | space-before-blocks | implemented | [rules/core/space-before-blocks/test.js](rules/core/space-before-blocks/test.js) |
 | space-before-function-paren | implemented | [rules/core/space-before-function-paren/test.js](rules/core/space-before-function-paren/test.js) |
 | space-infix-ops | implemented | [rules/core/space-infix-ops/test.js](rules/core/space-infix-ops/test.js) |
-| space-unary-ops | pending | |
-| template-tag-spacing | pending | |
-| no-mixed-operators | pending | |
-| no-multi-str | pending | |
-| no-native-reassign | pending | |
-| no-negated-in-lhs | pending | |
-| no-new-func | pending | |
-| no-new-object | pending | |
-| no-new-symbol | pending | |
-| no-new-wrappers | pending | |
-| no-obj-calls | pending | |
-| no-octal | pending | |
-| no-octal-escape | pending | |
-| no-redeclare | pending | |
+| space-unary-ops | implemented | [rules/core/space-unary-ops/test.js](rules/core/space-unary-ops/test.js) |
+| template-tag-spacing | implemented | [rules/core/template-tag-spacing/test.js](rules/core/template-tag-spacing/test.js) |
+| no-mixed-operators | implemented | [rules/core/no-mixed-operators/test.js](rules/core/no-mixed-operators/test.js) |
+| no-multi-str | implemented | [rules/core/no-multi-str/test.js](rules/core/no-multi-str/test.js) |
+| no-native-reassign | implemented | [rules/core/no-global-assign/test.js](rules/core/no-global-assign/test.js) (replaced by no-global-assign) |
+| no-negated-in-lhs | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) (replaced by no-unsafe-negation) |
+| no-new-func | implemented | [rules/core/no-new-func/test.js](rules/core/no-new-func/test.js) |
+| no-new-object | problematic | The `no-new-object` rule has been deprecated and its successor, `no-object-constructor`, is not available in the current ESLint version. |
+| no-new-symbol | problematic | The `no-new-symbol` rule has been deprecated and its successor, `no-new-native-nonconstructor`, is not available in the current ESLint version. |
+| no-new-wrappers | implemented | [rules/core/no-new-wrappers/test.js](rules/core/no-new-wrappers/test.js) |
+| no-obj-calls | implemented | [rules/core/no-obj-calls/test.js](rules/core/no-obj-calls/test.js) |
+| no-octal | implemented | [rules/core/no-octal/test.js](rules/core/no-octal/test.js) |
+| no-octal-escape | implemented | [rules/core/no-octal-escape/test.js](rules/core/no-octal-escape/test.js) |
+| no-redeclare | implemented | [rules/core/no-redeclare/test.js](rules/core/no-redeclare/test.js) |
 | no-regex-spaces | pending | |
 | no-restricted-globals | pending | |
 | no-restricted-properties | pending | |
