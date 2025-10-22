@@ -140,13 +140,13 @@
 | no-octal | implemented | [rules/core/no-octal/test.js](rules/core/no-octal/test.js) |
 | no-octal-escape | implemented | [rules/core/no-octal-escape/test.js](rules/core/no-octal-escape/test.js) |
 | no-redeclare | implemented | [rules/core/no-redeclare/test.js](rules/core/no-redeclare/test.js) |
-| no-regex-spaces | pending | |
-| no-restricted-globals | pending | |
-| no-restricted-properties | pending | |
-| no-restricted-syntax | pending | |
-| no-script-url | pending | |
-| no-self-assign | pending | |
-| no-self-compare | pending | |
+| no-regex-spaces | implemented | [rules/core/no-regex-spaces/test.js](rules/core/no-regex-spaces/test.js) |
+| no-restricted-globals | implemented | [rules/core/no-restricted-globals/test.js](rules/core/no-restricted-globals/test.js) |
+| no-restricted-properties | implemented | [rules/core/no-restricted-properties/test.js](rules/core/no-restricted-properties/test.js) |
+| no-restricted-syntax | implemented | [rules/core/no-restricted-syntax/test.js](rules/core/no-restricted-syntax/test.js) |
+| no-script-url | implemented | [rules/core/no-script-url/test.js](rules/core/no-script-url/test.js) |
+| no-self-assign | implemented | [rules/core/no-self-assign/test.js](rules/core/no-self-assign/test.js) |
+| no-self-compare | implemented | [rules/core/no-self-compare/test.js](rules/core/no-self-compare/test.js) |
 | no-shadow-restricted-names | pending | |
 | no-sparse-arrays | pending | |
 | no-template-curly-in-string | pending | |

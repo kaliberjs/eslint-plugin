@@ -9,9 +9,13 @@ ruleTester.run('no-global-assign', rule, {
   valid: [
     { code: 'a = 1;' },
     { code: 'var a = 1; a = 2;' },
-    { code: 'window = window;' },
   ],
   invalid: [
+    {
+      code: 'window = window;',
+      errors: [{ message: "Read-only global 'window' should not be modified." }],
+      env: { browser: true },
+    },
     {
       code: 'window = {};',
       errors: [{ message: "Read-only global 'window' should not be modified." }],
