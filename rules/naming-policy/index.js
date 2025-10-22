@@ -4,6 +4,7 @@ const {
   getFunctionName,
   getParentJSXElement,
   hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
+  getEnclosingFunctionNode,
 } = require('../../machinery/ast')
 const { isApp, isPage, getBaseFilename, getFilename } = require('../../machinery/filename')
 const { firstLetterLowerCase } = require('../../machinery/word')
@@ -118,7 +119,8 @@ module.exports = defineRule({
     }
 
     function reportInvalidRootElementClassName(jsxElement, property) {
-      const expectedClassNames = getValidRootElementClassNames(context)
+      const functionNode = getEnclosingFunctionNode(jsxElement);
+      const expectedClassNames = getValidRootElementClassNames(context, functionNode)
 
       const className = getPropertyName(property)
       if (expectedClassNames.includes(className)) {
@@ -178,13 +180,12 @@ module.exports = defineRule({
   }
 })
 
-function getValidRootElementClassNames(context) {
-  const filename = getFilename(context);
-
-  console.log({ a: context, b: context.getScope?.() })
+function getValidRootElementClassNames(context, functionNode) {
+  const filename = getFilename(context)
   const prefix = new RegExp(`^${getBaseFilename(filename)}`)
-  const name = getFunctionName(context).replace(prefix, '')
-  const exported = isInExport(context)
+
+  const name = getFunctionName(functionNode).replace(prefix, '')
+  const exported = isInExport(functionNode)
 
   return (
     exported && isApp(filename) ? [`app${name}`] :
