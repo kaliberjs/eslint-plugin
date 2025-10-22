@@ -170,5 +170,5 @@
 | rest-spread-spacing | implemented | [rules/core/rest-spread-spacing/test.js](rules/core/rest-spread-spacing/test.js) |
 | strict | implemented | [rules/core/strict/test.js](rules/core/strict/test.js) |
 | unicode-bom | implemented | [rules/core/unicode-bom/test.js](rules/core/unicode-bom/test.js) |
-| use-isnan | pending | |
-| valid-typeof | pending | |
+| use-isnan | implemented | [rules/core/use-isnan.test.js](rules/core/use-isnan.test.js) |
+| valid-typeof | implemented | [rules/core/valid-typeof.test.js](rules/core/valid-typeof.test.js) |
