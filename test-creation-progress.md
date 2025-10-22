@@ -97,11 +97,11 @@
 | no-extra-boolean-cast | implemented | [rules/core/no-extra-boolean-cast.js](rules/core/no-extra-boolean-cast.js) |
 | no-extra-label | problematic | The test for this rule could not be implemented successfully. |
 | no-extra-parens | problematic | The test for this rule could not be implemented successfully. |
-| no-fallthrough | implemented | [rules/core/no-fallthrough/test.js](rules/core/no-fallthrough/test.js) |
-| no-floating-decimal | implemented | [rules/core/no-floating-decimal/test.js](rules/core/no-floating-decimal/test.js) |
-| no-func-assign | implemented | [rules/core/no-func-assign/test.js](rules/core/no-func-assign/test.js) |
-| no-global-assign | implemented | [rules/core/no-global-assign/test.js](rules/core/no-global-assign/test.js) |
-| no-implied-eval | implemented | [rules/core/no-implied-eval/test.js](rules/core/no-implied-eval/test.js) |
+| no-fallthrough | problematic | The test for this rule could not be implemented successfully. |
+| no-floating-decimal | problematic | The test for this rule could not be implemented successfully. |
+| no-func-assign | problematic | The test for this rule could not be implemented successfully. |
+| no-global-assign | problematic | The test for this rule could not be implemented successfully. |
+| no-implied-eval | problematic | The test for this rule could not be implemented successfully. |
 | no-invalid-regexp | implemented | [rules/core/no-invalid-regexp/test.js](rules/core/no-invalid-regexp/test.js) |
 | no-irregular-whitespace | problematic | The test for this rule could not be implemented successfully. |
 | no-iterator | problematic | The test for this rule could not be implemented successfully. |
