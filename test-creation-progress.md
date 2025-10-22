@@ -2,130 +2,130 @@
 
 | Rule | Status | Remark |
 |---|---|---|
-| @kaliber/component-properties | pending | |
-| @kaliber/jsx-key | pending | |
-| @kaliber/layout-class-name | pending | |
-| @kaliber/naming-policy | pending | |
-| @kaliber/no-default-export | pending | |
-| @kaliber/no-relative-parent-import | pending | |
-| import/first | pending | |
-| import/no-amd | pending | |
-| import/no-webpack-loader-syntax | pending | |
-| import/no-duplicates | pending | |
-| import/export | pending | |
-| import/default | pending | |
-| import/no-unresolved | pending | |
-| import/named | pending | |
-| jsx-a11y/accessible-emoji | pending | |
-| jsx-a11y/alt-text | pending | |
-| jsx-a11y/anchor-has-content | pending | |
-| jsx-a11y/anchor-is-valid | pending | |
-| jsx-a11y/aria-activedescendant-has-tabindex | pending | |
-| jsx-a11y/aria-props | pending | |
-| jsx-a11y/aria-proptypes | pending | |
-| jsx-a11y/aria-role | pending | |
-| jsx-a11y/aria-unsupported-elements | pending | |
-| jsx-a11y/heading-has-content | pending | |
-| jsx-a11y/html-has-lang | pending | |
-| jsx-a11y/iframe-has-title | pending | |
-| jsx-a11y/img-redundant-alt | pending | |
-| jsx-a11y/no-access-key | pending | |
-| jsx-a11y/no-distracting-elements | pending | |
-| jsx-a11y/no-redundant-roles | pending | |
-| jsx-a11y/role-has-required-aria-props | pending | |
-| jsx-a11y/role-supports-aria-props | pending | |
-| jsx-a11y/scope | pending | |
-| react/jsx-boolean-value | pending | |
-| react/jsx-curly-spacing | pending | |
-| react/jsx-equals-spacing | pending | |
-| react/jsx-indent | pending | |
-| react/jsx-indent-props | pending | |
-| react/jsx-no-comment-textnodes | pending | |
-| react/jsx-no-duplicate-props | pending | |
-| react/jsx-no-target-blank | pending | |
-| react/jsx-no-undef | pending | |
-| react/jsx-pascal-case | pending | |
-| react/jsx-tag-spacing | pending | |
-| react/jsx-uses-vars | pending | |
-| react/jsx-wrap-multilines | pending | |
-| react/no-danger-with-children | pending | |
-| react/no-deprecated | pending | |
-| react/no-direct-mutation-state | pending | |
-| react/no-unused-prop-types | pending | |
-| react/prop-types | pending | |
-| react/require-render-return | pending | |
-| react/self-closing-comp | pending | |
-| react/void-dom-elements-no-children | pending | |
-| react-hooks/rules-of-hooks | pending | |
-| react-hooks/exhaustive-deps | pending | |
-| brace-style | pending | |
-| indent | pending | |
-| accessor-pairs | pending | |
-| array-callback-return | pending | |
-| arrow-spacing | pending | |
-| block-spacing | pending | |
-| comma-dangle | pending | |
-| comma-spacing | pending | |
-| comma-style | pending | |
-| default-case | pending | |
-| dot-location | pending | |
-| eol-last | pending | |
-| eqeqeq | pending | |
-| key-spacing | pending | |
-| keyword-spacing | pending | |
-| new-parens | pending | |
-| no-array-constructor | pending | |
-| no-caller | pending | |
-| no-class-assign | pending | |
-| no-compare-neg-zero | pending | |
-| no-cond-assign | pending | |
-| no-const-assign | pending | |
-| no-constant-condition | pending | |
-| no-control-regex | pending | |
-| no-debugger | pending | |
-| no-delete-var | pending | |
-| no-dupe-args | pending | |
-| no-dupe-class-members | pending | |
-| no-dupe-keys | pending | |
-| no-duplicate-case | pending | |
-| no-empty-character-class | pending | |
-| no-empty-pattern | pending | |
-| no-eval | pending | |
-| no-ex-assign | pending | |
-| no-extend-native | pending | |
-| no-extra-bind | pending | |
-| no-extra-boolean-cast | pending | |
-| no-extra-label | pending | |
-| no-extra-parens | pending | |
-| no-fallthrough | pending | |
-| no-floating-decimal | pending | |
-| no-func-assign | pending | |
-| no-global-assign | pending | |
-| no-implied-eval | pending | |
-| no-invalid-regexp | pending | |
-| no-irregular-whitespace | pending | |
-| no-iterator | pending | |
-| no-label-var | pending | |
-| no-labels | pending | |
-| no-lone-blocks | pending | |
-| no-loop-func | pending | |
-| no-mixed-spaces-and-tabs | pending | |
-| no-path-concat | pending | |
-| no-proto | pending | |
-| no-return-assign | pending | |
-| no-return-await | pending | |
-| no-trailing-spaces | pending | |
-| no-unneeded-ternary | pending | |
-| no-unsafe-negation | pending | |
-| no-useless-return | pending | |
-| object-curly-spacing | pending | |
-| object-shorthand | pending | |
-| quotes | pending | |
-| semi | pending | |
-| semi-spacing | pending | |
-| space-before-blocks | pending | |
-| space-before-function-paren | pending | |
-| space-infix-ops | pending | |
+| @kaliber/component-properties | implemented | [rules/component-properties/test.js](rules/component-properties/test.js) |
+| @kaliber/jsx-key | implemented | [rules/jsx-key/test.js](rules/jsx-key/test.js) |
+| @kaliber/layout-class-name | implemented | [rules/layout-class-name/test.js](rules/layout-class-name/test.js) |
+| @kaliber/naming-policy | implemented | [rules/naming-policy/test.js](rules/naming-policy/test.js) |
+| @kaliber/no-default-export | implemented | [rules/no-default-export/test.js](rules/no-default-export/test.js) |
+| @kaliber/no-relative-parent-import | implemented | [rules/no-relative-parent-import/test.js](rules/no-relative-parent-import/test.js) |
+| import/first | implemented | [rules/third-party/import-first.js](rules/third-party/import-first.js) |
+| import/no-amd | implemented | [rules/third-party/import-no-amd.js](rules/third-party/import-no-amd.js) |
+| import/no-webpack-loader-syntax | problematic | The test for `require` calls could not be implemented successfully. |
+| import/no-duplicates | problematic | The test for duplicate imports could not be implemented successfully. |
+| import/export | problematic | The test for duplicate exports could not be implemented successfully. |
+| import/default | implemented | [rules/third-party/import-default.js](rules/third-party/import-default.js) |
+| import/no-unresolved | implemented | [rules/third-party/import-no-unresolved.js](rules/third-party/import-no-unresolved.js) |
+| import/named | implemented | [rules/third-party/import-named.js](rules/third-party/import-named.js) |
+| jsx-a11y/accessible-emoji | problematic | This rule is deprecated. |
+| jsx-a11y/alt-text | implemented | [rules/third-party/jsx-a11y-alt-text.js](rules/third-party/jsx-a11y-alt-text.js) |
+| jsx-a11y/anchor-has-content | implemented | [rules/third-party/jsx-a11y-anchor-has-content.js](rules/third-party/jsx-a11y-anchor-has-content.js) |
+| jsx-a11y/anchor-is-valid | implemented | [rules/third-party/jsx-a11y-anchor-is-valid.js](rules/third-party/jsx-a11y-anchor-is-valid.js) |
+| jsx-a11y/aria-activedescendant-has-tabindex | implemented | [rules/third-party/jsx-a11y-aria-activedescendant-has-tabindex.js](rules/third-party/jsx-a11y-aria-activedescendant-has-tabindex.js) |
+| jsx-a11y/aria-props | implemented | [rules/third-party/jsx-a11y-aria-props.js](rules/third-party/jsx-a11y-aria-props.js) |
+| jsx-a11y/aria-proptypes | implemented | [rules/third-party/jsx-a11y-aria-proptypes.js](rules/third-party/jsx-a11y-aria-proptypes.js) |
+| jsx-a11y/aria-role | implemented | [rules/third-party/jsx-a11y-aria-role.js](rules/third-party/jsx-a11y-aria-role.js) |
+| jsx-a11y/aria-unsupported-elements | implemented | [rules/third-party/jsx-a11y-aria-unsupported-elements.js](rules/third-party/jsx-a11y-aria-unsupported-elements.js) |
+| jsx-a11y/heading-has-content | implemented | [rules/third-party/jsx-a11y-heading-has-content.js](rules/third-party/jsx-a11y-heading-has-content.js) |
+| jsx-a11y/html-has-lang | implemented | [rules/third-party/jsx-a11y-html-has-lang.js](rules/third-party/jsx-a11y-html-has-lang.js) |
+| jsx-a11y/iframe-has-title | implemented | [rules/third-party/jsx-a11y-iframe-has-title.js](rules/third-party/jsx-a11y-iframe-has-title.js) |
+| jsx-a11y/img-redundant-alt | implemented | [rules/third-party/jsx-a11y-img-redundant-alt.js](rules/third-party/jsx-a11y-img-redundant-alt.js) |
+| jsx-a11y/no-access-key | implemented | [rules/third-party/jsx-a11y-no-access-key.js](rules/third-party/jsx-a11y-no-access-key.js) |
+| jsx-a11y/no-distracting-elements | implemented | [rules/third-party/jsx-a11y-no-distracting-elements.js](rules/third-party/jsx-a11y-no-distracting-elements.js) |
+| jsx-a11y/no-redundant-roles | implemented | [rules/third-party/jsx-a11y-no-redundant-roles.js](rules/third-party/jsx-a11y-no-redundant-roles.js) |
+| jsx-a11y/role-has-required-aria-props | problematic | The test for this rule could not be implemented successfully. |
+| jsx-a11y/role-supports-aria-props | problematic | The test for this rule could not be implemented successfully. |
+| jsx-a11y/scope | implemented | [rules/third-party/jsx-a11y-scope.js](rules/third-party/jsx-a11y-scope.js) |
+| react/jsx-boolean-value | implemented | [rules/third-party/react/jsx-boolean-value.js](rules/third-party/react/jsx-boolean-value.js) |
+| react/jsx-curly-spacing | implemented | [rules/third-party/react/jsx-curly-spacing.js](rules/third-party/react/jsx-curly-spacing.js) |
+| react/jsx-equals-spacing | implemented | [rules/third-party/react/jsx-equals-spacing.js](rules/third-party/react/jsx-equals-spacing.js) |
+| react/jsx-indent | implemented | [rules/third-party/react/jsx-indent.js](rules/third-party/react/jsx-indent.js) |
+| react/jsx-indent-props | implemented | [rules/third-party/react/jsx-indent-props.js](rules/third-party/react/jsx-indent-props.js) |
+| react/jsx-no-comment-textnodes | implemented | [rules/third-party/react/jsx-no-comment-textnodes.js](rules/third-party/react/jsx-no-comment-textnodes.js) |
+| react/jsx-no-duplicate-props | implemented | [rules/third-party/react/jsx-no-duplicate-props.js](rules/third-party/react/jsx-no-duplicate-props.js) |
+| react/jsx-no-target-blank | implemented | [rules/third-party/react/jsx-no-target-blank.js](rules/third-party/react/jsx-no-target-blank.js) |
+| react/jsx-no-undef | implemented | [rules/third-party/react/jsx-no-undef.js](rules/third-party/react/jsx-no-undef.js) |
+| react/jsx-pascal-case | problematic | The test for this rule could not be implemented successfully. |
+| react/jsx-tag-spacing | implemented | [rules/third-party/react/jsx-tag-spacing.js](rules/third-party/react/jsx-tag-spacing.js) |
+| react/jsx-uses-vars | problematic | The test for this rule could not be implemented successfully. |
+| react/jsx-wrap-multilines | implemented | [rules/third-party/react/jsx-wrap-multilines.js](rules/third-party/react/jsx-wrap-multilines.js) |
+| react/no-danger-with-children | implemented | [rules/third-party/react/no-danger-with-children.js](rules/third-party/react/no-danger-with-children.js) |
+| react/no-deprecated | implemented | [rules/third-party/react/no-deprecated.js](rules/third-party/react/no-deprecated.js) |
+| react/no-direct-mutation-state | implemented | [rules/third-party/react/no-direct-mutation-state.js](rules/third-party/react/no-direct-mutation-state.js) |
+| react/no-unused-prop-types | problematic | The test for this rule could not be implemented successfully. |
+| react/prop-types | implemented | [rules/third-party/react/prop-types.js](rules/third-party/react/prop-types.js) |
+| react/require-render-return | implemented | [rules/third-party/react/require-render-return.js](rules/third-party/react/require-render-return.js) |
+| react/self-closing-comp | implemented | [rules/third-party/react/self-closing-comp.js](rules/third-party/react/self-closing-comp.js) |
+| react/void-dom-elements-no-children | implemented | [rules/third-party/react/void-dom-elements-no-children.js](rules/third-party/react/void-dom-elements-no-children.js) |
+| react-hooks/rules-of-hooks | implemented | [rules/third-party/react-hooks/rules-of-hooks.js](rules/third-party/react-hooks/rules-of-hooks.js) |
+| react-hooks/exhaustive-deps | implemented | [rules/third-party/react-hooks/exhaustive-deps.js](rules/third-party/react-hooks/exhaustive-deps.js) |
+| brace-style | implemented | [rules/core/brace-style.js](rules/core/brace-style.js) |
+| indent | implemented | [rules/core/indent.js](rules/core/indent.js) |
+| accessor-pairs | implemented | [rules/core/accessor-pairs.js](rules/core/accessor-pairs.js) |
+| array-callback-return | implemented | [rules/core/array-callback-return.js](rules/core/array-callback-return.js) |
+| arrow-spacing | implemented | [rules/core/arrow-spacing.js](rules/core/arrow-spacing.js) |
+| block-spacing | implemented | [rules/core/block-spacing.js](rules/core/block-spacing.js) |
+| comma-dangle | implemented | [rules/core/comma-dangle.js](rules/core/comma-dangle.js) |
+| comma-spacing | implemented | [rules/core/comma-spacing.js](rules/core/comma-spacing.js) |
+| comma-style | implemented | [rules/core/comma-style.js](rules/core/comma-style.js) |
+| default-case | problematic | The test for this rule could not be implemented successfully. |
+| dot-location | implemented | [rules/core/dot-location.js](rules/core/dot-location.js) |
+| eol-last | implemented | [rules/core/eol-last.js](rules/core/eol-last.js) |
+| eqeqeq | implemented | [rules/core/eqeqeq.js](rules/core/eqeqeq.js) |
+| key-spacing | implemented | [rules/core/key-spacing.js](rules/core/key-spacing.js) |
+| keyword-spacing | implemented | [rules/core/keyword-spacing.js](rules/core/keyword-spacing.js) |
+| new-parens | implemented | [rules/core/new-parens.js](rules/core/new-parens.js) |
+| no-array-constructor | implemented | [rules/core/no-array-constructor.js](rules/core/no-array-constructor.js) |
+| no-caller | implemented | [rules/core/no-caller.js](rules/core/no-caller.js) |
+| no-class-assign | implemented | [rules/core/no-class-assign.js](rules/core/no-class-assign.js) |
+| no-compare-neg-zero | implemented | [rules/core/no-compare-neg-zero.js](rules/core/no-compare-neg-zero.js) |
+| no-cond-assign | implemented | [rules/core/no-cond-assign.js](rules/core/no-cond-assign.js) |
+| no-const-assign | implemented | [rules/core/no-const-assign.js](rules/core/no-const-assign.js) |
+| no-constant-condition | implemented | [rules/core/no-constant-condition.js](rules/core/no-constant-condition.js) |
+| no-control-regex | implemented | [rules/core/no-control-regex.js](rules/core/no-control-regex.js) |
+| no-debugger | implemented | [rules/core/no-debugger.js](rules/core/no-debugger.js) |
+| no-delete-var | implemented | [rules/core/no-delete-var.js](rules/core/no-delete-var.js) |
+| no-dupe-args | implemented | [rules/core/no-dupe-args.js](rules/core/no-dupe-args.js) |
+| no-dupe-class-members | implemented | [rules/core/no-dupe-class-members.js](rules/core/no-dupe-class-members.js) |
+| no-dupe-keys | implemented | [rules/core/no-dupe-keys.js](rules/core/no-dupe-keys.js) |
+| no-duplicate-case | implemented | [rules/core/no-duplicate-case.js](rules/core/no-duplicate-case.js) |
+| no-empty-character-class | implemented | [rules/core/no-empty-character-class.js](rules/core/no-empty-character-class.js) |
+| no-empty-pattern | implemented | [rules/core/no-empty-pattern.js](rules/core/no-empty-pattern.js) |
+| no-eval | implemented | [rules/core/no-eval.js](rules/core/no-eval.js) |
+| no-ex-assign | implemented | [rules/core/no-ex-assign.js](rules/core/no-ex-assign.js) |
+| no-extend-native | implemented | [rules/core/no-extend-native.js](rules/core/no-extend-native.js) |
+| no-extra-bind | implemented | [rules/core/no-extra-bind.js](rules/core/no-extra-bind.js) |
+| no-extra-boolean-cast | implemented | [rules/core/no-extra-boolean-cast.js](rules/core/no-extra-boolean-cast.js) |
+| no-extra-label | problematic | The test for this rule could not be implemented successfully. |
+| no-extra-parens | problematic | The test for this rule could not be implemented successfully. |
+| no-fallthrough | implemented | [rules/core/no-fallthrough/test.js](rules/core/no-fallthrough/test.js) |
+| no-floating-decimal | implemented | [rules/core/no-floating-decimal/test.js](rules/core/no-floating-decimal/test.js) |
+| no-func-assign | implemented | [rules/core/no-func-assign/test.js](rules/core/no-func-assign/test.js) |
+| no-global-assign | implemented | [rules/core/no-global-assign/test.js](rules/core/no-global-assign/test.js) |
+| no-implied-eval | implemented | [rules/core/no-implied-eval/test.js](rules/core/no-implied-eval/test.js) |
+| no-invalid-regexp | implemented | [rules/core/no-invalid-regexp/test.js](rules/core/no-invalid-regexp/test.js) |
+| no-irregular-whitespace | problematic | The test for this rule could not be implemented successfully. |
+| no-iterator | problematic | The test for this rule could not be implemented successfully. |
+| no-label-var | implemented | [rules/core/no-label-var/test.js](rules/core/no-label-var/test.js) |
+| no-labels | implemented | [rules/core/no-labels/test.js](rules/core/no-labels/test.js) |
+| no-lone-blocks | implemented | [rules/core/no-lone-blocks/test.js](rules/core/no-lone-blocks/test.js) |
+| no-loop-func | implemented | [rules/core/no-loop-func/test.js](rules/core/no-loop-func/test.js) |
+| no-mixed-spaces-and-tabs | implemented | [rules/core/no-mixed-spaces-and-tabs/test.js](rules/core/no-mixed-spaces-and-tabs/test.js) |
+| no-path-concat | implemented | [rules/core/no-path-concat/test.js](rules/core/no-path-concat/test.js) |
+| no-proto | problematic | The test for this rule could not be implemented successfully. |
+| no-return-assign | implemented | [rules/core/no-return-assign/test.js](rules/core/no-return-assign/test.js) |
+| no-return-await | implemented | [rules/core/no-return-await/test.js](rules/core/no-return-await/test.js) |
+| no-trailing-spaces | implemented | [rules/core/no-trailing-spaces/test.js](rules/core/no-trailing-spaces/test.js) |
+| no-unneeded-ternary | problematic | The test for this rule could not be implemented successfully. |
+| no-unsafe-negation | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) |
+| no-useless-return | problematic | The test for this rule could not be implemented successfully. |
+| object-curly-spacing | implemented | [rules/core/object-curly-spacing/test.js](rules/core/object-curly-spacing/test.js) |
+| object-shorthand | implemented | [rules/core/object-shorthand/test.js](rules/core/object-shorthand/test.js) |
+| quotes | problematic | The test for this rule could not be implemented successfully. |
+| semi | implemented | [rules/core/semi/test.js](rules/core/semi/test.js) |
+| semi-spacing | implemented | [rules/core/semi-spacing/test.js](rules/core/semi-spacing/test.js) |
+| space-before-blocks | implemented | [rules/core/space-before-blocks/test.js](rules/core/space-before-blocks/test.js) |
+| space-before-function-paren | implemented | [rules/core/space-before-function-paren/test.js](rules/core/space-before-function-paren/test.js) |
+| space-infix-ops | implemented | [rules/core/space-infix-ops/test.js](rules/core/space-infix-ops/test.js) |
 | space-unary-ops | pending | |
 | template-tag-spacing | pending | |
 | no-mixed-operators | pending | |
