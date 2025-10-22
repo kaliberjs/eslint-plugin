@@ -5,6 +5,7 @@ This ESLint plugin enforces Kaliber's code conventions, helping maintain consist
 
 ## Usage (for `oxlint` experiment)
 ```bash
+yarn add -D oxlint
 yarn link "@kaliber/eslint-plugin"
 yarn install --force
 ```

@@ -120,11 +120,10 @@ Some eslint-plugin-import rules such as import/no-unresolved aren’t listed in 
     "import/default": "warn",
     "import/named": "warn",
     // Oxlint also has this; it approximates @kaliber/no-default-export
-    "import/no-default-export": "warn"
+    // "import/no-default-export": "warn"
     // NOTE: eslint-plugin-import's "no-unresolved" is not yet implemented in Oxlint at the time of writing.
     // If you need it, keep ESLint for that single rule or rely on TypeScript/jsconfig resolution (see notes).
-    // "import/no-unresolved": "warn"
-    ,
+    // "import/no-unresolved": "warn",
 
     // react plugin (Oxlint port)
     "react/jsx-no-comment-textnodes": "warn",
@@ -132,7 +131,7 @@ Some eslint-plugin-import rules such as import/no-unresolved aren’t listed in 
     "react/jsx-no-target-blank": "warn",
     "react/jsx-no-undef": ["warn", { "allowGlobals": true }],
     // Your config delegated jsx-key to @kaliber; enable the React one here:
-    "react/jsx-key": "warn",
+    "react/jsx-key": "off",
     "react/no-danger-with-children": "warn",
     "react/no-direct-mutation-state": "warn",
     "react/prop-types": ["error", { "skipUndeclared": true }],
@@ -164,11 +163,11 @@ Some eslint-plugin-import rules such as import/no-unresolved aren’t listed in 
     "jsx-a11y/scope": "warn",
 
     // Custom Kaliber (ESLint) rules
-    "kaliber/component-properties": "error",
-    "kaliber/layout-class-name": "error",
-    "kaliber/naming-policy": "error",
-    "kaliber/no-default-export": "error",
-    "kaliber/no-relative-parent-import": "error",
-    "kaliber/jsx-key": "error"
+    "kaliber/component-properties": "warn",
+    "kaliber/layout-class-name": "warn",
+    "kaliber/naming-policy": "warn",
+    "kaliber/no-default-export": "warn",
+    "kaliber/no-relative-parent-import": "warn",
+    "kaliber/jsx-key": "warn"
   }
 }

@@ -1,16 +1,29 @@
 const { defineCompatibleRule } = require('../../machinery/define-compatible-rule')
-const { isApp, isTemplate, getFilename } = require('../../machinery/filename')
+const { isApp, isTemplate, isUniversal, getFilename } = require('../../machinery/filename')
 
 function createLogic(context) {
   return {
     ExportDefaultDeclaration: (node) => {
       const filename = getFilename(context)
-      if (isApp(filename) || isTemplate(filename)) return
+      if (isApp(filename) || isTemplate(filename) || isUniversal(filename)) return
 
       context.report({
         node,
         messageId: 'noDefaultExport',
       })
+    },
+    ExportNamedDeclaration: (node) => {
+      const filename = getFilename(context)
+      if (isApp(filename) || isTemplate(filename) || isUniversal(filename)) return
+
+      for (const specifier of node.specifiers) {
+        if (specifier.exported.name === 'default') {
+          context.report({
+            node: specifier,
+            messageId: 'noDefaultExport',
+          })
+        }
+      }
     }
   }
 }
