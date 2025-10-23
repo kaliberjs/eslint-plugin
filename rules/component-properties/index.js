@@ -80,6 +80,7 @@ module.exports = {
 
 function isSetter(name) {
   return (
+    name &&
     name.length >= 4 &&
     name.startsWith('set') &&
     name[3] === name[3].toUpperCase()
