@@ -10,13 +10,13 @@
 | @kaliber/no-relative-parent-import | implemented | [rules/no-relative-parent-import/test.js](rules/no-relative-parent-import/test.js) |
 | import/first | implemented | [rules/third-party/import-first.js](rules/third-party/import-first.js) |
 | import/no-amd | implemented | [rules/third-party/import-no-amd.js](rules/third-party/import-no-amd.js) |
-| import/no-webpack-loader-syntax | problematic | The test for `require` calls could not be implemented successfully. |
-| import/no-duplicates | problematic | The test for duplicate imports could not be implemented successfully. |
-| import/export | problematic | The test for duplicate exports could not be implemented successfully. |
+| import/no-webpack-loader-syntax | implemented | [rules/third-party/import-no-webpack-loader-syntax.js](rules/third-party/import-no-webpack-loader-syntax.js) |
+| import/no-duplicates | implemented | [rules/third-party/import-no-duplicates.test.js](rules/third-party/import-no-duplicates.test.js) |
+| import/export | problematic after retry | [rules/third-party/import-export-retry-failure.md](rules/third-party/import-export-retry-failure.md) |
 | import/default | implemented | [rules/third-party/import-default.js](rules/third-party/import-default.js) |
 | import/no-unresolved | implemented | [rules/third-party/import-no-unresolved.js](rules/third-party/import-no-unresolved.js) |
 | import/named | implemented | [rules/third-party/import-named.js](rules/third-party/import-named.js) |
-| jsx-a11y/accessible-emoji | problematic | This rule is deprecated. |
+| jsx-a11y/accessible-emoji | problematic after retry | [rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md](rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md) |
 | jsx-a11y/alt-text | implemented | [rules/third-party/jsx-a11y-alt-text.js](rules/third-party/jsx-a11y-alt-text.js) |
 | jsx-a11y/anchor-has-content | implemented | [rules/third-party/jsx-a11y-anchor-has-content.js](rules/third-party/jsx-a11y-anchor-has-content.js) |
 | jsx-a11y/anchor-is-valid | implemented | [rules/third-party/jsx-a11y-anchor-is-valid.js](rules/third-party/jsx-a11y-anchor-is-valid.js) |
@@ -32,8 +32,8 @@
 | jsx-a11y/no-access-key | implemented | [rules/third-party/jsx-a11y-no-access-key.js](rules/third-party/jsx-a11y-no-access-key.js) |
 | jsx-a11y/no-distracting-elements | implemented | [rules/third-party/jsx-a11y-no-distracting-elements.js](rules/third-party/jsx-a11y-no-distracting-elements.js) |
 | jsx-a11y/no-redundant-roles | implemented | [rules/third-party/jsx-a11y-no-redundant-roles.js](rules/third-party/jsx-a11y-no-redundant-roles.js) |
-| jsx-a11y/role-has-required-aria-props | problematic | The test for this rule could not be implemented successfully. |
-| jsx-a11y/role-supports-aria-props | problematic | The test for this rule could not be implemented successfully. |
+| jsx-a11y/role-has-required-aria-props | implemented | [rules/third-party/jsx-a11y-role-has-required-aria-props.test.js](rules/third-party/jsx-a11y-role-has-required-aria-props.test.js) |
+| jsx-a11y/role-supports-aria-props | implemented | [rules/third-party/jsx-a11y-role-supports-aria-props.test.js](rules/third-party/jsx-a11y-role-supports-aria-props.test.js) |
 | jsx-a11y/scope | implemented | [rules/third-party/jsx-a11y-scope.js](rules/third-party/jsx-a11y-scope.js) |
 | react/jsx-boolean-value | implemented | [rules/third-party/react/jsx-boolean-value.js](rules/third-party/react/jsx-boolean-value.js) |
 | react/jsx-curly-spacing | implemented | [rules/third-party/react/jsx-curly-spacing.js](rules/third-party/react/jsx-curly-spacing.js) |
@@ -44,14 +44,14 @@
 | react/jsx-no-duplicate-props | implemented | [rules/third-party/react/jsx-no-duplicate-props.js](rules/third-party/react/jsx-no-duplicate-props.js) |
 | react/jsx-no-target-blank | implemented | [rules/third-party/react/jsx-no-target-blank.js](rules/third-party/react/jsx-no-target-blank.js) |
 | react/jsx-no-undef | implemented | [rules/third-party/react/jsx-no-undef.js](rules/third-party/react/jsx-no-undef.js) |
-| react/jsx-pascal-case | problematic | The test for this rule could not be implemented successfully. |
+| react/jsx-pascal-case | problematic after retry | [rules/third-party/react/jsx-pascal-case-retry-failure.md](rules/third-party/react/jsx-pascal-case-retry-failure.md) |
 | react/jsx-tag-spacing | implemented | [rules/third-party/react/jsx-tag-spacing.js](rules/third-party/react/jsx-tag-spacing.js) |
-| react/jsx-uses-vars | problematic | The test for this rule could not be implemented successfully. |
+| react/jsx-uses-vars | implemented | [rules/third-party/react/jsx-uses-vars.test.js](rules/third-party/react/jsx-uses-vars.test.js) |
 | react/jsx-wrap-multilines | implemented | [rules/third-party/react/jsx-wrap-multilines.js](rules/third-party/react/jsx-wrap-multilines.js) |
 | react/no-danger-with-children | implemented | [rules/third-party/react/no-danger-with-children.js](rules/third-party/react/no-danger-with-children.js) |
 | react/no-deprecated | implemented | [rules/third-party/react/no-deprecated.js](rules/third-party/react/no-deprecated.js) |
 | react/no-direct-mutation-state | implemented | [rules/third-party/react/no-direct-mutation-state.js](rules/third-party/react/no-direct-mutation-state.js) |
-| react/no-unused-prop-types | problematic | The test for this rule could not be implemented successfully. |
+| react/no-unused-prop-types | implemented | [rules/third-party/react/no-unused-prop-types.test.js](rules/third-party/react/no-unused-prop-types.test.js) |
 | react/prop-types | implemented | [rules/third-party/react/prop-types.js](rules/third-party/react/prop-types.js) |
 | react/require-render-return | implemented | [rules/third-party/react/require-render-return.js](rules/third-party/react/require-render-return.js) |
 | react/self-closing-comp | implemented | [rules/third-party/react/self-closing-comp.js](rules/third-party/react/self-closing-comp.js) |
@@ -67,7 +67,7 @@
 | comma-dangle | implemented | [rules/core/comma-dangle.js](rules/core/comma-dangle.js) |
 | comma-spacing | implemented | [rules/core/comma-spacing.js](rules/core/comma-spacing.js) |
 | comma-style | implemented | [rules/core/comma-style.js](rules/core/comma-style.js) |
-| default-case | problematic | The test for this rule could not be implemented successfully. |
+| default-case | problematic after retry | [rules/core/default-case-retry-failure.md](rules/core/default-case-retry-failure.md) |
 | dot-location | implemented | [rules/core/dot-location.js](rules/core/dot-location.js) |
 | eol-last | implemented | [rules/core/eol-last.js](rules/core/eol-last.js) |
 | eqeqeq | implemented | [rules/core/eqeqeq.js](rules/core/eqeqeq.js) |
@@ -95,32 +95,32 @@
 | no-extend-native | implemented | [rules/core/no-extend-native.js](rules/core/no-extend-native.js) |
 | no-extra-bind | implemented | [rules/core/no-extra-bind.js](rules/core/no-extra-bind.js) |
 | no-extra-boolean-cast | implemented | [rules/core/no-extra-boolean-cast.js](rules/core/no-extra-boolean-cast.js) |
-| no-extra-label | problematic | The test for this rule could not be implemented successfully. |
-| no-extra-parens | problematic | The test for this rule could not be implemented successfully. |
-| no-fallthrough | problematic | The test for this rule could not be implemented successfully. |
-| no-floating-decimal | problematic | The test for this rule could not be implemented successfully. |
-| no-func-assign | problematic | The test for this rule could not be implemented successfully. |
-| no-global-assign | problematic | The test for this rule could not be implemented successfully. |
-| no-implied-eval | problematic | The test for this rule could not be implemented successfully. |
+| no-extra-label | problematic after retry | [rules/core/no-extra-label-retry-failure.md](rules/core/no-extra-label-retry-failure.md) |
+| no-extra-parens | implemented | [rules/core/no-extra-parens.test.js](rules/core/no-extra-parens.test.js) |
+| no-fallthrough | implemented | [rules/core/no-fallthrough/test.js](rules/core/no-fallthrough/test.js) |
+| no-floating-decimal | implemented | [rules/core/no-floating-decimal/test.js](rules/core/no-floating-decimal/test.js) |
+| no-func-assign | implemented | [rules/core/no-func-assign/test.js](rules/core/no-func-assign/test.js) |
+| no-global-assign | implemented | [rules/core/no-global-assign/test.js](rules/core/no-global-assign/test.js) |
+| no-implied-eval | implemented | [rules/core/no-implied-eval/test.js](rules/core/no-implied-eval/test.js) |
 | no-invalid-regexp | implemented | [rules/core/no-invalid-regexp/test.js](rules/core/no-invalid-regexp/test.js) |
-| no-irregular-whitespace | problematic | The test for this rule could not be implemented successfully. |
-| no-iterator | problematic | The test for this rule could not be implemented successfully. |
+| no-irregular-whitespace | implemented | [rules/core/no-irregular-whitespace.test.js](rules/core/no-irregular-whitespace.test.js) |
+| no-iterator | problematic after retry | [rules/core/no-iterator-retry-failure.md](rules/core/no-iterator-retry-failure.md) |
 | no-label-var | implemented | [rules/core/no-label-var/test.js](rules/core/no-label-var/test.js) |
 | no-labels | implemented | [rules/core/no-labels/test.js](rules/core/no-labels/test.js) |
 | no-lone-blocks | implemented | [rules/core/no-lone-blocks/test.js](rules/core/no-lone-blocks/test.js) |
 | no-loop-func | implemented | [rules/core/no-loop-func/test.js](rules/core/no-loop-func/test.js) |
 | no-mixed-spaces-and-tabs | implemented | [rules/core/no-mixed-spaces-and-tabs/test.js](rules/core/no-mixed-spaces-and-tabs/test.js) |
 | no-path-concat | implemented | [rules/core/no-path-concat/test.js](rules/core/no-path-concat/test.js) |
-| no-proto | problematic | The test for this rule could not be implemented successfully. |
+| no-proto | problematic after retry | [rules/core/no-proto-retry-failure.md](rules/core/no-proto-retry-failure.md) |
 | no-return-assign | implemented | [rules/core/no-return-assign/test.js](rules/core/no-return-assign/test.js) |
 | no-return-await | implemented | [rules/core/no-return-await/test.js](rules/core/no-return-await/test.js) |
 | no-trailing-spaces | implemented | [rules/core/no-trailing-spaces/test.js](rules/core/no-trailing-spaces/test.js) |
-| no-unneeded-ternary | problematic | The test for this rule could not be implemented successfully. |
+| no-unneeded-ternary | implemented | [rules/core/no-unneeded-ternary.test.js](rules/core/no-unneeded-ternary.test.js) |
 | no-unsafe-negation | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) |
-| no-useless-return | problematic | The test for this rule could not be implemented successfully. |
+| no-useless-return | problematic after retry | [rules/core/no-useless-return-retry-failure.md](rules/core/no-useless-return-retry-failure.md) |
 | object-curly-spacing | implemented | [rules/core/object-curly-spacing/test.js](rules/core/object-curly-spacing/test.js) |
 | object-shorthand | implemented | [rules/core/object-shorthand/test.js](rules/core/object-shorthand/test.js) |
-| quotes | problematic | The test for this rule could not be implemented successfully. |
+| quotes | implemented | [rules/core/quotes.test.js](rules/core/quotes.test.js) |
 | semi | implemented | [rules/core/semi/test.js](rules/core/semi/test.js) |
 | semi-spacing | implemented | [rules/core/semi-spacing/test.js](rules/core/semi-spacing/test.js) |
 | space-before-blocks | implemented | [rules/core/space-before-blocks/test.js](rules/core/space-before-blocks/test.js) |
@@ -128,20 +128,20 @@
 | space-infix-ops | implemented | [rules/core/space-infix-ops/test.js](rules/core/space-infix-ops/test.js) |
 | space-unary-ops | implemented | [rules/core/space-unary-ops/test.js](rules/core/space-unary-ops/test.js) |
 | template-tag-spacing | implemented | [rules/core/template-tag-spacing/test.js](rules/core/template-tag-spacing/test.js) |
-| no-mixed-operators | problematic | The test for this rule could not be implemented successfully. |
+| no-mixed-operators | implemented | [rules/core/no-mixed-operators.test.js](rules/core/no-mixed-operators.test.js) |
 | no-multi-str | implemented | [rules/core/no-multi-str/test.js](rules/core/no-multi-str/test.js) |
 | no-native-reassign | implemented | [rules/core/no-native-reassign/test.js](rules/core/no-native-reassign/test.js) (replaced by no-global-assign) |
 | no-negated-in-lhs | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) (replaced by no-unsafe-negation) |
 | no-new-func | implemented | [rules/core/no-new-func/test.js](rules/core/no-new-func/test.js) |
-| no-new-object | problematic | The `no-new-object` rule has been deprecated and its successor, `no-object-constructor`, is not available in the current ESLint version. |
-| no-new-symbol | problematic | The `no-new-symbol` rule has been deprecated and its successor, `no-new-native-nonconstructor`, is not available in the current ESLint version. |
+| no-new-object | problematic after retry | [rules/core/no-new-object-retry-failure.md](rules/core/no-new-object-retry-failure.md) |
+| no-new-symbol | problematic after retry | [rules/core/no-new-symbol-retry-failure.md](rules/core/no-new-symbol-retry-failure.md) |
 | no-new-wrappers | implemented | [rules/core/no-new-wrappers/test.js](rules/core/no-new-wrappers/test.js) |
-| no-obj-calls | problematic | The test for this rule could not be implemented successfully. |
+| no-obj-calls | implemented | [rules/core/no-obj-calls.test.js](rules/core/no-obj-calls.test.js) |
 | no-octal | implemented | [rules/core/no-octal/test.js](rules/core/no-octal/test.js) |
 | no-octal-escape | implemented | [rules/core/no-octal-escape/test.js](rules/core/no-octal-escape/test.js) |
 | no-redeclare | implemented | [rules/core/no-redeclare/test.js](rules/core/no-redeclare/test.js) |
 | no-regex-spaces | implemented | [rules/core/no-regex-spaces/test.js](rules/core/no-regex-spaces/test.js) |
-| no-restricted-globals | problematic | The test for this rule could not be implemented successfully. |
+| no-restricted-globals | implemented | [rules/core/no-restricted-globals.test.js](rules/core/no-restricted-globals.test.js) |
 | no-restricted-properties | implemented | [rules/core/no-restricted-properties/test.js](rules/core/no-restricted-properties/test.js) |
 | no-restricted-syntax | implemented | [rules/core/no-restricted-syntax/test.js](rules/core/no-restricted-syntax/test.js) |
 | no-script-url | implemented | [rules/core/no-script-url/test.js](rules/core/no-script-url/test.js) |
@@ -162,13 +162,13 @@
 | no-useless-computed-key | implemented | [rules/core/no-useless-computed-key/test.js](rules/core/no-useless-computed-key/test.js) |
 | no-useless-concat | implemented | [rules/core/no-useless-concat/test.js](rules/core/no-useless-concat/test.js) |
 | no-useless-constructor | implemented | [rules/core/no-useless-constructor/test.js](rules/core/no-useless-constructor/test.js) |
-| no-useless-escape | problematic | The test for this rule could not be implemented successfully. |
+| no-useless-escape | implemented | [rules/core/no-useless-escape.test.js](rules/core/no-useless-escape.test.js) |
 | no-whitespace-before-property | implemented | [rules/core/no-whitespace-before-property/test.js](rules/core/no-whitespace-before-property/test.js) |
 | no-with | implemented | [rules/core/no-with/test.js](rules/core/no-with/test.js) |
 | radix | implemented | [rules/core/radix/test.js](rules/core/radix/test.js) |
 | require-yield | implemented | [rules/core/require-yield/test.js](rules/core/require-yield/test.js) |
 | rest-spread-spacing | implemented | [rules/core/rest-spread-spacing/test.js](rules/core/rest-spread-spacing/test.js) |
-| strict | problematic | The test for this rule could not be implemented successfully. |
+| strict | implemented | [rules/core/strict/test.js](rules/core/strict/test.js) |
 | unicode-bom | implemented | [rules/core/unicode-bom/test.js](rules/core/unicode-bom/test.js) |
 | use-isnan | implemented | [rules/core/use-isnan.test.js](rules/core/use-isnan.test.js) |
 | valid-typeof | implemented | [rules/core/valid-typeof.test.js](rules/core/valid-typeof.test.js) |

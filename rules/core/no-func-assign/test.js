@@ -2,7 +2,7 @@ const { RuleTester } = require('eslint')
 const rule = require('eslint/lib/rules/no-func-assign')
 const { test } = require('node:test')
 
-test.skip('no-func-assign', () => {
+test('no-func-assign', () => {
   const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 2017 } })
 
   ruleTester.run('no-func-assign', rule, {

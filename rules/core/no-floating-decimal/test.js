@@ -2,7 +2,7 @@ const { RuleTester } = require('eslint')
 const rule = require('eslint/lib/rules/no-floating-decimal')
 const { test } = require('node:test')
 
-test.skip('no-floating-decimal', () => {
+test('no-floating-decimal', () => {
   const ruleTester = new RuleTester()
 
   ruleTester.run('no-floating-decimal', rule, {

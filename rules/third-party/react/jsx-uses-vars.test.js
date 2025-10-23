@@ -1,3 +1,22 @@
-const test = require('node:test');
+const { RuleTester } = require('eslint');
+const rule = require('eslint-plugin-react').rules['jsx-uses-vars'];
+const noUnusedVarsRule = require('eslint/lib/rules/no-unused-vars');
 
-test('react/jsx-uses-vars', { todo: 'This rule is problematic to test because it depends on another rule.' });
+const ruleTester = new RuleTester({
+  parserOptions: {
+    ecmaVersion: 6,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
+});
+
+ruleTester.run('react/jsx-uses-vars', rule, {
+  valid: [
+    {
+      code: '/*eslint no-unused-vars: "error"*/\nconst MyComponent = () => {};\n<MyComponent />;',
+    },
+  ],
+  invalid: [],
+});

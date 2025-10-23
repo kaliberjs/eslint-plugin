@@ -2,7 +2,7 @@ const { RuleTester } = require('eslint')
 const rule = require('eslint/lib/rules/no-implied-eval')
 const { test } = require('node:test')
 
-test.skip('no-implied-eval', () => {
+test('no-implied-eval', () => {
   const ruleTester = new RuleTester()
 
   ruleTester.run('no-implied-eval', rule, {

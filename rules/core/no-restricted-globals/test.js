@@ -1,3 +1,20 @@
-const test = require('node:test')
+const { RuleTester } = require('eslint');
+const rule = require('eslint/lib/rules/no-restricted-globals');
 
-test('no-restricted-globals', { todo: 'This rule is problematic to test because the globals are not being applied correctly.' })
+const ruleTester = new RuleTester();
+
+ruleTester.run('no-restricted-globals', rule, {
+  valid: [
+    {
+      code: 'foo()',
+      options: ['error', 'bar'],
+    },
+  ],
+  invalid: [
+    {
+      code: 'error()',
+      options: ['error'],
+      errors: [{ message: "Unexpected use of 'error'." }],
+    },
+  ],
+});

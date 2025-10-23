@@ -1,9 +1,9 @@
-const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-fallthrough')
-const { test } = require('node:test')
+const { RuleTester } = require('eslint');
+const rule = require('eslint/lib/rules/no-fallthrough');
+const { test } = require('node:test');
 
-test.skip('no-fallthrough', () => {
-  const ruleTester = new RuleTester()
+test('no-fallthrough', () => {
+  const ruleTester = new RuleTester();
 
   ruleTester.run('no-fallthrough', rule, {
     valid: [
@@ -19,5 +19,5 @@ test.skip('no-fallthrough', () => {
         errors: [{ message: "Expected a 'break' statement before 'case'." }],
       },
     ],
-  })
-})
+  });
+});
