@@ -128,7 +128,7 @@
 | space-infix-ops | implemented | [rules/core/space-infix-ops/test.js](rules/core/space-infix-ops/test.js) |
 | space-unary-ops | implemented | [rules/core/space-unary-ops/test.js](rules/core/space-unary-ops/test.js) |
 | template-tag-spacing | implemented | [rules/core/template-tag-spacing/test.js](rules/core/template-tag-spacing/test.js) |
-| no-mixed-operators | implemented | [rules/core/no-mixed-operators/test.js](rules/core/no-mixed-operators/test.js) |
+| no-mixed-operators | problematic | The test for this rule could not be implemented successfully. |
 | no-multi-str | implemented | [rules/core/no-multi-str/test.js](rules/core/no-multi-str/test.js) |
 | no-native-reassign | implemented | [rules/core/no-native-reassign/test.js](rules/core/no-native-reassign/test.js) (replaced by no-global-assign) |
 | no-negated-in-lhs | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) (replaced by no-unsafe-negation) |
@@ -136,12 +136,12 @@
 | no-new-object | problematic | The `no-new-object` rule has been deprecated and its successor, `no-object-constructor`, is not available in the current ESLint version. |
 | no-new-symbol | problematic | The `no-new-symbol` rule has been deprecated and its successor, `no-new-native-nonconstructor`, is not available in the current ESLint version. |
 | no-new-wrappers | implemented | [rules/core/no-new-wrappers/test.js](rules/core/no-new-wrappers/test.js) |
-| no-obj-calls | implemented | [rules/core/no-obj-calls/test.js](rules/core/no-obj-calls/test.js) |
+| no-obj-calls | problematic | The test for this rule could not be implemented successfully. |
 | no-octal | implemented | [rules/core/no-octal/test.js](rules/core/no-octal/test.js) |
 | no-octal-escape | implemented | [rules/core/no-octal-escape/test.js](rules/core/no-octal-escape/test.js) |
 | no-redeclare | implemented | [rules/core/no-redeclare/test.js](rules/core/no-redeclare/test.js) |
 | no-regex-spaces | implemented | [rules/core/no-regex-spaces/test.js](rules/core/no-regex-spaces/test.js) |
-| no-restricted-globals | implemented | [rules/core/no-restricted-globals/test.js](rules/core/no-restricted-globals/test.js) |
+| no-restricted-globals | problematic | The test for this rule could not be implemented successfully. |
 | no-restricted-properties | implemented | [rules/core/no-restricted-properties/test.js](rules/core/no-restricted-properties/test.js) |
 | no-restricted-syntax | implemented | [rules/core/no-restricted-syntax/test.js](rules/core/no-restricted-syntax/test.js) |
 | no-script-url | implemented | [rules/core/no-script-url/test.js](rules/core/no-script-url/test.js) |
@@ -168,7 +168,7 @@
 | radix | implemented | [rules/core/radix/test.js](rules/core/radix/test.js) |
 | require-yield | implemented | [rules/core/require-yield/test.js](rules/core/require-yield/test.js) |
 | rest-spread-spacing | implemented | [rules/core/rest-spread-spacing/test.js](rules/core/rest-spread-spacing/test.js) |
-| strict | implemented | [rules/core/strict/test.js](rules/core/strict/test.js) |
+| strict | problematic | The test for this rule could not be implemented successfully. |
 | unicode-bom | implemented | [rules/core/unicode-bom/test.js](rules/core/unicode-bom/test.js) |
 | use-isnan | implemented | [rules/core/use-isnan.test.js](rules/core/use-isnan.test.js) |
 | valid-typeof | implemented | [rules/core/valid-typeof.test.js](rules/core/valid-typeof.test.js) |
