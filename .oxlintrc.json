@@ -1,0 +1,173 @@
+/**
+# What changed (and why)
+
+## Plugins
+Oxlint has native ports of import, react, and jsx-a11y. 
+You enable them via "plugins" in the config and (for import) also pass a CLI flag (below). 
+The config schema and plugin support are documented in Oxlint’s docs. 
+
+## React Hooks rules
+In Oxlint they’re under the react plugin: use react/rules-of-hooks and react/exhaustive-deps (not react-hooks/*). 
+
+## Absolute/aliased imports
+Your ESLint config used a custom Kaliber resolver. Oxlint’s import plugin uses its own super-fast resolver; to support path aliases like @/… (or a src base path), run Oxlint with your tsconfig/jsconfig:
+npx oxlint --import-plugin --tsconfig ./tsconfig.json
+(Set compilerOptions.baseUrl/paths there.) 
+
+## Formatting/stylistic rules
+Most whitespace/formatting rules (indent, semi, quotes, comma-spacing, object-curly-spacing, space-*, etc.) live in ESLint’s @stylistic now and are not implemented in Oxlint; use a formatter (Prettier) for those. That’s why they’re omitted above. 
+
+## Rules not (yet) in Oxlint
+Some eslint-plugin-import rules such as import/no-unresolved aren’t listed in Oxlint’s rule index at the moment, so they’re commented out. The big list of supported rules is here if you want to cross-check. 
+*/
+
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "root": true,
+
+  // Environments → same semantics as ESLint
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "es6": true,
+    "jest": true,
+    "node": true
+  },
+
+  // Enable Oxlint's ports of these ESLint plugins
+  "plugins": ["import", "react", "jsx-a11y"],
+
+  "jsPlugins": [
+    "./index.js"
+  ],
+
+    // Same globals as your ESLint config
+  "globals": {
+    "Component": "writeable",
+    "React": "writeable",
+    "cx": "writeable"
+  },
+
+  "rules": {
+
+    // Core "correctness/suspicious/pedantic" rules (supported by Oxlint)
+    "array-callback-return": "warn",
+    "eqeqeq": "warn",
+    "no-array-constructor": "warn",
+    "no-caller": "warn",
+    "no-class-assign": "warn",
+    "no-compare-neg-zero": "warn",
+    "no-cond-assign": "warn",
+    "no-const-assign": "warn",
+    "no-constant-condition": "warn",
+    "no-control-regex": "warn",
+    "no-debugger": "warn",
+    "no-delete-var": "warn",
+    "no-dupe-class-members": "warn",
+    "no-dupe-keys": "warn",
+    "no-duplicate-case": "warn",
+    "no-empty-character-class": "warn",
+    "no-empty-pattern": "warn",
+    "no-eval": "warn",
+    "no-ex-assign": "warn",
+    "no-extend-native": "warn",
+    "no-extra-bind": "warn",
+    "no-extra-boolean-cast": "warn",
+    "no-fallthrough": "warn",
+    "no-func-assign": "warn",
+    "no-global-assign": "warn",
+    "no-implied-eval": "warn",
+    "no-invalid-regexp": "warn",
+    "no-irregular-whitespace": "warn",
+    "no-iterator": "warn",
+    "no-label-var": "warn",
+    "no-labels": ["warn", { "allowLoop": true, "allowSwitch": false }],
+    "no-lone-blocks": "warn",
+    "no-loop-func": "warn",
+    "no-path-concat": "warn",
+    "no-proto": "warn",
+    "no-return-assign": "warn",
+    "no-template-curly-in-string": "warn",
+    "no-this-before-super": "warn",
+    "no-throw-literal": "warn",
+    "no-unexpected-multiline": "warn",
+    "no-unneeded-ternary": "warn",
+    "no-unsafe-negation": "warn",
+    "no-unused-expressions": ["warn", { "allowShortCircuit": true, "allowTernary": true, "allowTaggedTemplates": true }],
+    "no-unused-labels": "warn",
+    "no-unused-vars": ["warn", { "args": "none", "ignoreRestSiblings": true }],
+    "no-useless-concat": "warn",
+    "no-useless-constructor": "warn",
+    "no-useless-escape": "warn",
+    "no-with": "warn",
+    "radix": "warn",
+    "require-yield": "warn",
+    "use-isnan": "warn",
+    "valid-typeof": "warn",
+
+    // Restrict globals (same list you had)
+    "no-restricted-globals": [
+      "warn",
+      "addEventListener","blur","close","closed","confirm","defaultStatus","defaultstatus","event","external","find","focus","frameElement","frames","history","innerHeight","innerWidth","length","location","locationbar","menubar","moveBy","moveTo","name","onblur","onwarn","onfocus","onload","onresize","onunload","open","opener","opera","outerHeight","outerWidth","pageXOffset","pageYOffset","parent","print","removeEventListener","resizeBy","resizeTo","screen","screenLeft","screenTop","screenX","screenY","scroll","scrollbars","scrollBy","scrollTo","scrollX","scrollY","self","status","statusbar","stop","toolbar","top"
+    ],
+
+    // import plugin (Oxlint port). Add --import-plugin on the CLI (see notes).
+    "import/first": "warn",
+    "import/no-amd": "warn",
+    "import/no-webpack-loader-syntax": "warn",
+    "import/no-duplicates": ["warn", { "considerQueryString": true }],
+    "import/export": "warn",
+    "import/default": "warn",
+    "import/named": "warn",
+    // Oxlint also has this; it approximates @kaliber/no-default-export
+    // "import/no-default-export": "warn"
+    // NOTE: eslint-plugin-import's "no-unresolved" is not yet implemented in Oxlint at the time of writing.
+    // If you need it, keep ESLint for that single rule or rely on TypeScript/jsconfig resolution (see notes).
+    // "import/no-unresolved": "warn",
+
+    // react plugin (Oxlint port)
+    "react/jsx-no-comment-textnodes": "warn",
+    "react/jsx-no-duplicate-props": ["warn", { "ignoreCase": true }],
+    "react/jsx-no-target-blank": "warn",
+    "react/jsx-no-undef": ["warn", { "allowGlobals": true }],
+    // Your config delegated jsx-key to @kaliber; enable the React one here:
+    "react/jsx-key": "off",
+    "react/no-danger-with-children": "warn",
+    "react/no-direct-mutation-state": "warn",
+    "react/prop-types": ["error", { "skipUndeclared": true }],
+    "react/react-in-jsx-scope": "off",
+    "react/require-render-return": "warn",
+    "react/self-closing-comp": "warn",
+    "react/void-dom-elements-no-children": "warn",
+    // Hooks: in Oxlint these live under the react plugin (not react-hooks/*)
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+
+    // jsx-a11y plugin (Oxlint port)
+    "jsx-a11y/alt-text": "warn",
+    "jsx-a11y/anchor-has-content": "warn",
+    "jsx-a11y/anchor-is-valid": "warn",
+    "jsx-a11y/aria-activedescendant-has-tabindex": "warn",
+    "jsx-a11y/aria-props": "warn",
+    "jsx-a11y/aria-role": "warn",
+    "jsx-a11y/aria-unsupported-elements": "warn",
+    "jsx-a11y/heading-has-content": "warn",
+    "jsx-a11y/html-has-lang": "warn",
+    "jsx-a11y/iframe-has-title": "warn",
+    "jsx-a11y/img-redundant-alt": "warn",
+    "jsx-a11y/no-access-key": "warn",
+    "jsx-a11y/no-distracting-elements": "warn",
+    "jsx-a11y/no-redundant-roles": "warn",
+    "jsx-a11y/role-has-required-aria-props": "warn",
+    "jsx-a11y/role-supports-aria-props": "warn",
+    "jsx-a11y/scope": "warn",
+
+    // Custom Kaliber (ESLint) rules
+    "kaliber/component-properties": "warn",
+    "kaliber/layout-class-name": "warn",
+    "kaliber/naming-policy": "warn",
+    "kaliber/no-default-export": "warn",
+    "kaliber/no-relative-parent-import": "warn",
+    "kaliber/jsx-key": "warn"
+  }
+}

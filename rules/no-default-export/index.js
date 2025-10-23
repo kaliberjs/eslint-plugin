@@ -1,11 +1,40 @@
-const eslintPluginImport = require('eslint-plugin-import')
-const { isApp, isTemplate } = require('../../machinery/filename')
+const { defineCompatibleRule } = require('../../machinery/define-compatible-rule')
+const { isApp, isTemplate, isUniversal, isRaw, getFilename } = require('../../machinery/filename')
 
-module.exports = {
-  meta: { type: 'problem' },
+function createLogic(context) {
+  return {
+    ExportDefaultDeclaration: (node) => {
+      const filename = getFilename(context)
+      if (isApp(filename) || isTemplate(filename) || isUniversal(filename) || isRaw(filename)) return
 
-  create(context) {
-    if (isApp(context) || isTemplate(context)) return {}
-    return eslintPluginImport.rules['no-default-export'].create(context)
+      context.report({
+        node,
+        messageId: 'noDefaultExport',
+      })
+    },
+    ExportNamedDeclaration: (node) => {
+      const filename = getFilename(context)
+      if (isApp(filename) || isTemplate(filename) || isUniversal(filename) || isRaw(filename)) return
+
+      for (const specifier of node.specifiers) {
+        if (specifier.exported.name === 'default') {
+          context.report({
+            node: specifier,
+            messageId: 'noDefaultExport',
+          })
+        }
+      }
+    }
   }
 }
+
+module.exports = defineCompatibleRule({
+  meta: {
+    type: 'problem',
+    messages: {
+      noDefaultExport: 'Default exports are not allowed in this file type. Use named exports instead.',
+    },
+    schema: [], // Always good to include for ESLint
+  },
+  create: createLogic,
+})

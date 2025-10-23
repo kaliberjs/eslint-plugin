@@ -4,6 +4,7 @@ const {
   getJSXElementName, getParentJSXElement,
   isRootJSXElement
 } = require('../../machinery/ast')
+const { defineRule } = require('oxlint')
 
 const messages = {
   'no layoutClassName in child':
@@ -24,12 +25,12 @@ const messages = {
     `Unexpected 'export', Base components can not be exported - remove the 'export' keyword`,
 }
 
-module.exports = {
+module.exports = defineRule({
   messages,
 
   meta: { type: 'problem' },
 
-  create(context) {
+  createOnce(context) {
     const hasLayoutClassName = new Set()
     const foundRootReferences = new Map()
 
@@ -135,7 +136,7 @@ module.exports = {
       })
     }
   }
-}
+})
 
 function findRootProperty(jsxElement, node) {
   if (!isRootJSXElement(jsxElement)) return

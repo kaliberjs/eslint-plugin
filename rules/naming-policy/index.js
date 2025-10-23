@@ -1,10 +1,12 @@
+const { defineRule } = require('oxlint')
 const {
   getPropertyName,
   getFunctionName,
   getParentJSXElement,
   hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
+  getEnclosingFunctionNode,
 } = require('../../machinery/ast')
-const { isApp, isPage, getBaseFilename } = require('../../machinery/filename')
+const { isApp, isPage, getBaseFilename, getFilename } = require('../../machinery/filename')
 const { firstLetterLowerCase } = require('../../machinery/word')
 
 const messages = {
@@ -32,12 +34,12 @@ const messages = {
     `Unexpected ref name '${found}', expected '${exptected}'`,
 }
 
-module.exports = {
+module.exports = defineRule({
   messages,
 
   meta: { type: 'problem' },
 
-  create(context) {
+  createOnce(context) {
     const elementsWithValidRootElementClassName = new Set()
 
     return {
@@ -88,8 +90,8 @@ module.exports = {
       const source = node.source.value
       if (!source.endsWith('.css')) return
 
-      const filename = getBaseFilename(context)
-      const mainCss = `./${filename}.css`
+      const filename = getFilename(context)
+      const mainCss = `./${getBaseFilename(filename)}.css`
       if (source !== mainCss) return
 
       const [firstSpecifier] = node.specifiers
@@ -117,7 +119,8 @@ module.exports = {
     }
 
     function reportInvalidRootElementClassName(jsxElement, property) {
-      const expectedClassNames = getValidRootElementClassNames(context)
+      const functionNode = getEnclosingFunctionNode(jsxElement);
+      const expectedClassNames = getValidRootElementClassNames(context, functionNode)
 
       const className = getPropertyName(property)
       if (expectedClassNames.includes(className)) {
@@ -152,7 +155,8 @@ module.exports = {
       const { name } = node.id
       if (firstLetterLowerCase(name)) return
 
-      const expectedPrefix = getBaseFilename(context)
+      const filename = getFilename(context)
+      const expectedPrefix = getBaseFilename(filename)
       if (name.startsWith(expectedPrefix)) return
 
       const expected = suggestFilename ? expectedPrefix : `${expectedPrefix}${name}`
@@ -174,15 +178,18 @@ module.exports = {
       })
     }
   }
-}
+})
 
-function getValidRootElementClassNames(context) {
-  const prefix = new RegExp(`^${getBaseFilename(context)}`)
-  const name = getFunctionName(context).replace(prefix, '')
-  const exported = isInExport(context)
+function getValidRootElementClassNames(context, functionNode) {
+  const filename = getFilename(context)
+  const prefix = new RegExp(`^${getBaseFilename(filename)}`)
+
+  const name = getFunctionName(functionNode).replace(prefix, '')
+  const exported = isInExport(functionNode)
+
   return (
-    exported && isApp(context) ? [`app${name}`] :
-    exported && isPage(context) ? [`page${name}`] :
+    exported && isApp(filename) ? [`app${name}`] :
+    exported && isPage(filename) ? [`page${name}`] :
     [`component${name}`, `component_root${name}`]
   )
 }

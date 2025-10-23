@@ -1,14 +1,16 @@
+const { defineRule } = require("oxlint")
+
 const messages = {
   'no relative parent import': found =>
     `Unexpected relative parent import '${found}' - use a root slash import`,
 }
 
-module.exports = {
+module.exports = defineRule({
   messages,
 
   meta: { type: 'problem' },
 
-  create(context) {
+  createOnce(context) {
     return {
       'ImportDeclaration': reportRelativeImportInSource,
       'ExportNamedDeclaration': reportRelativeImportInSource,
@@ -26,4 +28,4 @@ module.exports = {
       })
     }
   }
-}
+})

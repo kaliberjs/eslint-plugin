@@ -2,6 +2,22 @@
 
 This ESLint plugin enforces Kaliber's code conventions, helping maintain consistency across projects.
 
+
+## Usage (for `oxlint` experiment)
+```bash
+yarn add -D oxlint
+yarn link "@kaliber/eslint-plugin"
+yarn install --force
+```
+
+```json
+{ 
+  scripts: {
+    "lint.javascript:oxlint": "oxlint -c node_modules/@kaliber/eslint-plugin/.oxlintrc.json --ignore-path .gitignore ."
+  }
+}
+```
+
 ## Usage
 
 To use this plugin in your project, create an `.eslintrc` file with the following content:

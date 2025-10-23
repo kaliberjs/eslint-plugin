@@ -1,3 +1,4 @@
+const { defineRule } = require('oxlint')
 const { firstLetterLowerCase } = require('../../machinery/word')
 
 const messages = {
@@ -11,7 +12,7 @@ const messages = {
     `Expected destructured props`,
 }
 
-module.exports = {
+module.exports = defineRule({
   messages,
 
   meta: { type: 'problem' },
@@ -76,9 +77,9 @@ module.exports = {
       })
     }
   }
-}
+})
 
-function isSetter(name) {
+function isSetter(name) { 
   return (
     name &&
     name.length >= 4 &&
