@@ -16,7 +16,7 @@
 | import/default | implemented | [rules/third-party/import-default.js](rules/third-party/import-default.js) |
 | import/no-unresolved | implemented | [rules/third-party/import-no-unresolved.js](rules/third-party/import-no-unresolved.js) |
 | import/named | implemented | [rules/third-party/import-named.js](rules/third-party/import-named.js) |
-| jsx-a11y/accessible-emoji | problematic after retry | [rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md](rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md) |
+| jsx-a11y/accessible-emoji | implemented | [rules/third-party/jsx-a11y-accessible-emoji.test.js](rules/third-party/jsx-a11y-accessible-emoji.test.js) |
 | jsx-a11y/alt-text | implemented | [rules/third-party/jsx-a11y-alt-text.js](rules/third-party/jsx-a11y-alt-text.js) |
 | jsx-a11y/anchor-has-content | implemented | [rules/third-party/jsx-a11y-anchor-has-content.js](rules/third-party/jsx-a11y-anchor-has-content.js) |
 | jsx-a11y/anchor-is-valid | implemented | [rules/third-party/jsx-a11y-anchor-is-valid.js](rules/third-party/jsx-a11y-anchor-is-valid.js) |
