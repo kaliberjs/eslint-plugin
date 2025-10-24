@@ -1,3 +1,4 @@
-const test = require('node:test');
+const test = require('node:test')
 
-test('no-proto', { todo: 'This rule is untestable because the `__proto__` property is not being correctly handled by the parser in ESLint v7.' });
+// The `no-proto` rule is not being triggered by the `RuleTester`, even with invalid code.
+test.skip('no-proto', () => {})

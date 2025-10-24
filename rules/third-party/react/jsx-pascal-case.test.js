@@ -1,3 +1,4 @@
-const test = require('node:test');
+const test = require('node:test')
 
-test('react/jsx-pascal-case', { todo: 'This rule is problematic to test.' });
+// The `react/jsx-pascal-case` rule is not being triggered by the `RuleTester`, even with invalid code.
+test.skip('react/jsx-pascal-case', () => {})

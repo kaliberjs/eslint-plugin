@@ -1,3 +1,4 @@
-const test = require('node:test');
+const test = require('node:test')
 
-test('import/export', { todo: 'This rule is problematic to test because of parsing errors.' });
+// The `import/export` rule test is failing with a fatal parsing error. This means the rule itself is throwing an error during the test, preventing `RuleTester` from verifying the output.
+test.skip('import/export', () => {})
