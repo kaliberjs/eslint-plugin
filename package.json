@@ -21,6 +21,5 @@
     "eslint-plugin-standard": "^5.0.0",
     "jsx-ast-utils": "^3.3.5",
     "prop-types": "^15.8.1"
-  },
-  "devDependencies": {}
+  }
 }
