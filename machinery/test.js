@@ -1,14 +1,19 @@
 const { RuleTester } = require('eslint')
 const { rules } = require('..')
+const babelParser = require('@babel/eslint-parser')
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-      generators: true,
-      experimentalObjectRestSpread: true,
+  languageOptions: {
+    parser: babelParser,
+    parserOptions: {
+      sourceType: 'module',
+      ecmaFeatures: {
+        jsx: true,
+      },
+      requireConfigFile: false,
+      babelOptions: {
+        presets: ["@babel/preset-react"],
+      },
     }
   }
 })

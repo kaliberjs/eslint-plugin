@@ -17,16 +17,18 @@ function getPropertyName(property) {
   }
 }
 
-function getFunctionName(context) {
-  return getName(getRootFunctionScope(context.getScope()))
+function getFunctionName(context, node) {
+  const sourceCode = context.getSourceCode()
+  return getName(getRootFunctionScope(sourceCode.getScope(node)))
 
   function getName({ block: { id } }) {
     return id ? id.name : '???'
   }
 }
 
-function isInExport(context) {
-  const { type } = getRootFunctionScope(context.getScope()).block.parent
+function isInExport(context, node) {
+  const sourceCode = context.getSourceCode()
+  const { type } = getRootFunctionScope(sourceCode.getScope(node)).block.parent
   return ['ExportDefaultDeclaration', 'ExportNamedDeclaration'].includes(type)
 }
 
