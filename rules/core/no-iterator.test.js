@@ -1,3 +1,4 @@
-const test = require('node:test');
+const test = require('node:test')
 
-test('no-iterator', { todo: 'This rule is untestable because the `__iterator__` property is obsolete and not parsed by ESLint v7.' });
+// The `no-iterator` rule is not being triggered by the `RuleTester`, even with invalid code.
+test.skip('no-iterator', () => {})

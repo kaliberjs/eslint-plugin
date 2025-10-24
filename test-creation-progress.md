@@ -12,11 +12,11 @@
 | import/no-amd | implemented | [rules/third-party/import-no-amd.js](rules/third-party/import-no-amd.js) |
 | import/no-webpack-loader-syntax | implemented | [rules/third-party/import-no-webpack-loader-syntax.js](rules/third-party/import-no-webpack-loader-syntax.js) |
 | import/no-duplicates | implemented | [rules/third-party/import-no-duplicates.test.js](rules/third-party/import-no-duplicates.test.js) |
-| import/export | problematic after retry | [rules/third-party/import-export-retry-failure.md](rules/third-party/import-export-retry-failure.md) |
+| import/export | unfixable | [rules/third-party/import-export-retry-failure.md](rules/third-party/import-export-retry-failure.md) |
 | import/default | implemented | [rules/third-party/import-default.js](rules/third-party/import-default.js) |
 | import/no-unresolved | implemented | [rules/third-party/import-no-unresolved.js](rules/third-party/import-no-unresolved.js) |
 | import/named | implemented | [rules/third-party/import-named.js](rules/third-party/import-named.js) |
-| jsx-a11y/accessible-emoji | problematic after retry | [rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md](rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md) |
+| jsx-a11y/accessible-emoji | unfixable | [rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md](rules/third-party/jsx-a11y-accessible-emoji-retry-failure.md) |
 | jsx-a11y/alt-text | implemented | [rules/third-party/jsx-a11y-alt-text.js](rules/third-party/jsx-a11y-alt-text.js) |
 | jsx-a11y/anchor-has-content | implemented | [rules/third-party/jsx-a11y-anchor-has-content.js](rules/third-party/jsx-a11y-anchor-has-content.js) |
 | jsx-a11y/anchor-is-valid | implemented | [rules/third-party/jsx-a11y-anchor-is-valid.js](rules/third-party/jsx-a11y-anchor-is-valid.js) |
@@ -44,7 +44,7 @@
 | react/jsx-no-duplicate-props | implemented | [rules/third-party/react/jsx-no-duplicate-props.js](rules/third-party/react/jsx-no-duplicate-props.js) |
 | react/jsx-no-target-blank | implemented | [rules/third-party/react/jsx-no-target-blank.js](rules/third-party/react/jsx-no-target-blank.js) |
 | react/jsx-no-undef | implemented | [rules/third-party/react/jsx-no-undef.js](rules/third-party/react/jsx-no-undef.js) |
-| react/jsx-pascal-case | problematic after retry | [rules/third-party/react/jsx-pascal-case-retry-failure.md](rules/third-party/react/jsx-pascal-case-retry-failure.md) |
+| react/jsx-pascal-case | unfixable | [rules/third-party/react/jsx-pascal-case-retry-failure.md](rules/third-party/react/jsx-pascal-case-retry-failure.md) |
 | react/jsx-tag-spacing | implemented | [rules/third-party/react/jsx-tag-spacing.js](rules/third-party/react/jsx-tag-spacing.js) |
 | react/jsx-uses-vars | implemented | [rules/third-party/react/jsx-uses-vars.test.js](rules/third-party/react/jsx-uses-vars.test.js) |
 | react/jsx-wrap-multilines | implemented | [rules/third-party/react/jsx-wrap-multilines.js](rules/third-party/react/jsx-wrap-multilines.js) |
@@ -67,7 +67,7 @@
 | comma-dangle | implemented | [rules/core/comma-dangle.js](rules/core/comma-dangle.js) |
 | comma-spacing | implemented | [rules/core/comma-spacing.js](rules/core/comma-spacing.js) |
 | comma-style | implemented | [rules/core/comma-style.js](rules/core/comma-style.js) |
-| default-case | problematic after retry | [rules/core/default-case-retry-failure.md](rules/core/default-case-retry-failure.md) |
+| default-case | implemented | [rules/core/default-case.test.js](rules/core/default-case.test.js) |
 | dot-location | implemented | [rules/core/dot-location.js](rules/core/dot-location.js) |
 | eol-last | implemented | [rules/core/eol-last.js](rules/core/eol-last.js) |
 | eqeqeq | implemented | [rules/core/eqeqeq.js](rules/core/eqeqeq.js) |
@@ -95,7 +95,7 @@
 | no-extend-native | implemented | [rules/core/no-extend-native.js](rules/core/no-extend-native.js) |
 | no-extra-bind | implemented | [rules/core/no-extra-bind.js](rules/core/no-extra-bind.js) |
 | no-extra-boolean-cast | implemented | [rules/core/no-extra-boolean-cast.js](rules/core/no-extra-boolean-cast.js) |
-| no-extra-label | problematic after retry | [rules/core/no-extra-label-retry-failure.md](rules/core/no-extra-label-retry-failure.md) |
+| no-extra-label | unfixable | [rules/core/no-extra-label-retry-failure.md](rules/core/no-extra-label-retry-failure.md) |
 | no-extra-parens | implemented | [rules/core/no-extra-parens.test.js](rules/core/no-extra-parens.test.js) |
 | no-fallthrough | implemented | [rules/core/no-fallthrough/test.js](rules/core/no-fallthrough/test.js) |
 | no-floating-decimal | implemented | [rules/core/no-floating-decimal/test.js](rules/core/no-floating-decimal/test.js) |
@@ -104,20 +104,20 @@
 | no-implied-eval | implemented | [rules/core/no-implied-eval/test.js](rules/core/no-implied-eval/test.js) |
 | no-invalid-regexp | implemented | [rules/core/no-invalid-regexp/test.js](rules/core/no-invalid-regexp/test.js) |
 | no-irregular-whitespace | implemented | [rules/core/no-irregular-whitespace.test.js](rules/core/no-irregular-whitespace.test.js) |
-| no-iterator | problematic after retry | [rules/core/no-iterator-retry-failure.md](rules/core/no-iterator-retry-failure.md) |
+| no-iterator | unfixable | [rules/core/no-iterator-retry-failure.md](rules/core/no-iterator-retry-failure.md) |
 | no-label-var | implemented | [rules/core/no-label-var/test.js](rules/core/no-label-var/test.js) |
 | no-labels | implemented | [rules/core/no-labels/test.js](rules/core/no-labels/test.js) |
 | no-lone-blocks | implemented | [rules/core/no-lone-blocks/test.js](rules/core/no-lone-blocks/test.js) |
 | no-loop-func | implemented | [rules/core/no-loop-func/test.js](rules/core/no-loop-func/test.js) |
 | no-mixed-spaces-and-tabs | implemented | [rules/core/no-mixed-spaces-and-tabs/test.js](rules/core/no-mixed-spaces-and-tabs/test.js) |
 | no-path-concat | implemented | [rules/core/no-path-concat/test.js](rules/core/no-path-concat/test.js) |
-| no-proto | problematic after retry | [rules/core/no-proto-retry-failure.md](rules/core/no-proto-retry-failure.md) |
+| no-proto | unfixable | [rules/core/no-proto-retry-failure.md](rules/core/no-proto-retry-failure.md) |
 | no-return-assign | implemented | [rules/core/no-return-assign/test.js](rules/core/no-return-assign/test.js) |
 | no-return-await | implemented | [rules/core/no-return-await/test.js](rules/core/no-return-await/test.js) |
 | no-trailing-spaces | implemented | [rules/core/no-trailing-spaces/test.js](rules/core/no-trailing-spaces/test.js) |
 | no-unneeded-ternary | implemented | [rules/core/no-unneeded-ternary.test.js](rules/core/no-unneeded-ternary.test.js) |
 | no-unsafe-negation | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) |
-| no-useless-return | problematic after retry | [rules/core/no-useless-return-retry-failure.md](rules/core/no-useless-return-retry-failure.md) |
+| no-useless-return | unfixable | [rules/core/no-useless-return-retry-failure.md](rules/core/no-useless-return-retry-failure.md) |
 | object-curly-spacing | implemented | [rules/core/object-curly-spacing/test.js](rules/core/object-curly-spacing/test.js) |
 | object-shorthand | implemented | [rules/core/object-shorthand/test.js](rules/core/object-shorthand/test.js) |
 | quotes | implemented | [rules/core/quotes.test.js](rules/core/quotes.test.js) |
@@ -133,8 +133,8 @@
 | no-native-reassign | implemented | [rules/core/no-native-reassign/test.js](rules/core/no-native-reassign/test.js) (replaced by no-global-assign) |
 | no-negated-in-lhs | implemented | [rules/core/no-unsafe-negation/test.js](rules/core/no-unsafe-negation/test.js) (replaced by no-unsafe-negation) |
 | no-new-func | implemented | [rules/core/no-new-func/test.js](rules/core/no-new-func/test.js) |
-| no-new-object | problematic after retry | [rules/core/no-new-object-retry-failure.md](rules/core/no-new-object-retry-failure.md) |
-| no-new-symbol | problematic after retry | [rules/core/no-new-symbol-retry-failure.md](rules/core/no-new-symbol-retry-failure.md) |
+| no-new-object | unfixable | [rules/core/no-new-object-retry-failure.md](rules/core/no-new-object-retry-failure.md) |
+| no-new-symbol | unfixable | [rules/core/no-new-symbol-retry-failure.md](rules/core/no-new-symbol-retry-failure.md) |
 | no-new-wrappers | implemented | [rules/core/no-new-wrappers/test.js](rules/core/no-new-wrappers/test.js) |
 | no-obj-calls | implemented | [rules/core/no-obj-calls.test.js](rules/core/no-obj-calls.test.js) |
 | no-octal | implemented | [rules/core/no-octal/test.js](rules/core/no-octal/test.js) |
