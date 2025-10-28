@@ -4,7 +4,7 @@
     "test:eslint": "node --test '**/test.js'",
     "test:oxlint": "node machinery/oxlint-test-runner.js"
   },
-  "version": "1.0.1",
+  "version": "1.0.3",
   "dependencies": {
     "@babel/core": "^7.11.6",
     "@babel/eslint-parser": "^7.16.5",
@@ -21,6 +21,7 @@
     "eslint-plugin-react-hooks": "^4.1.2",
     "eslint-plugin-standard": "^5.0.0",
     "jsx-ast-utils": "^3.3.5",
-    "oxlint": "^1.23.0"
+    "oxlint": "^1.23.0",
+    "prop-types": "^15.8.1"
   }
 }

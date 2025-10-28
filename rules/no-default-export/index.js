@@ -32,7 +32,7 @@ module.exports = defineCompatibleRule({
   meta: {
     type: 'problem',
     messages: {
-      noDefaultExport: 'Default exports are not allowed in this file type. Use named exports instead.',
+      noDefaultExport: 'Prefer named exports.',
     },
     schema: [], // Always good to include for ESLint
   },
