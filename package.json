@@ -1,7 +1,7 @@
 {
   "name": "@kaliber/eslint-plugin",
   "scripts": {
-    "test:eslint": "node --test '**/test.js'",
+    "test:eslint": "node --test",
     "test:oxlint": "node machinery/oxlint-test-runner.js"
   },
   "version": "1.0.3",
@@ -23,5 +23,8 @@
     "jsx-ast-utils": "^3.3.5",
     "oxlint": "^1.23.0",
     "prop-types": "^15.8.1"
+  },
+  "devDependencies": {
+    "glob": "^11.0.3"
   }
 }
