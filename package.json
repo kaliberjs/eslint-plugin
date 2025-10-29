@@ -1,31 +1,10 @@
 {
-  "name": "@kaliber/eslint-plugin",
-  "scripts": {
-    "test:eslint": "node --test",
-    "test:oxlint": "node machinery/oxlint-test-runner.js"
-  },
-  "version": "1.0.3",
-  "dependencies": {
-    "@babel/core": "^7.11.6",
-    "@babel/eslint-parser": "^7.16.5",
-    "@babel/preset-react": "^7.26.3",
-    "eslint": "^7.9.0",
-    "eslint-config-standard": "^16.0.3",
-    "eslint-config-standard-react": "^11.0.1",
-    "eslint-import-resolver-node": "^0.3.4",
-    "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-jsx-a11y": "^6.3.1",
-    "eslint-plugin-node": "^11.0.0",
-    "eslint-plugin-promise": "^5.1.0",
-    "eslint-plugin-react": "^7.21.0",
-    "eslint-plugin-react-hooks": "^4.1.2",
-    "eslint-plugin-standard": "^5.0.0",
-    "jsx-ast-utils": "^3.3.5",
-    "oxlint": "^1.23.0",
-    "prop-types": "^15.8.1"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.3.2",
-    "glob": "^11.0.3"
-  }
+	"name": "@kaliber/eslint-plugin",
+	"scripts": {
+		"test:biome": "biome check ."
+	},
+	"version": "1.0.3",
+	"devDependencies": {
+		"@biomejs/biome": "2.3.2"
+	}
 }

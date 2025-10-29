@@ -1,32 +1,27 @@
 # @kaliber/eslint-plugin
 
-This ESLint plugin enforces Kaliber's code conventions, helping maintain consistency across projects.
-
-
-## Usage (for `oxlint` experiment)
-```bash
-yarn add -D oxlint
-yarn link "@kaliber/eslint-plugin"
-yarn install --force
-```
-
-```json
-{ 
-  scripts: {
-    "lint.javascript:oxlint": "oxlint -c node_modules/@kaliber/eslint-plugin/.oxlintrc.json --ignore-path .gitignore ."
-  }
-}
-```
+This repository contains the configuration for Biome, which enforces Kaliber's code conventions.
 
 ## Usage
 
-To use this plugin in your project, create an `.eslintrc` file with the following content:
+To use this configuration in your project, create a `biome.json` file with the following content:
 
 ```json
 {
-  "extends": "./node_modules/@kaliber/eslint-plugin/.eslintrc"
+  "extends": "./node_modules/@kaliber/eslint-plugin/biome.json"
 }
 ```
+
+## Custom Rules
+
+This project includes custom rules that are implemented as Biome plugins. These plugins are located in the `plugins/` directory.
+
+### Supported Rules
+
+*   `kaliber/component-properties`: Enforces conventions for component properties.
+*   `kaliber/layout-class-name`: Enforces conventions for `className` and `layoutClassName`.
+*   `kaliber/naming-policy`: Enforces naming conventions for components, CSS files, and style variables.
+*   `kaliber/no-relative-parent-import`: Prevents imports from parent directories.
 
 ## Publishing a new version
 
