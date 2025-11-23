@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-constant-condition')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-constant-condition')
 
 const ruleTester = new RuleTester({
   parserOptions: {

@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/indent')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('indent')
 
 const ruleTester = new RuleTester()
 

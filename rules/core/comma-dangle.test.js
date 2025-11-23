@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/comma-dangle')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('comma-dangle')
 
 const ruleTester = new RuleTester({
   parserOptions: {

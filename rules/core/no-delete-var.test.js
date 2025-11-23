@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-delete-var')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-delete-var')
 
 const ruleTester = new RuleTester({
   parserOptions: {

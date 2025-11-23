@@ -1,6 +1,6 @@
 const { RuleTester } = require('eslint');
 const rule = require('eslint-plugin-react').rules['jsx-uses-vars'];
-const noUnusedVarsRule = require('eslint/lib/rules/no-unused-vars');
+const noUnusedVarsRule = require('eslint/use-at-your-own-risk').builtinRules.get('no-unused-vars');
 
 const ruleTester = new RuleTester({
   parserOptions: {

@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/arrow-spacing')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('arrow-spacing')
 
 const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
 

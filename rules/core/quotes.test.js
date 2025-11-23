@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/quotes');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('quotes');
 
 const ruleTester = new RuleTester();
 

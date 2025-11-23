@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-restricted-globals');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-restricted-globals');
 
 const ruleTester = new RuleTester();
 

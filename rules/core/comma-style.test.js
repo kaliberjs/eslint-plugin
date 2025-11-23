@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/comma-style')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('comma-style')
 
 const ruleTester = new RuleTester({
   parserOptions: {

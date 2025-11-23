@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/new-parens')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('new-parens')
 
 const ruleTester = new RuleTester({
   parserOptions: {

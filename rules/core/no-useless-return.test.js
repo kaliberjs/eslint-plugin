@@ -1,6 +1,6 @@
 const test = require('node:test')
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-useless-return')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-useless-return')
 
 // This is a bug in ESLint v7, where it incorrectly flags a valid use of a return.
 // The 'return' is necessary to prevent execution from continuing outside the if block.

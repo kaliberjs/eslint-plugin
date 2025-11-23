@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-unneeded-ternary');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-unneeded-ternary');
 
 const ruleTester = new RuleTester();
 

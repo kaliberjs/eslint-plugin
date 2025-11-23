@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/strict');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('strict');
 
 const ruleTester = new RuleTester();
 

@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-extra-parens');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-extra-parens');
 
 const ruleTester = new RuleTester();
 

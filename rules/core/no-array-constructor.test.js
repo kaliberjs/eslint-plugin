@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-array-constructor')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-array-constructor')
 
 const ruleTester = new RuleTester({
   parserOptions: {

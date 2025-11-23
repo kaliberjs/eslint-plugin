@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-obj-calls');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-obj-calls');
 
 const ruleTester = new RuleTester({ env: { es6: true } });
 

@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-mixed-operators');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-mixed-operators');
 
 const ruleTester = new RuleTester();
 

@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/array-callback-return')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('array-callback-return')
 
 const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
 

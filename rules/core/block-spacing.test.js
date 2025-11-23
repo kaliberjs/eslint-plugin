@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/block-spacing')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('block-spacing')
 
 const ruleTester = new RuleTester()
 

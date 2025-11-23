@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-fallthrough');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-fallthrough');
 const { test } = require('node:test');
 
 test('no-fallthrough', () => {

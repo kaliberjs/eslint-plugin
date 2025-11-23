@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-irregular-whitespace');
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-irregular-whitespace');
 
 const ruleTester = new RuleTester();
 

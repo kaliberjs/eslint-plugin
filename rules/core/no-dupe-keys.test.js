@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-dupe-keys')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-dupe-keys')
 
 const ruleTester = new RuleTester({
   parserOptions: {

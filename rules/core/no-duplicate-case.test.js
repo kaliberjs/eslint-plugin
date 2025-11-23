@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-duplicate-case')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-duplicate-case')
 
 const ruleTester = new RuleTester({
   parserOptions: {

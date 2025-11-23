@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-empty-pattern')
+const rule = require('eslint/use-at-your-own-risk').builtinRules.get('no-empty-pattern')
 
 const ruleTester = new RuleTester({
   parserOptions: {
