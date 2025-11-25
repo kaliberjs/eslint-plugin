@@ -6,7 +6,7 @@ module.exports = {
     'no-default-export': require('./rules/no-default-export'),
     'no-relative-parent-import': require('./rules/no-relative-parent-import'),
     'jsx-key': require('./rules/jsx-key'),
-    // Data-x attribute rules
+    
     'data-x-required': require('./rules/data-x-required'),
     'data-x-english-only': require('./rules/data-x-english-only'),
     'data-x-navigation-context': require('./rules/data-x-navigation-context'),
