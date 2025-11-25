@@ -17,5 +17,7 @@ module.exports = {
     'data-x-cta-style-suffix': require('./rules/data-x-cta-style-suffix'),
     'data-x-toggle-prefix': require('./rules/data-x-toggle-prefix'),
     'data-x-dynamic-content': require('./rules/data-x-dynamic-content'),
+    'data-x-sectioning-elements': require('./rules/data-x-sectioning-elements'),
+    'data-x-form-naming': require('./rules/data-x-form-naming'),
   }
 }
