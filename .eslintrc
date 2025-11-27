@@ -51,6 +51,17 @@
     "@kaliber/no-relative-parent-import": "warn",
     "@kaliber/jsx-key": "warn",
 
+    "@kaliber/data-x": "warn",
+    // "@kaliber/require-data-x-on-links-and-buttons": "warn",
+    // "@kaliber/data-x-must-be-english": "warn",
+    // "@kaliber/require-data-x-context": "warn",
+    // "@kaliber/external-clickout-prefix": "warn",
+    // "@kaliber/require-data-x-id-on-lists": "warn",
+    // "@kaliber/cta-prepend": "warn",
+    // "kaliber/data-x-action-format": "warn",
+    // "@kaliber/multiple-cta-style-suffix": "warn",
+    // "@kaliber/data-x-toggle": "warn",
+
     "brace-style": ["warn", "1tbs", { "allowSingleLine": true }],
     "indent": ["warn", 2, {
       "SwitchCase": 1,
