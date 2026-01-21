@@ -3,23 +3,40 @@
   "scripts": {
     "test": "node --test"
   },
+  "type": "commonjs",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "index.js",
+    "LICENSE",
+    "package.json",
+    "README.md",
+    "rules-overview.md",
+    "lib/**",
+    "machinery/**",
+    "rules/**"
+  ],
   "version": "1.0.3",
   "dependencies": {
-    "@babel/core": "^7.11.6",
-    "@babel/eslint-parser": "^7.16.5",
-    "@babel/preset-react": "^7.26.3",
-    "eslint": "^7.9.0",
-    "eslint-config-standard": "^16.0.3",
-    "eslint-config-standard-react": "^11.0.1",
+    "@babel/core": "^7.0.0",
+    "@babel/eslint-parser": "^7.0.0",
+    "@babel/preset-react": "^7.0.0",
+    "eslint": "^7.0.0",
+    "eslint-config-standard": "^16.0.0",
+    "eslint-config-standard-react": "^11.0.0",
     "eslint-import-resolver-node": "^0.3.4",
-    "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-jsx-a11y": "^6.3.1",
+    "eslint-plugin-import": "^2.0.0",
+    "eslint-plugin-jsx-a11y": "^6.0.0",
     "eslint-plugin-node": "^11.0.0",
-    "eslint-plugin-promise": "^5.1.0",
-    "eslint-plugin-react": "^7.21.0",
-    "eslint-plugin-react-hooks": "^4.1.2",
+    "eslint-plugin-promise": "^5.0.0",
+    "eslint-plugin-react": "^7.0.0",
+    "eslint-plugin-react-hooks": "^4.0.0",
     "eslint-plugin-standard": "^5.0.0",
-    "jsx-ast-utils": "^3.3.5",
-    "prop-types": "^15.8.1"
+    "jsx-ast-utils": "^3.0.0",
+    "prop-types": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
   }
 }

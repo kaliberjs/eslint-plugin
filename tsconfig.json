@@ -1,0 +1,13 @@
+{
+  "include": [
+    "./index.js",
+    "./lib/**/*",
+    "./machinery/**/*",
+    "./rules/**/*",
+  ],
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+  }
+}
