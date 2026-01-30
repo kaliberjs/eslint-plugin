@@ -5,7 +5,7 @@ module.exports = {
   meta: {
     type: 'problem',
     messages: {
-      nonEnglishDataX: 'The "data-x" attribute must be language-independent (English). Found non-English characters or spaces in: "{{value}}"',
+      nonLatinDataX: 'The "data-x" attribute must use Latin characters only (a-z, 0-9, hyphens, underscores). Found invalid characters in: "{{value}}"',
     },
   },
 
@@ -23,13 +23,13 @@ module.exports = {
         const value = getLiteralPropValue(dataXProp)
         if (typeof value !== 'string') return
 
-        // Check for non-English characters (allow only ASCII alphanumeric, hyphens, underscores)
+        // Check for non-Latin characters (allow only ASCII alphanumeric, hyphens, underscores)
         // This rejects spaces, accented characters, and non-ASCII characters
-        const englishPattern = /^[a-zA-Z0-9\-_]+$/
-        if (!englishPattern.test(value)) {
+        const latinPattern = /^[a-zA-Z0-9\-_]+$/
+        if (!latinPattern.test(value)) {
           context.report({
             node: dataXProp,
-            messageId: 'nonEnglishDataX',
+            messageId: 'nonLatinDataX',
             data: { value }
           })
         }
