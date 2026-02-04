@@ -13,6 +13,7 @@ module.exports = {
     'data-x-unique-id': require('./rules/data-x-unique-id'),
     'data-x-cta-prefix': require('./rules/data-x-cta-prefix'),
     'data-x-onpage-action-format': require('./rules/data-x-onpage-action-format'),
+    'data-x-context': require('./rules/data-x-context'),
 
     'data-x-toggle-prefix': require('./rules/data-x-toggle-prefix'),
     'data-x-sectioning-elements': require('./rules/data-x-sectioning-elements'),

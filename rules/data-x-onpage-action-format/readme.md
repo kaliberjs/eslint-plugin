@@ -6,6 +6,8 @@ On-page actions should use the format `action-target`.
 
 This rule enforces proper formatting for on-page actions. The format should clearly indicate both the action verb and the target element.
 
+Exception: `submit` (and `cta-submit`) is allowed as a standalone action.
+
 ### Supported Action Verbs
 
 | Category | Verbs |
@@ -35,4 +37,6 @@ This rule enforces proper formatting for on-page actions. The format should clea
 <a data-x="goto-next-slide">Next</a>
 <button data-x="copy-to-clipboard">Copy</button>
 <button data-x="save-favorites">Save</button>
+<button data-x="submit">Submit</button>
+<a data-x="cta-submit">Submit</a>
 ```

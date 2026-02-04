@@ -5,6 +5,7 @@ test('data-x-onpage-action-format', {
     { code: '<div>Hello</div>' },
     { code: '<a data-x="nav-home">Home</a>' },
     { code: '<button data-x="submit">Submit</button>' },
+    { code: '<a data-x="cta-submit">Submit</a>' },
     { code: '<a data-x="scroll-applyform">Apply</a>' },
     { code: '<button data-x="scroll-contact">Contact</button>' },
     { code: '<a data-x="cta-scroll-applyform">Apply</a>' },

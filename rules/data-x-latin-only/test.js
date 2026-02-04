@@ -1,6 +1,6 @@
 const { test } = require('../../machinery/test')
 
-test('data-x-english-only', {
+test('data-x-latin-only', {
   valid: [
     { code: '<div>Hello</div>' },
     { code: '<a data-x="home">Home</a>' },
@@ -15,19 +15,19 @@ test('data-x-english-only', {
   invalid: [
     {
       code: '<button data-x="verstuur formulier">Submit</button>',
-      errors: [{ messageId: 'nonEnglishDataX' }] // Has space
+      errors: [{ messageId: 'nonLatinDataX' }] // Has space
     },
     {
       code: '<a data-x="über-uns">About</a>',
-      errors: [{ messageId: 'nonEnglishDataX' }] // Has umlaut
+      errors: [{ messageId: 'nonLatinDataX' }] // Has umlaut
     },
     {
       code: '<button data-x="hôtel">Hotel</button>',
-      errors: [{ messageId: 'nonEnglishDataX' }] // Has circumflex
+      errors: [{ messageId: 'nonLatinDataX' }] // Has circumflex
     },
     {
       code: '<a data-x="café">Cafe</a>',
-      errors: [{ messageId: 'nonEnglishDataX' }] // Has accent
+      errors: [{ messageId: 'nonLatinDataX' }] // Has accent
     },
   ]
 })

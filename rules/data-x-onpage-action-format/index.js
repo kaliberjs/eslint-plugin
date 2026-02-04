@@ -3,6 +3,7 @@ const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 const dataXConfig = require('../../lib/data-x-config')
 
 const verbPattern = dataXConfig.getActionVerbPattern()
+const standaloneVerbPattern = dataXConfig.getStandaloneActionVerbPattern()
 
 
 module.exports = {
@@ -36,7 +37,15 @@ module.exports = {
         // The verb must be followed by a hyphen and a target name
         const validFormat = new RegExp(`^(cta-)?(${verbPattern})-[a-z0-9_-]+$`, 'i')
         
-        if (!validFormat.test(dataXValue)) {
+        const standaloneActionPattern = standaloneVerbPattern
+          ? new RegExp(`^(cta-)?(${standaloneVerbPattern})$`, 'i')
+          : null
+
+        const isStandaloneAction = standaloneActionPattern
+          ? standaloneActionPattern.test(dataXValue)
+          : false
+
+        if (!validFormat.test(dataXValue) && !isStandaloneAction) {
           context.report({
             node: dataXProp,
             messageId: 'invalidOnpageFormat',
