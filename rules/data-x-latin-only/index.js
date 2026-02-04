@@ -5,7 +5,7 @@ module.exports = {
   meta: {
     type: 'problem',
     messages: {
-      nonLatinDataX: 'The "data-x" attribute must use Latin characters only (a-z, 0-9, hyphens, underscores). Found invalid characters in: "{{value}}"',
+      nonLatinDataX: 'The "data-x" attribute must use Latin characters only (A-Z, a-z, 0-9, hyphens, underscores). Found invalid characters in: "{{value}}"',
     },
   },
 

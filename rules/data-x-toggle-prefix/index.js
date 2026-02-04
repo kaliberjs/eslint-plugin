@@ -28,15 +28,14 @@ module.exports = {
 
         // Check for toggle-like patterns
         const togglePatterns = /^(accordion|menu|dropdown|collapse|expand|faq|question|answer|drawer|sidebar|panel)/i
+        const baseValue = dataXValue.replace(/^(open-|close-|show-|hide-)/, '')
         
         // Also check for aria-expanded attribute which indicates a toggle
         const ariaExpanded = getProp(node.attributes, 'aria-expanded')
         const hasAriaExpanded = !!ariaExpanded
         
         // Only report if it matches the pattern OR has aria-expanded (but not both to avoid duplicates)
-        if (togglePatterns.test(dataXValue)) {
-          const baseValue = dataXValue.replace(/^(open-|close-|show-|hide-)/, '')
-          
+        if (togglePatterns.test(baseValue)) {
           context.report({
             node: dataXProp,
             messageId: 'needsTogglePrefix',
@@ -44,8 +43,6 @@ module.exports = {
           })
         } else if (hasAriaExpanded) {
           // Only report for aria-expanded if it didn't match the pattern above
-          const baseValue = dataXValue.replace(/^(open-|close-|show-|hide-)/, '')
-          
           context.report({
             node: dataXProp,
             messageId: 'needsTogglePrefix',

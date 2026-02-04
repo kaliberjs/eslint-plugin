@@ -11,6 +11,8 @@ module.exports = {
   create(context) {
     return {
       JSXOpeningElement(node) {
+        if (!node.name || node.name.type !== 'JSXIdentifier') return
+
         const elementName = node.name.name
         
         // Check for sectioning elements defined in documentation
