@@ -1,12 +1,12 @@
 # data-x-context
 
-Ensures that all `<a>` and `<button>` elements in page templates include a `data-x-context` attribute.
+Ensures that `<a>` and `<button>` elements with `data-x` also include `data-x-context`.
 
 ## Rule Details
 
-This rule enforces that every link and button element includes a `data-x-context` attribute for analytics context tracking.
+This rule enforces that links and buttons using `data-x` also provide `data-x-context` for analytics context tracking.
 
-Optionally, you can restrict `data-x-context` values to a predefined list using `allowedValues`.
+`data-x-context` values are not restricted by this rule.
 
 ### Invalid
 
@@ -18,22 +18,8 @@ Optionally, you can restrict `data-x-context` values to a predefined list using 
 ### Valid
 
 ```jsx
+<a href="/about">About</a>
+<button type="button">Toggle</button>
 <a data-x="nav-home" data-x-context="mainnav">Home</a>
 <button data-x="submit" data-x-context="footer">Submit</button>
-```
-
-### Options
-
-```json
-{
-  "@kaliber/data-x-context": ["error", {
-    "allowedValues": ["mainnav", "subnav", "footer"]
-  }]
-}
-```
-
-With `allowedValues`, this is invalid:
-
-```jsx
-<a data-x="nav-home" data-x-context="sidebar">Home</a>
 ```
