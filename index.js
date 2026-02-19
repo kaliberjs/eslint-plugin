@@ -18,5 +18,7 @@ module.exports = {
     'data-x-toggle-prefix': require('./rules/data-x-toggle-prefix'),
     'data-x-sectioning-elements': require('./rules/data-x-sectioning-elements'),
     'data-x-form-naming': require('./rules/data-x-form-naming'),
+
+    'todo-ticket-reference': require('./rules/todo-ticket-reference'),
   }
 }
