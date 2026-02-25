@@ -2,7 +2,7 @@ module.exports = {
   meta: {
     type: 'suggestion',
     fixable: 'code',
-    schema: [], // Matches the structure of the working rule
+    schema: [], 
     messages: {
       unsorted: 'Imports are not sorted according to the predefined groups',
     },
@@ -40,9 +40,6 @@ module.exports = {
 
         if (imports.length === 0) return;
 
-        // Force a log to the ESLint Output channel to prove it's running
-        console.log(`[ImportSort] Checking ${context.getFilename()}`);
-
         const importData = imports.map(n => {
           const commentsBefore = sourceCode.getCommentsBefore(n);
           const start = commentsBefore.length > 0 ? commentsBefore[0].range[0] : n.range[0];
@@ -52,7 +49,6 @@ module.exports = {
           return { node: n, text: sourceCode.text.slice(start, end), group, start, end };
         });
 
-        // Validation Logic
         const isSorted = importData.every((data, i) => {
           if (i === 0) return true;
           const prevGroupIndex = GROUP_ORDER.indexOf(importData[i - 1].group);
@@ -79,7 +75,6 @@ module.exports = {
           const lastImport = importData[importData.length - 1];
 
           context.report({
-            // Reporting on the first node like the todo rule reports on the comment
             node: firstImport.node,
             messageId: 'unsorted',
             fix(fixer) {
