@@ -6,6 +6,8 @@ module.exports = {
     'no-default-export': require('./rules/no-default-export'),
     'no-relative-parent-import': require('./rules/no-relative-parent-import'),
     'jsx-key': require('./rules/jsx-key'),
+    'import-sort': require('./rules/import-sort'),
+    'position-center': require('./rules/position-center'),
     
     'data-x-required': require('./rules/data-x-required'),
     'data-x-latin-only': require('./rules/data-x-latin-only'),
