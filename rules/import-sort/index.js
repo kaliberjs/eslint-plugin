@@ -2,7 +2,7 @@ module.exports = {
   meta: {
     type: 'suggestion',
     fixable: 'code',
-    schema: [], 
+    schema: [],
     messages: {
       unsorted: 'Imports are not sorted according to the predefined groups',
     },
@@ -10,27 +10,49 @@ module.exports = {
 
   create(context) {
     const GROUPS = {
-      OTHER: 'non-component',
+      NODE_PACKAGE_DEFAULT: 'node-package-default',
+      NODE_PACKAGE_DESTRUCTURED: 'node-package-destructured',
+      MACHINERY: 'machinery',
       COMPONENT: 'component',
-      UNIVERSAL: 'universal component',
+      UNIVERSAL_COMPONENT: 'universal-component',
       STYLE: 'style',
       ASSET: 'asset',
     };
 
     const GROUP_ORDER = [
-      GROUPS.OTHER,
+      GROUPS.NODE_PACKAGE_DEFAULT,
+      GROUPS.NODE_PACKAGE_DESTRUCTURED,
+      GROUPS.MACHINERY,
       GROUPS.COMPONENT,
-      GROUPS.UNIVERSAL,
+      GROUPS.UNIVERSAL_COMPONENT,
       GROUPS.STYLE,
       GROUPS.ASSET,
     ];
 
-    function getGroup(path) {
+    function getGroup(node) {
+      const path = node.source.value;
       if (/\.(raw\.svg|svg|png|jpg|jpeg|gif|webp|riv)(\?.*)?$/.test(path)) return GROUPS.ASSET;
       if (path.includes('.css')) return GROUPS.STYLE;
-      if (path.includes('.universal')) return GROUPS.UNIVERSAL;
+      if (path.includes('.universal')) return GROUPS.UNIVERSAL_COMPONENT;
       if (path.includes('/features/')) return GROUPS.COMPONENT;
-      return GROUPS.OTHER;
+      if (path.includes('/machinery/')) return GROUPS.MACHINERY;
+
+      const isExternal = !path.startsWith('/') && !path.startsWith('.');
+      if (isExternal) {
+        const hasDestructuring = node.specifiers.some(s => s.type === 'ImportSpecifier');
+        return hasDestructuring ? GROUPS.NODE_PACKAGE_DESTRUCTURED : GROUPS.NODE_PACKAGE_DEFAULT;
+      }
+
+      return GROUPS.MACHINERY;
+    }
+
+    function getBlock(group) {
+      if (group === GROUPS.NODE_PACKAGE_DEFAULT || group === GROUPS.NODE_PACKAGE_DESTRUCTURED) return 0;
+      if (group === GROUPS.MACHINERY) return 1;
+      if (group === GROUPS.COMPONENT || group === GROUPS.UNIVERSAL_COMPONENT) return 2;
+      if (group === GROUPS.STYLE) return 3;
+      if (group === GROUPS.ASSET) return 4;
+      return 0;
     }
 
     return {
@@ -44,7 +66,7 @@ module.exports = {
           const commentsBefore = sourceCode.getCommentsBefore(n);
           const start = commentsBefore.length > 0 ? commentsBefore[0].range[0] : n.range[0];
           const end = n.range[1];
-          const group = getGroup(n.source.value);
+          const group = getGroup(n);
 
           return { node: n, text: sourceCode.text.slice(start, end), group, start, end };
         });
@@ -63,7 +85,8 @@ module.exports = {
           const textBetween = sourceCode.text.slice(current.node.range[1], next.node.range[0]);
           const newlineCount = (textBetween.match(/\n/g) || []).length;
 
-          if (current.group === next.group) {
+          const sameBlock = getBlock(current.group) === getBlock(next.group);
+          if (sameBlock) {
             if (newlineCount > 1) hasNewlineIssues = true;
           } else {
             if (newlineCount <= 1) hasNewlineIssues = true;
@@ -75,16 +98,26 @@ module.exports = {
           const lastImport = importData[importData.length - 1];
 
           context.report({
-            node: firstImport.node,
+            loc: {
+              start: sourceCode.getLocFromIndex(firstImport.start),
+              end: sourceCode.getLocFromIndex(lastImport.end)
+            },
             messageId: 'unsorted',
             fix(fixer) {
               const sortedGroups = GROUP_ORDER.map(groupName =>
                 importData.filter(d => d.group === groupName)
               ).filter(g => g.length > 0);
 
-              const fixedText = sortedGroups.map(group =>
-                group.map(d => d.text).join('\n')
-              ).join('\n\n');
+              const fixedText = sortedGroups.reduce((acc, group, i) => {
+                const groupText = group.map(d => d.text).join('\n');
+                if (i === 0) return groupText;
+
+                const prevGroup = sortedGroups[i - 1][0].group;
+                const currentGroup = group[0].group;
+                const separator = getBlock(prevGroup) === getBlock(currentGroup) ? '\n' : '\n\n';
+
+                return acc + separator + groupText;
+              }, '');
 
               return fixer.replaceTextRange([firstImport.start, lastImport.end], fixedText);
             }
