@@ -7,9 +7,9 @@ test('import-sort', {
 import config from '@kaliber/config'
 import { createFloep } from '@kaliber/flap'
 
-import { useReportError } from '/machinery/ReportError'
-
 import { ImageText } from '/features/pageOnly/ImageText'
+
+import { useReportError } from '/machinery/ReportError'
 
 import styles from './Content.css'
 
@@ -68,9 +68,9 @@ import { useReportError } from '/machinery/ReportError'
 import { ImageText } from '/features/pageOnly/ImageText'
       `,
       output: `
-import { useReportError } from '/machinery/ReportError'
-
 import { ImageText } from '/features/pageOnly/ImageText'
+
+import { useReportError } from '/machinery/ReportError'
       `,
       errors: [{ message: messages.unsorted }]
     },
@@ -100,10 +100,11 @@ import { Domain } from './pages/Domain'
 import config from '@kaliber/config'
 import { useRouting } from '@kaliber/routing'
 
-import { routeMap } from '/routeMap'
 import { Domain } from './pages/Domain'
 
 import Preview from '/pages/Preview.universal'
+
+import { routeMap } from '/routeMap'
       `,
       errors: [{ message: messages.unsorted }]
     },
@@ -119,10 +120,10 @@ import CtaSmall from '/features/pageOnly/CtaSmall.universal'
       output: `
 import { useLocation } from '@kaliber/routing'
 
-import { routeMap } from '/routeMap'
-
 import { ColleagueContactCard } from '/features/pageOnly/ColleagueContactCard'
 import CtaSmall from '/features/pageOnly/CtaSmall.universal'
+
+import { routeMap } from '/routeMap'
 
 import styles from './Content.css'
       `,

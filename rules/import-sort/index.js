@@ -12,6 +12,7 @@ module.exports = {
     const GROUPS = {
       NODE_PACKAGE_DEFAULT: 'node-package-default',
       NODE_PACKAGE_DESTRUCTURED: 'node-package-destructured',
+      TEMPLATES: 'templates',
       MACHINERY: 'machinery',
       COMPONENT: 'component',
       UNIVERSAL_COMPONENT: 'universal-component',
@@ -22,9 +23,10 @@ module.exports = {
     const GROUP_ORDER = [
       GROUPS.NODE_PACKAGE_DEFAULT,
       GROUPS.NODE_PACKAGE_DESTRUCTURED,
-      GROUPS.MACHINERY,
+      GROUPS.TEMPLATES,
       GROUPS.COMPONENT,
       GROUPS.UNIVERSAL_COMPONENT,
+      GROUPS.MACHINERY,
       GROUPS.STYLE,
       GROUPS.ASSET,
     ];
@@ -35,7 +37,8 @@ module.exports = {
       if (path.includes('.css')) return GROUPS.STYLE;
       if (path.includes('.universal')) return GROUPS.UNIVERSAL_COMPONENT;
       if (path.includes('/features/')) return GROUPS.COMPONENT;
-      if (path.includes('/machinery/')) return GROUPS.MACHINERY;
+      if (path.includes('/templates/') || path.includes('/pages/')) return GROUPS.TEMPLATES;
+      if (path.includes('/machinery/') || path.includes('/i18n/')) return GROUPS.MACHINERY;
 
       const isExternal = !path.startsWith('/') && !path.startsWith('.');
       if (isExternal) {
@@ -48,10 +51,11 @@ module.exports = {
 
     function getBlock(group) {
       if (group === GROUPS.NODE_PACKAGE_DEFAULT || group === GROUPS.NODE_PACKAGE_DESTRUCTURED) return 0;
-      if (group === GROUPS.MACHINERY) return 1;
+      if (group === GROUPS.TEMPLATES) return 1;
       if (group === GROUPS.COMPONENT || group === GROUPS.UNIVERSAL_COMPONENT) return 2;
-      if (group === GROUPS.STYLE) return 3;
-      if (group === GROUPS.ASSET) return 4;
+      if (group === GROUPS.MACHINERY) return 3;
+      if (group === GROUPS.STYLE) return 4;
+      if (group === GROUPS.ASSET) return 5;
       return 0;
     }
 
