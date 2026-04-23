@@ -62,9 +62,15 @@ module.exports = {
     return {
       'Program': function (node) {
         const sourceCode = context.getSourceCode();
-        const imports = node.body.filter(n => n.type === 'ImportDeclaration');
+        const imports = [];
+
+        for (const n of node.body) {
+          if (n.type !== 'ImportDeclaration') break;
+          imports.push(n);
+        }
 
         if (imports.length === 0) return;
+        const hasSideEffectImport = imports.some(n => n.specifiers.length === 0);
 
         const importData = imports.map(n => {
           const commentsBefore = sourceCode.getCommentsBefore(n);
@@ -86,7 +92,7 @@ module.exports = {
         for (let i = 0; i < importData.length - 1; i++) {
           const current = importData[i];
           const next = importData[i + 1];
-          const textBetween = sourceCode.text.slice(current.node.range[1], next.node.range[0]);
+          const textBetween = sourceCode.text.slice(current.end, next.start);
           const newlineCount = (textBetween.match(/\n/g) || []).length;
 
           const sameBlock = getBlock(current.group) === getBlock(next.group);
@@ -108,6 +114,7 @@ module.exports = {
             },
             messageId: 'unsorted',
             fix(fixer) {
+              if (hasSideEffectImport) return null;
               const sortedGroups = GROUP_ORDER.map(groupName =>
                 importData.filter(d => d.group === groupName)
               ).filter(g => g.length > 0);
