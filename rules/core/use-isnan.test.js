@@ -1,8 +1,7 @@
-const { Linter } = require('eslint')
 const { RuleTester } = require('eslint')
 
-const linter = new Linter()
-const rule = linter.getRules().get('use-isnan')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('use-isnan')
 
 const ruleTester = new RuleTester()
 
@@ -19,19 +18,19 @@ ruleTester.run('use-isnan', rule, {
   invalid: [
     {
       code: 'foo == NaN',
-      errors: [{ message: "Use the isNaN function to compare with NaN." }],
+      errors: [{ messageId: "comparisonWithNaN", suggestions: 2 }],
     },
     {
       code: 'foo != NaN',
-      errors: [{ message: "Use the isNaN function to compare with NaN." }],
+      errors: [{ messageId: "comparisonWithNaN", suggestions: 2 }],
     },
     {
       code: 'foo === NaN',
-      errors: [{ message: "Use the isNaN function to compare with NaN." }],
+      errors: [{ messageId: "comparisonWithNaN", suggestions: 1 }],
     },
     {
       code: 'foo !== NaN',
-      errors: [{ message: "Use the isNaN function to compare with NaN." }],
+      errors: [{ messageId: "comparisonWithNaN", suggestions: 1 }],
     },
   ],
 })

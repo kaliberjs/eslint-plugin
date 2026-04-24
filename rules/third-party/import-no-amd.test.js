@@ -1,12 +1,7 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint-plugin-import').rules['no-amd']
+const rule = require('eslint-plugin-import-x').rules['no-amd']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('import/no-amd', rule, {
   valid: [

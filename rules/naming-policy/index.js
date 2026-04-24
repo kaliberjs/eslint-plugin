@@ -38,17 +38,19 @@ module.exports = {
   meta: { type: 'problem' },
 
   create(context) {
+    const sourceCode = context.sourceCode
     const elementsWithValidRootElementClassName = new Set()
 
     return {
       [`ReturnStatement JSXAttribute[name.name = 'className'] MemberExpression[object.name = 'styles']`](node) {
+        const scopeNode = node
         const jsxElement = getParentJSXElement(node)
 
         const { property } = node
         if (hasParentsJSXElementsWithClassName(jsxElement) || isInJSXBranch(jsxElement))
           reportUnexpectedRootName(property)
         else
-          reportInvalidRootElementClassName(jsxElement, property)
+          reportInvalidRootElementClassName(jsxElement, property, scopeNode)
       },
       [`ExportDefaultDeclaration > FunctionDeclaration`](node) {
         reportInvalidFunctionName(node, { suggestFilename: true })
@@ -116,8 +118,8 @@ module.exports = {
       })
     }
 
-    function reportInvalidRootElementClassName(jsxElement, property) {
-      const expectedClassNames = getValidRootElementClassNames(context)
+    function reportInvalidRootElementClassName(jsxElement, property, scopeNode) {
+      const expectedClassNames = getValidRootElementClassNames(context, sourceCode, scopeNode)
 
       const className = getPropertyName(property)
       if (expectedClassNames.includes(className)) {
@@ -176,10 +178,10 @@ module.exports = {
   }
 }
 
-function getValidRootElementClassNames(context) {
+function getValidRootElementClassNames(context, sourceCode, node) {
   const prefix = new RegExp(`^${getBaseFilename(context)}`)
-  const name = getFunctionName(context).replace(prefix, '')
-  const exported = isInExport(context)
+  const name = getFunctionName(sourceCode, node).replace(prefix, '')
+  const exported = isInExport(sourceCode, node)
   return (
     exported && isApp(context) ? [`app${name}`] :
     exported && isPage(context) ? [`page${name}`] :

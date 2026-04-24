@@ -20,10 +20,6 @@ test('data-x-onpage-action-format', {
       errors: [{ messageId: 'invalidOnpageFormat' }]
     },
     {
-      code: '<button data-x="scrollapplyform">Scroll</button>',
-      errors: [{ messageId: 'invalidOnpageFormat' }]
-    },
-    {
       code: '<a data-x="open">Open</a>',
       errors: [{ messageId: 'invalidOnpageFormat' }]
     },

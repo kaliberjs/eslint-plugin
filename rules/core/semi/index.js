@@ -1,7 +1,5 @@
-const { Linter } = require('eslint');
-
-const linter = new Linter();
-const rule = linter.getRules().get('semi');
+const { builtinRules } = require('eslint/use-at-your-own-risk');
+const rule = builtinRules.get('semi');
 
 module.exports = {
   meta: rule.meta,

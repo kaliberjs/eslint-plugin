@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-script-url')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-script-url')
 
 const ruleTester = new RuleTester()
 
@@ -16,7 +15,7 @@ ruleTester.run('no-script-url', rule, {
     },
     {
       code: 'location.href = `javascript:void(0)`;',
-      parserOptions: { ecmaVersion: 6 },
+      languageOptions: { ecmaVersion: 2020 },
       errors: [{ message: "Script URL is a form of eval." }],
     },
   ],

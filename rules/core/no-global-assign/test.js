@@ -1,14 +1,16 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-global-assign')
+const { builtinRules } = require('eslint/use-at-your-own-risk');
+const rule = builtinRules.get('no-global-assign');
 const { test } = require('node:test')
+const globals = require('globals')
 
 test('no-global-assign', () => {
   const ruleTester = new RuleTester({
-    globals: {
-      window: 'writable',
-    },
-    env: {
-      browser: true,
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        window: 'writable',
+      },
     },
   })
 

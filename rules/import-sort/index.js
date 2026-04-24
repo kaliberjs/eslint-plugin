@@ -61,7 +61,7 @@ module.exports = {
 
     return {
       'Program': function (node) {
-        const sourceCode = context.getSourceCode();
+        const sourceCode = context.sourceCode;
         const imports = [];
 
         for (const n of node.body) {

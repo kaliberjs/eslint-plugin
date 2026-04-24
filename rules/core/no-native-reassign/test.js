@@ -1,7 +1,7 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-global-assign')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const globals = require('globals')
+const rule = builtinRules.get('no-global-assign')
 
 const ruleTester = new RuleTester()
 
@@ -14,7 +14,7 @@ ruleTester.run('no-global-assign', rule, {
     {
       code: 'window = {};',
       errors: [{ message: "Read-only global 'window' should not be modified." }],
-      env: { browser: true },
+      languageOptions: { globals: globals.browser },
     },
     {
       code: 'Object = null;',

@@ -1,9 +1,10 @@
+const globals = require('globals')
 const { RuleTester } = require('eslint');
 const rule = require('.');
 
 const ruleTester = new RuleTester({
-  parserOptions: { ecmaVersion: 2017 },
-  env: { node: true },
+  languageOptions: { ecmaVersion: 2020 },
+  languageOptions: { globals: globals.node },
 });
 
 ruleTester.run('no-loop-func', rule, {

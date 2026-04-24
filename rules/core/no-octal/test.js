@@ -1,9 +1,8 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-octal')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-octal')
 
-const ruleTester = new RuleTester()
+const ruleTester = new RuleTester({ languageOptions: { sourceType: 'script' } })
 
 ruleTester.run('no-octal', rule, {
   valid: [

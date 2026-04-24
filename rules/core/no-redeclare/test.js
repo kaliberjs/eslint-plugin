@@ -1,9 +1,8 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-redeclare')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-redeclare')
 
-const ruleTester = new RuleTester()
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'script' } })
 
 ruleTester.run('no-redeclare', rule, {
   valid: [

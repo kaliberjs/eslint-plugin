@@ -1,7 +1,8 @@
 const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/strict');
+const { builtinRules } = require('eslint/use-at-your-own-risk');
+const rule = builtinRules.get('strict');
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester({ languageOptions: { sourceType: 'script' } });
 
 ruleTester.run('strict', rule, {
   valid: [

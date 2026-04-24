@@ -1,7 +1,5 @@
-const { Linter } = require('eslint');
-
-const linter = new Linter();
-const rule = linter.getRules().get('semi-spacing');
+const { builtinRules } = require('eslint/use-at-your-own-risk');
+const rule = builtinRules.get('semi-spacing');
 
 module.exports = {
   meta: rule.meta,

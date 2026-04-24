@@ -1,15 +1,14 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-multi-str')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-multi-str')
 
-const ruleTester = new RuleTester()
+const ruleTester = new RuleTester({ languageOptions: { sourceType: 'script' } })
 
 ruleTester.run('no-multi-str', rule, {
   valid: [
     { code: 'var a = "b";' },
     { code: 'var a = "b\\nc";' },
-    { code: 'var a = `b\nc`;', parserOptions: { ecmaVersion: 6 } },
+    { code: 'var a = `b\nc`;', languageOptions: { ecmaVersion: 2020 }, },
   ],
   invalid: [
     {

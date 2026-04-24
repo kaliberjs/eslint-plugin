@@ -1,7 +1,5 @@
-const { Linter } = require('eslint');
-
-const linter = new Linter();
-const rule = linter.getRules().get('object-curly-spacing');
+const { builtinRules } = require('eslint/use-at-your-own-risk');
+const rule = builtinRules.get('object-curly-spacing');
 
 module.exports = {
   meta: rule.meta,

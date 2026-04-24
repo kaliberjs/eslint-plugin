@@ -2,12 +2,12 @@ const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-react').rules['no-deprecated']
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
+  languageOptions: {
+    ecmaVersion: 2020,
     sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
+    parserOptions: {
+      ecmaFeatures: { jsx: true },
+    },
   },
   settings: {
     react: {

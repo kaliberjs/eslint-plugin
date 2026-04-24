@@ -1,13 +1,8 @@
 const test = require('node:test');
 const RuleTester = require('eslint').RuleTester;
-const rule = require('eslint-plugin-import/lib/rules/no-webpack-loader-syntax');
+const rule = require('eslint-plugin-import-x').rules['no-webpack-loader-syntax'];
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 2020,
-    sourceType: 'module'
-  }
-});
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } });
 
 ruleTester.run('no-webpack-loader-syntax', rule, {
   valid: [

@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-use-before-define')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-use-before-define')
 
 const ruleTester = new RuleTester()
 
@@ -9,7 +8,7 @@ ruleTester.run('no-use-before-define', rule, {
   valid: [
     { code: 'var a = 1; var b = a;' },
     { code: 'function b() { return 1; } b();' },
-    { code: 'var b = () => 1; b();', parserOptions: { ecmaVersion: 6 } },
+    { code: 'var b = () => 1; b();', languageOptions: { ecmaVersion: 2020 }, },
     { code: 'b(); function b() { return 1; }', options: [{ functions: false }] },
   ],
   invalid: [

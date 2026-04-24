@@ -2,18 +2,14 @@ const { RuleTester } = require('eslint');
 const rule = require('eslint-plugin-react').rules['no-unused-prop-types'];
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
+  languageOptions: {
+    ecmaVersion: 2020,
     sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    },
+    parserOptions: { ecmaFeatures: { jsx: true } },
   },
   settings: {
-    react: {
-      version: "detect",
-    }
-  }
+    react: { version: '18.0' }, // explicit version to avoid filesystem traversal
+  },
 });
 
 ruleTester.run('react/no-unused-prop-types', rule, {

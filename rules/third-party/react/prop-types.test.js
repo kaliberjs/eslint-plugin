@@ -2,18 +2,18 @@ const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-react').rules['prop-types']
 
 const ruleTester = new RuleTester({
-  parser: require.resolve('@babel/eslint-parser'),
-  parserOptions: {
-    ecmaVersion: 2018,
+  languageOptions: {
+    parser: require('@babel/eslint-parser'),
+    ecmaVersion: 2020,
     sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
+    parserOptions: {
+      ecmaFeatures: { jsx: true },
+      requireConfigFile: false,
+      babelOptions: {
+        presets: [require.resolve('@babel/preset-react')]
+      },
     },
-    requireConfigFile: false,
-    babelOptions: {
-      presets: [require.resolve('@babel/preset-react')]
-    }
-  }
+  },
 })
 
 ruleTester.run('react/prop-types', rule, {

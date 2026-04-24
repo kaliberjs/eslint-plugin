@@ -1,5 +1,6 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/brace-style')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('brace-style')
 
 const ruleTester = new RuleTester()
 

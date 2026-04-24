@@ -1,17 +1,20 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-return-await')
 
-const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 2017 } });
+// Deprecated in ESLint 9 but still functional. Keep testing until removed.
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('no-return-await', rule, {
   valid: [
-    'async function foo() { await bar(); return; }',
     'async function foo() { return bar(); }',
+    'async function foo() { await bar(); return; }',
+    'async function foo() { const x = await bar(); return x; }',
   ],
   invalid: [
     {
       code: 'async function foo() { return await bar(); }',
-      errors: [{ message: 'Redundant use of `await` on a return value.' }],
+      errors: [{ message: 'Redundant use of `await` on a return value.', suggestions: 1 }],
     },
   ],
-});
+})

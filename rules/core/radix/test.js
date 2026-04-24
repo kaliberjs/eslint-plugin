@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('radix')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('radix')
 
 const ruleTester = new RuleTester()
 
@@ -13,7 +12,7 @@ ruleTester.run('radix', rule, {
   invalid: [
     {
       code: 'parseInt("10")',
-      errors: [{ message: "Missing radix parameter." }],
+      errors: [{ message: "Missing radix parameter.", suggestions: 1 }],
     },
   ],
 })

@@ -1,14 +1,13 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('rest-spread-spacing')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('rest-spread-spacing')
 
-const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('rest-spread-spacing', rule, {
   valid: [
     { code: 'let [...a] = [1, 2, 3];' },
-    { code: 'let { ...a } = { x: 1, y: 2 };', parserOptions: { ecmaVersion: 2018 } },
+    { code: 'let { ...a } = { x: 1, y: 2 };', languageOptions: { ecmaVersion: 2020 }, },
   ],
   invalid: [
     {
@@ -19,7 +18,7 @@ ruleTester.run('rest-spread-spacing', rule, {
     {
       code: 'let { ... a } = { x: 1, y: 2 };',
       output: 'let { ...a } = { x: 1, y: 2 };',
-      parserOptions: { ecmaVersion: 2018 },
+      languageOptions: { ecmaVersion: 2020 },
       errors: [{ message: "Unexpected whitespace after rest property operator." }],
     },
   ],

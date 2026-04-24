@@ -1,12 +1,8 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/dot-location')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('dot-location')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('dot-location', rule, {
   valid: [
