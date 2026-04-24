@@ -11,7 +11,7 @@ ruleTester.run('react/self-closing-comp', rule, {
     {
       code: `<MyComponent></MyComponent>`,
       output: `<MyComponent />`,
-      errors: [{ message: "Empty components are self-closing" }],
+      errors: [{ message: 'Empty components are self-closing' }],
     },
   ],
 })

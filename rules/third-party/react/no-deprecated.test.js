@@ -11,7 +11,7 @@ const ruleTester = new RuleTester({
   },
   settings: {
     react: {
-      version: "17.0",
+      version: '17.0',
     },
   },
 })
@@ -23,7 +23,7 @@ ruleTester.run('react/no-deprecated', rule, {
   invalid: [
     {
       code: `var React = require('react'); React.render(<div />, document.body);`,
-      errors: [{ message: "React.render is deprecated since React 0.14.0, use ReactDOM.render instead" }],
+      errors: [{ message: 'React.render is deprecated since React 0.14.0, use ReactDOM.render instead' }],
     },
   ],
 })

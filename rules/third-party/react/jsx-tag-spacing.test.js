@@ -12,17 +12,17 @@ ruleTester.run('react/jsx-tag-spacing', rule, {
     {
       code: `< MyComponent />`,
       output: `<MyComponent />`,
-      errors: [{ message: "A space is forbidden after opening bracket" }],
+      errors: [{ message: 'A space is forbidden after opening bracket' }],
     },
     {
       code: `<MyComponent / >`,
       output: `<MyComponent />`,
-      errors: [{ message: "Whitespace is forbidden between `/` and `>`; write `/>`" }],
+      errors: [{ message: 'Whitespace is forbidden between `/` and `>`; write `/>`' }],
     },
     {
       code: `<MyComponent>< /MyComponent>`,
       output: `<MyComponent></MyComponent>`,
-      errors: [{ message: "Whitespace is forbidden between `<` and `/`; write `</`" }],
+      errors: [{ message: 'Whitespace is forbidden between `<` and `/`; write `</`' }],
     },
   ],
 })

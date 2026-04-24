@@ -1,8 +1,8 @@
-const { RuleTester } = require('eslint');
-const { builtinRules } = require('eslint/use-at-your-own-risk');
-const rule = builtinRules.get('no-useless-escape');
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-useless-escape')
 
-const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } });
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('no-useless-escape', rule, {
   valid: [
@@ -12,15 +12,15 @@ ruleTester.run('no-useless-escape', rule, {
   invalid: [
     {
       code: '"\\a"',
-      errors: [{ message: "Unnecessary escape character: \\a.", suggestions: 2 }],
+      errors: [{ message: 'Unnecessary escape character: \\a.', suggestions: 2 }],
     },
     {
       code: '`\\a`',
-      errors: [{ message: "Unnecessary escape character: \\a.", suggestions: 2 }],
+      errors: [{ message: 'Unnecessary escape character: \\a.', suggestions: 2 }],
     },
     {
       code: '/\\a/',
-      errors: [{ message: "Unnecessary escape character: \\a.", suggestions: 2 }],
+      errors: [{ message: 'Unnecessary escape character: \\a.', suggestions: 2 }],
     },
   ],
-});
+})

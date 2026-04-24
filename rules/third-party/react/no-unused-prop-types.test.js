@@ -1,5 +1,5 @@
-const { RuleTester } = require('eslint');
-const rule = require('eslint-plugin-react').rules['no-unused-prop-types'];
+const { RuleTester } = require('eslint')
+const rule = require('eslint-plugin-react').rules['no-unused-prop-types']
 
 const ruleTester = new RuleTester({
   languageOptions: {
@@ -10,7 +10,7 @@ const ruleTester = new RuleTester({
   settings: {
     react: { version: '18.0' }, // explicit version to avoid filesystem traversal
   },
-});
+})
 
 ruleTester.run('react/no-unused-prop-types', rule, {
   valid: [
@@ -30,4 +30,4 @@ ruleTester.run('react/no-unused-prop-types', rule, {
       errors: [{ message: "'name' PropType is defined but prop is never used" }],
     },
   ],
-});
+})

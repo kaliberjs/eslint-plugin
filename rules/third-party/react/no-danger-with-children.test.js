@@ -11,7 +11,7 @@ ruleTester.run('react/no-danger-with-children', rule, {
   invalid: [
     {
       code: `<div dangerouslySetInnerHTML={{ __html: "Hello" }}>World</div>`,
-      errors: [{ message: "Only set one of `children` or `props.dangerouslySetInnerHTML`" }],
+      errors: [{ message: 'Only set one of `children` or `props.dangerouslySetInnerHTML`' }],
     },
   ],
 })

@@ -23,7 +23,7 @@ ruleTester.run('react/jsx-indent-props', rule, {
             prop="value"
         />
       `,
-      errors: [{ message: "Expected indentation of 12 space characters but found 10." }],
+      errors: [{ message: 'Expected indentation of 12 space characters but found 10.' }],
     },
   ],
 })

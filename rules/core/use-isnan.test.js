@@ -18,19 +18,19 @@ ruleTester.run('use-isnan', rule, {
   invalid: [
     {
       code: 'foo == NaN',
-      errors: [{ messageId: "comparisonWithNaN", suggestions: 2 }],
+      errors: [{ messageId: 'comparisonWithNaN', suggestions: 2 }],
     },
     {
       code: 'foo != NaN',
-      errors: [{ messageId: "comparisonWithNaN", suggestions: 2 }],
+      errors: [{ messageId: 'comparisonWithNaN', suggestions: 2 }],
     },
     {
       code: 'foo === NaN',
-      errors: [{ messageId: "comparisonWithNaN", suggestions: 1 }],
+      errors: [{ messageId: 'comparisonWithNaN', suggestions: 1 }],
     },
     {
       code: 'foo !== NaN',
-      errors: [{ messageId: "comparisonWithNaN", suggestions: 1 }],
+      errors: [{ messageId: 'comparisonWithNaN', suggestions: 1 }],
     },
   ],
 })

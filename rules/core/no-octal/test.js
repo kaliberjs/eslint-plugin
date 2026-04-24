@@ -13,11 +13,11 @@ ruleTester.run('no-octal', rule, {
   invalid: [
     {
       code: 'var a = 071;',
-      errors: [{ message: "Octal literals should not be used." }],
+      errors: [{ message: 'Octal literals should not be used.' }],
     },
     {
       code: 'var a = 0123;',
-      errors: [{ message: "Octal literals should not be used." }],
+      errors: [{ message: 'Octal literals should not be used.' }],
     },
   ],
 })

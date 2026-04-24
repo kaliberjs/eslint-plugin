@@ -12,7 +12,7 @@ ruleTester.run('no-extra-bind', rule, {
     {
       code: `const x = (function () {}).bind(this);`,
       output: `const x = (function () {});`,
-      errors: [{ message: "The function binding is unnecessary." }],
+      errors: [{ message: 'The function binding is unnecessary.' }],
     },
   ],
 })

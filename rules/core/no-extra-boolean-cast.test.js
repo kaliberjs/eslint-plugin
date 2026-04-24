@@ -12,12 +12,12 @@ ruleTester.run('no-extra-boolean-cast', rule, {
     {
       code: `if (!!foo) {}`,
       output: `if (foo) {}`,
-      errors: [{ message: "Redundant double negation." }],
+      errors: [{ message: 'Redundant double negation.' }],
     },
     {
       code: `if (Boolean(foo)) {}`,
       output: `if (foo) {}`,
-      errors: [{ message: "Redundant Boolean call." }],
+      errors: [{ message: 'Redundant Boolean call.' }],
     },
   ],
 })

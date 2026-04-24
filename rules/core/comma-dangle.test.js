@@ -13,12 +13,12 @@ ruleTester.run('comma-dangle', rule, {
     {
       code: `const obj = { a: 1, b: 2, }`,
       output: `const obj = { a: 1, b: 2 }`,
-      errors: [{ message: "Unexpected trailing comma." }],
+      errors: [{ message: 'Unexpected trailing comma.' }],
     },
     {
       code: `const arr = [1, 2,]`,
       output: `const arr = [1, 2]`,
-      errors: [{ message: "Unexpected trailing comma." }],
+      errors: [{ message: 'Unexpected trailing comma.' }],
     },
   ],
 })

@@ -12,14 +12,14 @@ ruleTester.run('brace-style', rule, {
     {
       code: 'if (foo)\n{\nbar()\n}',
       output: 'if (foo) {\nbar()\n}',
-      errors: [{ message: "Opening curly brace does not appear on the same line as controlling statement." }],
+      errors: [{ message: 'Opening curly brace does not appear on the same line as controlling statement.' }],
     },
     {
       code: 'if (foo) { bar() }',
       output: 'if (foo) {\n bar() \n}',
       errors: [
-        { message: "Statement inside of curly braces should be on next line." },
-        { message: "Closing curly brace should be on the same line as opening curly brace or on the line after the previous block." }
+        { message: 'Statement inside of curly braces should be on next line.' },
+        { message: 'Closing curly brace should be on the same line as opening curly brace or on the line after the previous block.' }
       ],
     }
   ],

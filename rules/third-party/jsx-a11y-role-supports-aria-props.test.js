@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/role-supports-aria-props', rule, {
   invalid: [
     {
       code: `<div role="button" aria-checked="true" />`,
-      errors: [{ message: "The attribute aria-checked is not supported by the role button." }],
+      errors: [{ message: 'The attribute aria-checked is not supported by the role button.' }],
     },
   ],
 })

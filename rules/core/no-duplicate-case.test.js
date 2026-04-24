@@ -11,7 +11,7 @@ ruleTester.run('no-duplicate-case', rule, {
   invalid: [
     {
       code: `switch (a) { case 1: break; case 1: break; }`,
-      errors: [{ message: "Duplicate case label." }],
+      errors: [{ message: 'Duplicate case label.' }],
     },
   ],
 })

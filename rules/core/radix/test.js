@@ -12,7 +12,7 @@ ruleTester.run('radix', rule, {
   invalid: [
     {
       code: 'parseInt("10")',
-      errors: [{ message: "Missing radix parameter.", suggestions: 1 }],
+      errors: [{ message: 'Missing radix parameter.', suggestions: 1 }],
     },
   ],
 })

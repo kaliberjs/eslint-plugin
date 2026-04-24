@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-invalid-regexp', rule, {
   valid: [
@@ -18,4 +18,4 @@ ruleTester.run('no-invalid-regexp', rule, {
       errors: [{ message: "Invalid flags supplied to RegExp constructor ')'." }],
     },
   ],
-});
+})

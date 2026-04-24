@@ -16,7 +16,7 @@ ruleTester.run('no-delete-var', rule, {
   invalid: [
     {
       code: `let a; delete a;`,
-      errors: [{ message: "Variables should not be deleted." }],
+      errors: [{ message: 'Variables should not be deleted.' }],
     },
   ],
 })

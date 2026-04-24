@@ -13,12 +13,12 @@ ruleTester.run('no-regex-spaces', rule, {
     {
       code: 'var re = /foo  bar/;',
       output: 'var re = /foo {2}bar/;',
-      errors: [{ message: "Spaces are hard to count. Use {2}." }],
+      errors: [{ message: 'Spaces are hard to count. Use {2}.' }],
     },
     {
       code: 'var re = /foo   bar/;',
       output: 'var re = /foo {3}bar/;',
-      errors: [{ message: "Spaces are hard to count. Use {3}." }],
+      errors: [{ message: 'Spaces are hard to count. Use {3}.' }],
     },
   ],
 })

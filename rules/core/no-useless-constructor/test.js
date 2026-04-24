@@ -12,11 +12,11 @@ ruleTester.run('no-useless-constructor', rule, {
   invalid: [
     {
       code: 'class A { constructor() {} }',
-      errors: [{ message: "Useless constructor.", suggestions: 1 }],
+      errors: [{ message: 'Useless constructor.', suggestions: 1 }],
     },
     {
       code: 'class A extends B { constructor() { super(); } }',
-      errors: [{ message: "Useless constructor.", suggestions: 1 }],
+      errors: [{ message: 'Useless constructor.', suggestions: 1 }],
     },
   ],
 })

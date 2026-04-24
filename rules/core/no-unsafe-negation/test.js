@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-unsafe-negation', rule, {
   valid: [
@@ -23,4 +23,4 @@ ruleTester.run('no-unsafe-negation', rule, {
       errors: [{ message: "Unexpected negating the left operand of 'in' operator.", suggestions: 2 }],
     },
   ],
-});
+})

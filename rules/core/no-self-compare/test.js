@@ -12,11 +12,11 @@ ruleTester.run('no-self-compare', rule, {
   invalid: [
     {
       code: 'if (a === a) {}',
-      errors: [{ message: "Comparing to itself is potentially pointless." }],
+      errors: [{ message: 'Comparing to itself is potentially pointless.' }],
     },
     {
       code: 'if (a > a) {}',
-      errors: [{ message: "Comparing to itself is potentially pointless." }],
+      errors: [{ message: 'Comparing to itself is potentially pointless.' }],
     },
   ],
 })

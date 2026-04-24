@@ -11,11 +11,11 @@ ruleTester.run('no-empty-pattern', rule, {
   invalid: [
     {
       code: `const {} = {}`,
-      errors: [{ message: "Unexpected empty object pattern." }],
+      errors: [{ message: 'Unexpected empty object pattern.' }],
     },
     {
       code: `const [] = []`,
-      errors: [{ message: "Unexpected empty array pattern." }],
+      errors: [{ message: 'Unexpected empty array pattern.' }],
     },
   ],
 })

@@ -11,7 +11,7 @@ ruleTester.run('no-cond-assign', rule, {
   invalid: [
     {
       code: `if (x = 0) {}`,
-      errors: [{ message: "Expected a conditional expression and instead saw an assignment." }],
+      errors: [{ message: 'Expected a conditional expression and instead saw an assignment.' }],
     },
   ],
 })

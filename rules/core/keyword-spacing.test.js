@@ -12,12 +12,12 @@ ruleTester.run('keyword-spacing', rule, {
     {
       code: `if(foo) {} else {}`,
       output: `if (foo) {} else {}`,
-      errors: [{ message: "Expected space(s) after \"if\"." }],
+      errors: [{ message: 'Expected space(s) after "if".' }],
     },
     {
       code: `if (foo) {}else {}`,
       output: `if (foo) {} else {}`,
-      errors: [{ message: "Expected space(s) before \"else\"." }],
+      errors: [{ message: 'Expected space(s) before "else".' }],
     },
   ],
 })

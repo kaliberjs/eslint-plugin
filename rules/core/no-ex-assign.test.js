@@ -11,7 +11,7 @@ ruleTester.run('no-ex-assign', rule, {
   invalid: [
     {
       code: `try {} catch (e) { e = 10; }`,
-      errors: [{ message: "Do not assign to the exception parameter." }],
+      errors: [{ message: 'Do not assign to the exception parameter.' }],
     },
   ],
 })

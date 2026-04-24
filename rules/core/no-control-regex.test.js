@@ -11,7 +11,7 @@ ruleTester.run('no-control-regex', rule, {
   invalid: [
     {
       code: `const regex = new RegExp("\x1f")`,
-      errors: [{ message: "Unexpected control character(s) in regular expression: \\x1f." }],
+      errors: [{ message: 'Unexpected control character(s) in regular expression: \\x1f.' }],
     },
   ],
 })

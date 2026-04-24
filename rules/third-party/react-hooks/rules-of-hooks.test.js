@@ -26,7 +26,7 @@ ruleTester.run('react-hooks/rules-of-hooks', rule, {
           return <div />;
         }
       `,
-      errors: [{ message: "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?" }],
+      errors: [{ message: 'React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?' }],
     },
     {
       code: `
@@ -37,7 +37,7 @@ ruleTester.run('react-hooks/rules-of-hooks', rule, {
           return <div />;
         }
       `,
-      errors: [{ message: "React Hook \"useState\" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function." }],
+      errors: [{ message: 'React Hook "useState" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function.' }],
     }
   ],
 })

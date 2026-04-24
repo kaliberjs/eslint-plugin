@@ -12,7 +12,7 @@ ruleTester.run('eol-last', rule, {
     {
       code: `const a = 1;`,
       output: `const a = 1;\n`,
-      errors: [{ message: "Newline required at end of file but not found." }],
+      errors: [{ message: 'Newline required at end of file but not found.' }],
     },
   ],
 })

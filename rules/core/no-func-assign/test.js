@@ -1,6 +1,6 @@
 const { RuleTester } = require('eslint')
-const { builtinRules } = require('eslint/use-at-your-own-risk');
-const rule = builtinRules.get('no-func-assign');
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-func-assign')
 const { test } = require('node:test')
 
 test('no-func-assign', () => {

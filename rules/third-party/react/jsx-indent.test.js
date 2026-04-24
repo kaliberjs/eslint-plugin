@@ -11,7 +11,7 @@ ruleTester.run('react/jsx-indent', rule, {
     {
       code: `<MyComponent>\n  <AnotherComponent />\n</MyComponent>`,
       output: `<MyComponent>\n    <AnotherComponent />\n</MyComponent>`,
-      errors: [{ message: "Expected indentation of 4 space characters but found 2." }],
+      errors: [{ message: 'Expected indentation of 4 space characters but found 2.' }],
     },
   ],
 })

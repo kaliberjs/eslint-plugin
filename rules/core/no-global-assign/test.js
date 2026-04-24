@@ -1,6 +1,6 @@
 const { RuleTester } = require('eslint')
-const { builtinRules } = require('eslint/use-at-your-own-risk');
-const rule = builtinRules.get('no-global-assign');
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-global-assign')
 const { test } = require('node:test')
 const globals = require('globals')
 

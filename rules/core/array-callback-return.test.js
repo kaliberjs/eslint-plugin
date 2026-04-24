@@ -12,7 +12,7 @@ ruleTester.run('array-callback-return', rule, {
   invalid: [
     {
       code: '[1, 2, 3].map(x => { })',
-      errors: [{ message: "Array.prototype.map() expects a return value from arrow function." }],
+      errors: [{ message: 'Array.prototype.map() expects a return value from arrow function.' }],
     },
   ],
 })

@@ -15,19 +15,19 @@ ruleTester.run('arrow-spacing', rule, {
       code: '()=>{}',
       output: '() => {}',
       errors: [
-        { message: "Missing space before =>." },
-        { message: "Missing space after =>." },
+        { message: 'Missing space before =>.' },
+        { message: 'Missing space after =>.' },
       ],
     },
     {
       code: '()=> {}',
       output: '() => {}',
-      errors: [{ message: "Missing space before =>." }],
+      errors: [{ message: 'Missing space before =>.' }],
     },
     {
       code: '() =>{}',
       output: '() => {}',
-      errors: [{ message: "Missing space after =>." }],
+      errors: [{ message: 'Missing space after =>.' }],
     },
   ],
 })

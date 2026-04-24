@@ -40,7 +40,7 @@ test('position-center', {
 
     // object style: template literal value
     {
-      code: "const styles = { placeContent: `center` }",
+      code: 'const styles = { placeContent: `center` }',
       errors: [{
         message: messages['no place-content center'],
         type: 'TemplateLiteral'

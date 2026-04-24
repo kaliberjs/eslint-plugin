@@ -20,7 +20,7 @@ ruleTester.run('react/require-render-return', rule, {
           render() {}
         }
       `,
-      errors: [{ message: "Your render method should have a return statement" }],
+      errors: [{ message: 'Your render method should have a return statement' }],
     },
   ],
 })

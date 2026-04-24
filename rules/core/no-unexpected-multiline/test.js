@@ -12,7 +12,7 @@ ruleTester.run('no-unexpected-multiline', rule, {
   invalid: [
     {
       code: 'var a = 1\n[1, 2, 3].forEach(console.log)',
-      errors: [{ message: "Unexpected newline between object and [ of property access." }],
+      errors: [{ message: 'Unexpected newline between object and [ of property access.' }],
     },
   ],
 })

@@ -10,11 +10,11 @@ ruleTester.run('react/void-dom-elements-no-children', rule, {
   invalid: [
     {
       code: `<br>Children</br>`,
-      errors: [{ message: "Void DOM element <br /> cannot receive children." }],
+      errors: [{ message: 'Void DOM element <br /> cannot receive children.' }],
     },
     {
       code: `<img dangerouslySetInnerHTML={{ __html: "Hello" }} />`,
-      errors: [{ message: "Void DOM element <img /> cannot receive children." }],
+      errors: [{ message: 'Void DOM element <img /> cannot receive children.' }],
     },
   ],
 })

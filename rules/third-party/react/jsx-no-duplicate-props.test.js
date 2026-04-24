@@ -10,7 +10,7 @@ ruleTester.run('react/jsx-no-duplicate-props', rule, {
   invalid: [
     {
       code: `<MyComponent prop1="value1" prop1="value2" />`,
-      errors: [{ message: "No duplicate props allowed" }],
+      errors: [{ message: 'No duplicate props allowed' }],
     },
   ],
 })

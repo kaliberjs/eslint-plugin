@@ -11,11 +11,11 @@ ruleTester.run('no-caller', rule, {
   invalid: [
     {
       code: `function foo() { return arguments.caller; }`,
-      errors: [{ message: "Avoid arguments.caller." }],
+      errors: [{ message: 'Avoid arguments.caller.' }],
     },
     {
       code: `function foo() { return arguments.callee; }`,
-      errors: [{ message: "Avoid arguments.callee." }],
+      errors: [{ message: 'Avoid arguments.callee.' }],
     },
   ],
 })

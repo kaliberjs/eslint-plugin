@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('space-infix-ops', rule, {
   valid: [
@@ -14,4 +14,4 @@ ruleTester.run('space-infix-ops', rule, {
       errors: [{ message: "Operator '+' must be spaced." }],
     },
   ],
-});
+})

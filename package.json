@@ -1,7 +1,9 @@
 {
   "name": "@kaliber/eslint-plugin",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint --config eslint.self.config.js .",
+    "lint:fix": "eslint --config eslint.self.config.js --fix ."
   },
   "version": "2.0.0-beta.1",
   "dependencies": {

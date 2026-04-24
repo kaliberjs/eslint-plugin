@@ -10,11 +10,11 @@ ruleTester.run('react/jsx-no-comment-textnodes', rule, {
   invalid: [
     {
       code: `<div>// a comment</div>`,
-      errors: [{ message: "Comments inside children section of tag should be placed inside braces" }],
+      errors: [{ message: 'Comments inside children section of tag should be placed inside braces' }],
     },
     {
       code: `<div>/* a comment */</div>`,
-      errors: [{ message: "Comments inside children section of tag should be placed inside braces" }],
+      errors: [{ message: 'Comments inside children section of tag should be placed inside braces' }],
     },
   ],
 })

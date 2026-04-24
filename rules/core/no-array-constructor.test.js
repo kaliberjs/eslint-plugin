@@ -14,12 +14,12 @@ ruleTester.run('no-array-constructor', rule, {
       code: `const arr = new Array()`,
       output: `const arr = []`,
       output: 'const arr = []',
-      errors: [{ message: "The array literal notation [] is preferable." }],
+      errors: [{ message: 'The array literal notation [] is preferable.' }],
     },
     {
       code: `const arr = new Array(1, 2, 3)`,
       output: `const arr = [1, 2, 3]`,
-      errors: [{ message: "The array literal notation [] is preferable." }],
+      errors: [{ message: 'The array literal notation [] is preferable.' }],
     },
   ],
 })

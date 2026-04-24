@@ -27,7 +27,7 @@ ruleTester.run('react/jsx-wrap-multilines', rule, {
             <p>Hello</p>
           </div>);
       `,
-      errors: [{ message: "Missing parentheses around multilines JSX" }],
+      errors: [{ message: 'Missing parentheses around multilines JSX' }],
     },
   ],
 })

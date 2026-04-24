@@ -11,7 +11,7 @@ ruleTester.run('react/jsx-boolean-value', rule, {
     {
       code: `<MyComponent disabled={true} />`,
       output: `<MyComponent disabled />`,
-      errors: [{ message: "Value must be omitted for boolean attribute `disabled`" }],
+      errors: [{ message: 'Value must be omitted for boolean attribute `disabled`' }],
     },
   ],
 })

@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('eslint-plugin-react').rules['jsx-uses-vars'];
+const { RuleTester } = require('eslint')
+const rule = require('eslint-plugin-react').rules['jsx-uses-vars']
 const { builtinRules: builtinRules2 } = require('eslint/use-at-your-own-risk')
-const noUnusedVarsRule = builtinRules2.get('no-unused-vars');
+const noUnusedVarsRule = builtinRules2.get('no-unused-vars')
 
 const ruleTester = new RuleTester({
   languageOptions: {
@@ -13,7 +13,7 @@ const ruleTester = new RuleTester({
       },
     },
   },
-});
+})
 
 ruleTester.run('react/jsx-uses-vars', rule, {
   valid: [
@@ -22,4 +22,4 @@ ruleTester.run('react/jsx-uses-vars', rule, {
     },
   ],
   invalid: [],
-});
+})

@@ -1,8 +1,8 @@
-const { RuleTester } = require('eslint');
-const { builtinRules } = require('eslint/use-at-your-own-risk');
-const rule = builtinRules.get('no-obj-calls');
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-obj-calls')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-obj-calls', rule, {
   valid: [
@@ -24,4 +24,4 @@ ruleTester.run('no-obj-calls', rule, {
         errors: [{ message: "'Reflect' is not a function." }],
     }
   ],
-});
+})

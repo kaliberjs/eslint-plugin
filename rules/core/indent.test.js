@@ -12,7 +12,7 @@ ruleTester.run('indent', rule, {
     {
       code: 'if (foo) {\n  bar()\n}',
       output: 'if (foo) {\n    bar()\n}',
-      errors: [{ message: "Expected indentation of 4 spaces but found 2." }],
+      errors: [{ message: 'Expected indentation of 4 spaces but found 2.' }],
     },
   ],
 })

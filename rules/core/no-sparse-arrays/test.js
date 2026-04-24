@@ -12,7 +12,7 @@ ruleTester.run('no-sparse-arrays', rule, {
   invalid: [
     {
       code: '[1, , 3]',
-      errors: [{ message: "Unexpected comma in middle of array." }],
+      errors: [{ message: 'Unexpected comma in middle of array.' }],
     },
   ],
 })

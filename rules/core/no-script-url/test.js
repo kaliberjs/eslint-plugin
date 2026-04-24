@@ -11,12 +11,12 @@ ruleTester.run('no-script-url', rule, {
   invalid: [
     {
       code: 'location.href = "javascript:void(0)";',
-      errors: [{ message: "Script URL is a form of eval." }],
+      errors: [{ message: 'Script URL is a form of eval.' }],
     },
     {
       code: 'location.href = `javascript:void(0)`;',
       languageOptions: { ecmaVersion: 2020 },
-      errors: [{ message: "Script URL is a form of eval." }],
+      errors: [{ message: 'Script URL is a form of eval.' }],
     },
   ],
 })

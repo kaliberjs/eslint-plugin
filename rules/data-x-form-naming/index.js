@@ -13,7 +13,7 @@ module.exports = {
     return {
       JSXOpeningElement(node) {
         const elementName = node.name.name
-        
+
         // Only check <form> elements
         if (elementName !== 'form') return
 

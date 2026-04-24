@@ -13,7 +13,7 @@ ruleTester.run('dot-location', rule, {
     {
       code: `const obj = { a: { b: 2 } }; const x = obj.a\n.b`,
       output: `const obj = { a: { b: 2 } }; const x = obj.a.\nb`,
-      errors: [{ message: "Expected dot to be on same line as object." }],
+      errors: [{ message: 'Expected dot to be on same line as object.' }],
     },
   ],
 })

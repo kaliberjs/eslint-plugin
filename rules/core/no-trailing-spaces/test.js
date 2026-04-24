@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-trailing-spaces', rule, {
   valid: [
@@ -19,4 +19,4 @@ ruleTester.run('no-trailing-spaces', rule, {
       errors: [{ message: 'Trailing spaces not allowed.' }],
     },
   ],
-});
+})

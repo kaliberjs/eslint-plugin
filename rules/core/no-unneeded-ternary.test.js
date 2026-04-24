@@ -1,8 +1,8 @@
-const { RuleTester } = require('eslint');
+const { RuleTester } = require('eslint')
 const { builtinRules } = require('eslint/use-at-your-own-risk')
-const rule = builtinRules.get('no-unneeded-ternary');
+const rule = builtinRules.get('no-unneeded-ternary')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-unneeded-ternary', rule, {
   valid: [
@@ -15,4 +15,4 @@ ruleTester.run('no-unneeded-ternary', rule, {
       errors: [{ message: 'Unnecessary use of boolean literals in conditional expression.' }],
     },
   ],
-});
+})

@@ -11,7 +11,7 @@ ruleTester.run('no-extend-native', rule, {
   invalid: [
     {
       code: `Object.prototype.extra = 55;`,
-      errors: [{ message: "Object prototype is read only, properties should not be added." }],
+      errors: [{ message: 'Object prototype is read only, properties should not be added.' }],
     },
   ],
 })

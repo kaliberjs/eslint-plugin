@@ -15,11 +15,11 @@ ruleTester.run('no-unused-expressions', rule, {
   invalid: [
     {
       code: '0;',
-      errors: [{ message: "Expected an assignment or function call and instead saw an expression." }],
+      errors: [{ message: 'Expected an assignment or function call and instead saw an expression.' }],
     },
     {
       code: 'a && b;',
-      errors: [{ message: "Expected an assignment or function call and instead saw an expression." }],
+      errors: [{ message: 'Expected an assignment or function call and instead saw an expression.' }],
     },
   ],
 })

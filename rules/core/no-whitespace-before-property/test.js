@@ -13,12 +13,12 @@ ruleTester.run('no-whitespace-before-property', rule, {
     {
       code: 'foo. bar',
       output: 'foo.bar',
-      errors: [{ message: "Unexpected whitespace before property bar." }],
+      errors: [{ message: 'Unexpected whitespace before property bar.' }],
     },
     {
       code: 'foo [bar]',
       output: 'foo[bar]',
-      errors: [{ message: "Unexpected whitespace before property bar." }],
+      errors: [{ message: 'Unexpected whitespace before property bar.' }],
     },
   ],
 })

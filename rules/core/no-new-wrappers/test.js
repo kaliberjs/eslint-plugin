@@ -14,15 +14,15 @@ ruleTester.run('no-new-wrappers', rule, {
   invalid: [
     {
       code: 'var a = new String("a");',
-      errors: [{ message: "Do not use String as a constructor." }],
+      errors: [{ message: 'Do not use String as a constructor.' }],
     },
     {
       code: 'var a = new Number("1");',
-      errors: [{ message: "Do not use Number as a constructor." }],
+      errors: [{ message: 'Do not use Number as a constructor.' }],
     },
     {
       code: 'var a = new Boolean("true");',
-      errors: [{ message: "Do not use Boolean as a constructor." }],
+      errors: [{ message: 'Do not use Boolean as a constructor.' }],
     },
   ],
 })

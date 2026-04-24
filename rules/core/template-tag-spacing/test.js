@@ -14,13 +14,13 @@ ruleTester.run('template-tag-spacing', rule, {
     {
       code: 'tag `template`',
       output: 'tag`template`',
-      errors: [{ message: "Unexpected space between template tag and template literal." }],
+      errors: [{ message: 'Unexpected space between template tag and template literal.' }],
     },
     {
       code: 'tag`template`',
       output: 'tag `template`',
       options: ['always'],
-      errors: [{ message: "Missing space between template tag and template literal." }],
+      errors: [{ message: 'Missing space between template tag and template literal.' }],
     },
   ],
 })

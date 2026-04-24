@@ -11,11 +11,11 @@ ruleTester.run('no-constant-condition', rule, {
   invalid: [
     {
       code: `if (true) {}`,
-      errors: [{ message: "Unexpected constant condition." }],
+      errors: [{ message: 'Unexpected constant condition.' }],
     },
     {
       code: `for (;-2;){}`,
-      errors: [{ message: "Unexpected constant condition." }],
+      errors: [{ message: 'Unexpected constant condition.' }],
     },
   ],
 })

@@ -13,15 +13,15 @@ ruleTester.run('no-throw-literal', rule, {
   invalid: [
     {
       code: 'throw "error";',
-      errors: [{ message: "Expected an error object to be thrown." }],
+      errors: [{ message: 'Expected an error object to be thrown.' }],
     },
     {
       code: 'throw 1;',
-      errors: [{ message: "Expected an error object to be thrown." }],
+      errors: [{ message: 'Expected an error object to be thrown.' }],
     },
     {
       code: 'throw undefined;',
-      errors: [{ message: "Do not throw undefined." }],
+      errors: [{ message: 'Do not throw undefined.' }],
     },
   ],
 })

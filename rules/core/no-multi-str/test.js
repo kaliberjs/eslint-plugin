@@ -8,12 +8,12 @@ ruleTester.run('no-multi-str', rule, {
   valid: [
     { code: 'var a = "b";' },
     { code: 'var a = "b\\nc";' },
-    { code: 'var a = `b\nc`;', languageOptions: { ecmaVersion: 2020 }, },
+    { code: 'var a = `b\nc`;', languageOptions: { ecmaVersion: 2020 } },
   ],
   invalid: [
     {
       code: 'var a = "b\\\nc";',
-      errors: [{ message: "Multiline support is limited to browsers supporting ES5 only." }],
+      errors: [{ message: 'Multiline support is limited to browsers supporting ES5 only.' }],
     },
   ],
 })

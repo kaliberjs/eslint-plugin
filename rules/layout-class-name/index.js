@@ -19,7 +19,7 @@ const messages = {
 
   'invalid layoutClassName':
     (found, expected) => `Unexpected layoutClassName '${found}', expected '${expected}'`,
-  
+
   'no export base':
     `Unexpected 'export', Base components can not be exported - remove the 'export' keyword`,
 }
@@ -98,8 +98,8 @@ module.exports = {
       const name = getJSXElementName(jsxElement)
 
       if (
-        firstLetterLowerCase(name) 
-        || name.endsWith('Base') 
+        firstLetterLowerCase(name)
+        || name.endsWith('Base')
         || name === 'FloatingOverlay'
       ) return
 

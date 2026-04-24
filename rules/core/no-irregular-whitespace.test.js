@@ -1,8 +1,8 @@
-const { RuleTester } = require('eslint');
+const { RuleTester } = require('eslint')
 const { builtinRules } = require('eslint/use-at-your-own-risk')
-const rule = builtinRules.get('no-irregular-whitespace');
+const rule = builtinRules.get('no-irregular-whitespace')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-irregular-whitespace', rule, {
   valid: [
@@ -14,4 +14,4 @@ ruleTester.run('no-irregular-whitespace', rule, {
       errors: [{ message: 'Irregular whitespace not allowed.' }],
     },
   ],
-});
+})

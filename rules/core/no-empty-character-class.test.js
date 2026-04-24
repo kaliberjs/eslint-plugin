@@ -11,7 +11,7 @@ ruleTester.run('no-empty-character-class', rule, {
   invalid: [
     {
       code: `const regex = /[]/`,
-      errors: [{ message: "Empty class." }],
+      errors: [{ message: 'Empty class.' }],
     },
   ],
 })

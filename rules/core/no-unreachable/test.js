@@ -12,11 +12,11 @@ ruleTester.run('no-unreachable', rule, {
   invalid: [
     {
       code: 'function foo() { return 1; var a = 1; }',
-      errors: [{ message: "Unreachable code." }],
+      errors: [{ message: 'Unreachable code.' }],
     },
     {
       code: 'function foo() { throw new Error(); var a = 1; }',
-      errors: [{ message: "Unreachable code." }],
+      errors: [{ message: 'Unreachable code.' }],
     },
   ],
 })

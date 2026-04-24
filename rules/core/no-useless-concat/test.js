@@ -12,7 +12,7 @@ ruleTester.run('no-useless-concat', rule, {
   invalid: [
     {
       code: 'var a = "a" + "b";',
-      errors: [{ message: "Unexpected string concatenation of literals." }],
+      errors: [{ message: 'Unexpected string concatenation of literals.' }],
     },
   ],
 })
