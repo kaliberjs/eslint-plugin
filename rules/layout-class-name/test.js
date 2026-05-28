@@ -3,8 +3,8 @@ const { test } = require('../../machinery/test')
 
 test('layout-class-name', {
   valid: [
-    `function Test({ layoutClassName }) { return <div className={layoutClassName} /> }`,
-    `function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.test)} /> }`,
+    "function Test({ layoutClassName }) { return <div className={layoutClassName} /> }",
+    "function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.test)} /> }",
     `
     function Test({ layoutClassName }) {
       return (
@@ -15,40 +15,40 @@ test('layout-class-name', {
     }
     `,
     `<div className='test' />`,
-    `<div className={styles.test} />`,
-    `<div {...{ className }} />`,
-    `<Test layoutClassName={styles.testLayout} />`,
+    "<div className={styles.test} />",
+    "<div {...{ className }} />",
+    "<Test layoutClassName={styles.testLayout} />",
     `<Test layoutClassName='testLayout' />`,
     `<TestBase className='test' />`,
-    `<TestBase className={styles.test} />`,
-    `<TestBase {...{ className }} />`,
+    "<TestBase className={styles.test} />",
+    "<TestBase {...{ className }} />",
     `<FloatingOverlay className='test' />`,
-    `<FloatingOverlay className={styles.test} />`,
-    `<FloatingOverlay {...{ className }} />`,
-    `<ReactSpring.animated.article className={styles.test} />`,
-    `export function Test() {}`,
-    `export function testBase() {}`,
-    `function TestBase({ className }) { return <div {...{ className }} /> }`,
+    "<FloatingOverlay className={styles.test} />",
+    "<FloatingOverlay {...{ className }} />",
+    "<ReactSpring.animated.article className={styles.test} />",
+    "export function Test() {}",
+    "export function testBase() {}",
+    "function TestBase({ className }) { return <div {...{ className }} /> }",
   ],
   invalid: [
     {
-      code: `function Test({ layoutClassName }) { return <div><div className={layoutClassName} /></div> }`,
+      code: "function Test({ layoutClassName }) { return <div><div className={layoutClassName} /></div> }",
       errors: [{ message: messages['no layoutClassName in child'] }]
     },
     {
-      code: `function Test({ layoutClassName }) { return <div><div className={cx(layoutClassName, styles.test)} /></div> }`,
+      code: "function Test({ layoutClassName }) { return <div><div className={cx(layoutClassName, styles.test)} /></div> }",
       errors: [{ message: messages['no layoutClassName in child'] }]
     },
     {
-      code: `function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.component_root)} /> }`,
+      code: "function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.component_root)} /> }",
       errors: [{ message: messages['no _root with layoutClassName'] }]
     },
     {
-      code: `function Test({ layoutClassName }) { return <div className={cx(styles.component_root, layoutClassName)} /> }`,
+      code: "function Test({ layoutClassName }) { return <div className={cx(styles.component_root, layoutClassName)} /> }",
       errors: [{ message: messages['no _root with layoutClassName'] }]
     },
     {
-      code: `function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.component, styles._root)} /> }`,
+      code: "function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.component, styles._root)} /> }",
       errors: [{ message: messages['no _root with layoutClassName'] }]
     },
     {
@@ -56,19 +56,19 @@ test('layout-class-name', {
       errors: [{ message: messages['no className on custom component'] }]
     },
     {
-      code: `<Test className={styles.test} />`,
+      code: "<Test className={styles.test} />",
       errors: [{ message: messages['no className on custom component'] }]
     },
     {
-      code: `<Test {...{ className }} />`,
+      code: "<Test {...{ className }} />",
       errors: [{ message: messages['no className on custom component'] }]
     },
     {
-      code: `<Test layoutClassName={styles.test} />`,
+      code: "<Test layoutClassName={styles.test} />",
       errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout') }]
     },
     {
-      code: `<Test layoutClassName={cx(styles.test, styles.testLayout)} />`,
+      code: "<Test layoutClassName={cx(styles.test, styles.testLayout)} />",
       errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout') }]
     },
     {
@@ -76,7 +76,7 @@ test('layout-class-name', {
       errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout') }]
     },
     {
-      code: `export function TestBase() {}`,
+      code: "export function TestBase() {}",
       errors: [{
         message: messages['no export base'],
         line: 1,

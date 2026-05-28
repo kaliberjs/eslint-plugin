@@ -5,11 +5,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('jsx-a11y/anchor-has-content', rule, {
   valid: [
-    `<a>foo</a>`,
+    "<a>foo</a>",
   ],
   invalid: [
     {
-      code: `<a></a>`,
+      code: "<a></a>",
       errors: [{ message: 'Anchors must have content and the content must be accessible by a screen reader.' }],
     },
   ],

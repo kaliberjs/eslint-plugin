@@ -5,11 +5,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('react/void-dom-elements-no-children', rule, {
   valid: [
-    `<br />`,
+    "<br />",
   ],
   invalid: [
     {
-      code: `<br>Children</br>`,
+      code: "<br>Children</br>",
       errors: [{ message: 'Void DOM element <br /> cannot receive children.' }],
     },
     {

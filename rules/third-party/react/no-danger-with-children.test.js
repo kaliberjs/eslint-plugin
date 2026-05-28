@@ -6,7 +6,7 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 ruleTester.run('react/no-danger-with-children', rule, {
   valid: [
     `<div dangerouslySetInnerHTML={{ __html: "Hello" }} />`,
-    `<div>Hello</div>`,
+    "<div>Hello</div>",
   ],
   invalid: [
     {

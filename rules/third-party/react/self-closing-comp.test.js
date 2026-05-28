@@ -5,12 +5,12 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('react/self-closing-comp', rule, {
   valid: [
-    `<MyComponent />`,
+    "<MyComponent />",
   ],
   invalid: [
     {
-      code: `<MyComponent></MyComponent>`,
-      output: `<MyComponent />`,
+      code: "<MyComponent></MyComponent>",
+      output: "<MyComponent />",
       errors: [{ message: 'Empty components are self-closing' }],
     },
   ],

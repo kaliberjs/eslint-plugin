@@ -6,15 +6,15 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-caller', rule, {
   valid: [
-    `function foo() {}`,
+    "function foo() {}",
   ],
   invalid: [
     {
-      code: `function foo() { return arguments.caller; }`,
+      code: "function foo() { return arguments.caller; }",
       errors: [{ message: 'Avoid arguments.caller.' }],
     },
     {
-      code: `function foo() { return arguments.callee; }`,
+      code: "function foo() { return arguments.callee; }",
       errors: [{ message: 'Avoid arguments.callee.' }],
     },
   ],

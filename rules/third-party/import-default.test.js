@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint-plugin-import-x').rules['default']
+const rule = require('eslint-plugin-import-x').rules.default
 
 const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 

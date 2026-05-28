@@ -9,7 +9,7 @@ ruleTester.run('jsx-a11y/iframe-has-title', rule, {
   ],
   invalid: [
     {
-      code: `<iframe />`,
+      code: "<iframe />",
       errors: [{ message: '<iframe> elements must have a unique title property.' }],
     },
   ],

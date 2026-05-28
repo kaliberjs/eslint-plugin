@@ -11,11 +11,11 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('no-dupe-args', rule, {
   valid: [
-    `function foo(a, b, c) {}`,
+    "function foo(a, b, c) {}",
   ],
   invalid: [
     {
-      code: `function foo(a, b, a) {}`,
+      code: "function foo(a, b, a) {}",
       errors: [{ message: "Duplicate param 'a'." }],
     },
   ],

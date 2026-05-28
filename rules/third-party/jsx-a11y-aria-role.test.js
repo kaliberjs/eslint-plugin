@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/aria-role', rule, {
   invalid: [
     {
       code: `<div role="foo" />`,
-      errors: [{ message: `Elements with ARIA roles must use a valid, non-abstract ARIA role.` }],
+      errors: [{ message: "Elements with ARIA roles must use a valid, non-abstract ARIA role." }],
     },
   ],
 })

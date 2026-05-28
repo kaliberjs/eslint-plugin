@@ -8,13 +8,13 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('react/jsx-pascal-case', rule, {
   valid: [
-    { code: `<MyComponent />` },
-    { code: `<MY_CONSTANT />`, options: [{ allowAllCaps: true }] },
-    { code: `<div />` },
+    { code: "<MyComponent />" },
+    { code: "<MY_CONSTANT />", options: [{ allowAllCaps: true }] },
+    { code: "<div />" },
   ],
   invalid: [
     {
-      code: `<My_Component />`,
+      code: "<My_Component />",
       errors: [{ message: 'Imported JSX component My_Component must be in PascalCase or SCREAMING_SNAKE_CASE' }],
       options: [{ allowAllCaps: true }],
     },

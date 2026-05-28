@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-empty-character-class', rule, {
   valid: [
-    `const regex = /[a]/`,
+    "const regex = /[a]/",
   ],
   invalid: [
     {
-      code: `const regex = /[]/`,
+      code: "const regex = /[]/",
       errors: [{ message: 'Empty class.' }],
     },
   ],

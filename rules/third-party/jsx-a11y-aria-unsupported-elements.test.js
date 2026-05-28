@@ -5,7 +5,7 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('jsx-a11y/aria-unsupported-elements', rule, {
   valid: [
-    `<div />`,
+    "<div />",
   ],
   invalid: [
     {

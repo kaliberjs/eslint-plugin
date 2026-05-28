@@ -6,17 +6,17 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('keyword-spacing', rule, {
   valid: [
-    `if (foo) {} else {}`,
+    "if (foo) {} else {}",
   ],
   invalid: [
     {
-      code: `if(foo) {} else {}`,
-      output: `if (foo) {} else {}`,
+      code: "if(foo) {} else {}",
+      output: "if (foo) {} else {}",
       errors: [{ message: 'Expected space(s) after "if".' }],
     },
     {
-      code: `if (foo) {}else {}`,
-      output: `if (foo) {} else {}`,
+      code: "if (foo) {}else {}",
+      output: "if (foo) {} else {}",
       errors: [{ message: 'Expected space(s) before "else".' }],
     },
   ],

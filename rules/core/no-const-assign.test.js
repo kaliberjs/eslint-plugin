@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-const-assign', rule, {
   valid: [
-    `const a = 1;`,
+    "const a = 1;",
   ],
   invalid: [
     {
-      code: `const a = 1; a = 2;`,
+      code: "const a = 1; a = 2;",
       errors: [{ message: "'a' is constant." }],
     },
   ],

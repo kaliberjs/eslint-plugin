@@ -6,16 +6,16 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-proto', rule, {
   valid: [
-    `const proto = Object.getPrototypeOf(obj)`,
-    `Object.setPrototypeOf(obj, proto)`,
+    "const proto = Object.getPrototypeOf(obj)",
+    "Object.setPrototypeOf(obj, proto)",
   ],
   invalid: [
     {
-      code: `const proto = obj.__proto__`,
+      code: "const proto = obj.__proto__",
       errors: [{ messageId: 'unexpectedProto' }],
     },
     {
-      code: `obj.__proto__ = proto`,
+      code: "obj.__proto__ = proto",
       errors: [{ messageId: 'unexpectedProto' }],
     },
   ],

@@ -12,8 +12,7 @@ const messages = {
     `Unexpected className '${found}', expected '${expected}'`,
 
   'no root className': found =>
-    `Unexpected className '${found}', only root nodes can have a className that starts with 'app', ` +
-    `'page' or 'component'`,
+    `Unexpected className '${found}', only root nodes can have a className that starts with 'app', 'page' or 'component'`,
 
   'invalid component name': (found, expected) =>
     `Unexpected component name '${found}', expected '${expected}'`,
@@ -25,8 +24,7 @@ const messages = {
     `Unexptected css import name '${found}', expected '${expected}'`,
 
   'no styles properties with _': found =>
-    `Unexpected underscore in '${found}', properties of styles can not start with an underscore - ` +
-    `if you exported using @value switch to ':export { ... }'`,
+    `Unexpected underscore in '${found}', properties of styles can not start with an underscore - if you exported using @value switch to ':export { ... }'`,
 
   'ref should end with Ref': (found, exptected) =>
     `Unexpected ref name '${found}', expected '${exptected}'`,
@@ -42,7 +40,7 @@ module.exports = {
     const elementsWithValidRootElementClassName = new Set()
 
     return {
-      [`ReturnStatement JSXAttribute[name.name = 'className'] MemberExpression[object.name = 'styles']`](node) {
+      "ReturnStatement JSXAttribute[name.name = 'className'] MemberExpression[object.name = 'styles']"(node) {
         const scopeNode = node
         const jsxElement = getParentJSXElement(node)
 
@@ -52,22 +50,22 @@ module.exports = {
         else
           reportInvalidRootElementClassName(jsxElement, property, scopeNode)
       },
-      [`ExportDefaultDeclaration > FunctionDeclaration`](node) {
+      "ExportDefaultDeclaration > FunctionDeclaration"(node) {
         reportInvalidFunctionName(node, { suggestFilename: true })
       },
-      [`ExportNamedDeclaration > FunctionDeclaration`](node) {
+      "ExportNamedDeclaration > FunctionDeclaration"(node) {
         reportInvalidFunctionName(node, { suggestFilename: false })
       },
-      [`ImportDeclaration[specifiers.0.local.name = 'styles']`](node) {
+      "ImportDeclaration[specifiers.0.local.name = 'styles']"(node) {
         reportInvalidCssFileName(node)
       },
-      [`ImportDeclaration`](node) {
+      "ImportDeclaration"(node) {
         reportInvalidStyleVariableName(node)
       },
-      [`MemberExpression[object.name = 'styles']`](node) {
+      "MemberExpression[object.name = 'styles']"(node) {
         reportUnderscoreProperties(node)
       },
-      [`VariableDeclarator > .init Identifier[name=/^use.*Ref$/]`](node) {
+      "VariableDeclarator > .init Identifier[name=/^use.*Ref$/]"(node) {
         reportInvalidRefName(node)
       },
     }

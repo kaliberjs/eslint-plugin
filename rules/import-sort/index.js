@@ -60,7 +60,7 @@ module.exports = {
     }
 
     return {
-      'Program': function (node) {
+      'Program': (node) => {
         const sourceCode = context.sourceCode
         const imports = []
 
