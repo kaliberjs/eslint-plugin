@@ -50,22 +50,22 @@ module.exports = {
         else
           reportInvalidRootElementClassName(jsxElement, property, scopeNode)
       },
-      "ExportDefaultDeclaration > FunctionDeclaration"(node) {
+      'ExportDefaultDeclaration > FunctionDeclaration'(node) {
         reportInvalidFunctionName(node, { suggestFilename: true })
       },
-      "ExportNamedDeclaration > FunctionDeclaration"(node) {
+      'ExportNamedDeclaration > FunctionDeclaration'(node) {
         reportInvalidFunctionName(node, { suggestFilename: false })
       },
       "ImportDeclaration[specifiers.0.local.name = 'styles']"(node) {
         reportInvalidCssFileName(node)
       },
-      "ImportDeclaration"(node) {
+      'ImportDeclaration'(node) {
         reportInvalidStyleVariableName(node)
       },
       "MemberExpression[object.name = 'styles']"(node) {
         reportUnderscoreProperties(node)
       },
-      "VariableDeclarator > .init Identifier[name=/^use.*Ref$/]"(node) {
+      'VariableDeclarator > .init Identifier[name=/^use.*Ref$/]'(node) {
         reportInvalidRefName(node)
       },
     }

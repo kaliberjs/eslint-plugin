@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/aria-props', rule, {
   invalid: [
     {
       code: `<div aria-foo="bar" />`,
-      errors: [{ message: "aria-foo: This attribute is an invalid ARIA attribute." }],
+      errors: [{ message: 'aria-foo: This attribute is an invalid ARIA attribute.' }],
     },
   ],
 })

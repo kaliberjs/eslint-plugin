@@ -7,7 +7,7 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 ruleTester.run('no-new-native-nonconstructor', rule, {
   valid: [
     `const s = Symbol('foo')`,
-    "const b = BigInt(9007199254740991)",
+    'const b = BigInt(9007199254740991)',
   ],
   invalid: [
     {

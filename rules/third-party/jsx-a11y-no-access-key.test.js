@@ -5,7 +5,7 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('jsx-a11y/no-access-key', rule, {
   valid: [
-    "<div />",
+    '<div />',
   ],
   invalid: [
     {

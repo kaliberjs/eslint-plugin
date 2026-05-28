@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-iterator', rule, {
   valid: [
-    "const iter = obj[Symbol.iterator]()",
+    'const iter = obj[Symbol.iterator]()',
   ],
   invalid: [
     {
-      code: "obj.__iterator__ = function () {}",
+      code: 'obj.__iterator__ = function () {}',
       errors: [{ messageId: 'noIterator' }],
     },
   ],

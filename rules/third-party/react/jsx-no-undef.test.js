@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 ruleTester.run('react/jsx-no-undef', rule, {
   valid: [
     `var Hello = require('react').createClass({ render: function() { return <div>Hello {this.props.name}</div>; } });`,
-    "var Hello = () => (<div>Hello</div>);",
+    'var Hello = () => (<div>Hello</div>);',
   ],
   invalid: [
     {
-      code: "<Hello />",
+      code: '<Hello />',
       errors: [{ message: "'Hello' is not defined." }],
     },
   ],

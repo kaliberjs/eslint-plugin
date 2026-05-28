@@ -28,6 +28,6 @@ function getBaseFilename(context) {
     const [name] = basename.split('.')
     return name.slice(0, 1).toUpperCase() + name.slice(1)
   }
-  
+
   return basename
 }

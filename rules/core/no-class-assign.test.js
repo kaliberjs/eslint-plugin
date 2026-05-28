@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-class-assign', rule, {
   valid: [
-    "class A {}",
+    'class A {}',
   ],
   invalid: [
     {
-      code: "class A {}; A = 1;",
+      code: 'class A {}; A = 1;',
       errors: [{ message: "'A' is a class." }],
     },
   ],

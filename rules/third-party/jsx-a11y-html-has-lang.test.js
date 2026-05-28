@@ -9,7 +9,7 @@ ruleTester.run('jsx-a11y/html-has-lang', rule, {
   ],
   invalid: [
     {
-      code: "<html />",
+      code: '<html />',
       errors: [{ message: '<html> elements must have the lang prop.' }],
     },
   ],

@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/scope', rule, {
   invalid: [
     {
       code: `<div scope="col" />`,
-      errors: [{ message: "The scope prop can only be used on <th> elements." }],
+      errors: [{ message: 'The scope prop can only be used on <th> elements.' }],
     },
   ],
 })

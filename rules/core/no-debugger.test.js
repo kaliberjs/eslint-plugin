@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-debugger', rule, {
   valid: [
-    "const a = 1;",
+    'const a = 1;',
   ],
   invalid: [
     {
-      code: "debugger;",
+      code: 'debugger;',
       errors: [{ message: "Unexpected 'debugger' statement." }],
     },
   ],

@@ -6,15 +6,15 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-empty-pattern', rule, {
   valid: [
-    "const { a } = {}",
+    'const { a } = {}',
   ],
   invalid: [
     {
-      code: "const {} = {}",
+      code: 'const {} = {}',
       errors: [{ message: 'Unexpected empty object pattern.' }],
     },
     {
-      code: "const [] = []",
+      code: 'const [] = []',
       errors: [{ message: 'Unexpected empty array pattern.' }],
     },
   ],

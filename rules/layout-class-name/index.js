@@ -63,7 +63,7 @@ module.exports = {
       "JSXAttribute[name.name = 'layoutClassName'] Literal"(node) {
         reportInvalidLayoutClassName(node, node.value)
       },
-      "ExportNamedDeclaration > FunctionDeclaration"(node) {
+      'ExportNamedDeclaration > FunctionDeclaration'(node) {
         reportExportedBase(node)
       },
     }

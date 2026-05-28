@@ -6,16 +6,16 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-object-constructor', rule, {
   valid: [
-    "const obj = {}",
-    "const obj = { a: 1 }",
-    "const obj = Object.create(null)",
+    'const obj = {}',
+    'const obj = { a: 1 }',
+    'const obj = Object.create(null)',
   ],
   invalid: [
     {
-      code: "const obj = new Object()",
+      code: 'const obj = new Object()',
       errors: [{
         messageId: 'preferLiteral',
-        suggestions: [{ messageId: 'useLiteral', output: "const obj = {}" }],
+        suggestions: [{ messageId: 'useLiteral', output: 'const obj = {}' }],
       }],
     },
   ],

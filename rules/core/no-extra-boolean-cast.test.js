@@ -6,17 +6,17 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-extra-boolean-cast', rule, {
   valid: [
-    "if (foo) {}",
+    'if (foo) {}',
   ],
   invalid: [
     {
-      code: "if (!!foo) {}",
-      output: "if (foo) {}",
+      code: 'if (!!foo) {}',
+      output: 'if (foo) {}',
       errors: [{ message: 'Redundant double negation.' }],
     },
     {
-      code: "if (Boolean(foo)) {}",
-      output: "if (foo) {}",
+      code: 'if (Boolean(foo)) {}',
+      output: 'if (foo) {}',
       errors: [{ message: 'Redundant Boolean call.' }],
     },
   ],

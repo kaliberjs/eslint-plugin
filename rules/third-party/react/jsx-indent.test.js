@@ -5,12 +5,12 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('react/jsx-indent', rule, {
   valid: [
-    "<MyComponent>\n    <AnotherComponent />\n</MyComponent>"
+    '<MyComponent>\n    <AnotherComponent />\n</MyComponent>'
   ],
   invalid: [
     {
-      code: "<MyComponent>\n  <AnotherComponent />\n</MyComponent>",
-      output: "<MyComponent>\n    <AnotherComponent />\n</MyComponent>",
+      code: '<MyComponent>\n  <AnotherComponent />\n</MyComponent>',
+      output: '<MyComponent>\n    <AnotherComponent />\n</MyComponent>',
       errors: [{ message: 'Expected indentation of 4 space characters but found 2.' }],
     },
   ],

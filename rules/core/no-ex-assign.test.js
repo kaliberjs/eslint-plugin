@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-ex-assign', rule, {
   valid: [
-    "try {} catch (e) {}",
+    'try {} catch (e) {}',
   ],
   invalid: [
     {
-      code: "try {} catch (e) { e = 10; }",
+      code: 'try {} catch (e) { e = 10; }',
       errors: [{ message: 'Do not assign to the exception parameter.' }],
     },
   ],

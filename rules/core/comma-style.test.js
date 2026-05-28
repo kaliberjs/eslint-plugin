@@ -6,18 +6,18 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('comma-style', rule, {
   valid: [
-    "const obj = { a: 1, b: 2 }",
-    "const arr = [1, 2]",
+    'const obj = { a: 1, b: 2 }',
+    'const arr = [1, 2]',
   ],
   invalid: [
     {
-      code: "const obj = { a: 1\n, b: 2 }",
-      output: "const obj = { a: 1,\n b: 2 }",
+      code: 'const obj = { a: 1\n, b: 2 }',
+      output: 'const obj = { a: 1,\n b: 2 }',
       errors: [{ message: "',' should be placed last." }],
     },
     {
-      code: "const arr = [1\n, 2]",
-      output: "const arr = [1,\n 2]",
+      code: 'const arr = [1\n, 2]',
+      output: 'const arr = [1,\n 2]',
       errors: [{ message: "',' should be placed last." }],
     },
   ],
