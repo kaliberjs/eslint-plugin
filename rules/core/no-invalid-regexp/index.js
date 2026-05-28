@@ -1,9 +1,7 @@
-const { Linter } = require('eslint');
-
-const linter = new Linter();
-const rule = linter.getRules().get('no-invalid-regexp');
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-invalid-regexp')
 
 module.exports = {
   meta: rule.meta,
   create: rule.create,
-};
+}

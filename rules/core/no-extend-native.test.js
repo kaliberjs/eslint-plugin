@@ -1,21 +1,17 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-extend-native')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-extend-native')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('no-extend-native', rule, {
   valid: [
-    `const a = {}; a.extra = 55;`,
+    'const a = {}; a.extra = 55;',
   ],
   invalid: [
     {
-      code: `Object.prototype.extra = 55;`,
-      errors: [{ message: "Object prototype is read only, properties should not be added." }],
+      code: 'Object.prototype.extra = 55;',
+      errors: [{ message: 'Object prototype is read only, properties should not be added.' }],
     },
   ],
 })

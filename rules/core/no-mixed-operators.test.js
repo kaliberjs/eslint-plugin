@@ -1,7 +1,8 @@
-const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-mixed-operators');
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-mixed-operators')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-mixed-operators', rule, {
   valid: [
@@ -16,4 +17,4 @@ ruleTester.run('no-mixed-operators', rule, {
     ],
     },
   ],
-});
+})

@@ -1,15 +1,7 @@
 const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-jsx-a11y').rules['alt-text']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('jsx-a11y/alt-text', rule, {
   valid: [
@@ -18,7 +10,7 @@ ruleTester.run('jsx-a11y/alt-text', rule, {
   invalid: [
     {
       code: `<img src="foo.jpg" />`,
-      errors: [{ message: 'img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.' }],
     },
   ],
 })

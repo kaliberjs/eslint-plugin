@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-unsafe-negation', rule, {
   valid: [
@@ -12,15 +12,15 @@ ruleTester.run('no-unsafe-negation', rule, {
   invalid: [
     {
       code: 'if (!key in object) {}',
-      errors: [{ message: "Unexpected negating the left operand of 'in' operator." }],
+      errors: [{ message: "Unexpected negating the left operand of 'in' operator.", suggestions: 2 }],
     },
     {
       code: 'if (!obj instanceof Ctor) {}',
-      errors: [{ message: "Unexpected negating the left operand of 'instanceof' operator." }],
+      errors: [{ message: "Unexpected negating the left operand of 'instanceof' operator.", suggestions: 2 }],
     },
     {
       code: '!a in b',
-      errors: [{ message: "Unexpected negating the left operand of 'in' operator." }],
+      errors: [{ message: "Unexpected negating the left operand of 'in' operator.", suggestions: 2 }],
     },
   ],
-});
+})

@@ -1,8 +1,7 @@
-const { Linter } = require('eslint')
 const { RuleTester } = require('eslint')
 
-const linter = new Linter()
-const rule = linter.getRules().get('valid-typeof')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('valid-typeof')
 
 const ruleTester = new RuleTester()
 

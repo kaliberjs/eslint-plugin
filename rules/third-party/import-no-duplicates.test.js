@@ -1,12 +1,7 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint-plugin-import').rules['no-duplicates']
+const rule = require('eslint-plugin-import-x').rules['no-duplicates']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('import/no-duplicates', rule, {
   valid: [
@@ -16,7 +11,7 @@ ruleTester.run('import/no-duplicates', rule, {
   invalid: [
     {
       code: `import { a } from 'a'; import { b } from 'a';`,
-      output: `import { a , b } from 'a'; `,
+      output: `import { a, b  } from 'a'; `,
       errors: [
         { message: "'a' imported multiple times." },
         { message: "'a' imported multiple times." },

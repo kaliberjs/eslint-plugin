@@ -6,9 +6,9 @@ const messages = {
 
   'no setters': name =>
     `Unexpected JSX attribute name, you should not directly pass \`${name}\` as a prop. Instead, pass an \`onXxx\` handler.`,
-  
+
   'destructure props':
-    `Expected destructured props`,
+    'Expected destructured props',
 }
 
 module.exports = {
@@ -18,12 +18,12 @@ module.exports = {
 
   create(context) {
     return {
-      [`FunctionDeclaration`]: reportNonDestructuredProps,
-      [`JSXAttribute`](node) {
+      'FunctionDeclaration': reportNonDestructuredProps,
+      'JSXAttribute'(node) {
         reportIncorrectVariablePassing(node)
         reportSetterProps(node)
       },
-      [`JSXSpreadAttribute`](node) {
+      'JSXSpreadAttribute'(node) {
         reportDestructuredSetterProps(node)
       }
     }
@@ -58,7 +58,7 @@ module.exports = {
             node,
           })
         }
-      }) 
+      })
     }
 
     function reportIncorrectVariablePassing(node) {

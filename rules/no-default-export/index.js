@@ -1,8 +1,9 @@
-const eslintPluginImport = require('eslint-plugin-import')
+const eslintPluginImport = require('eslint-plugin-import-x')
 const { isApp, isTemplate } = require('../../machinery/filename')
+const upstreamRule = eslintPluginImport.rules['no-default-export']
 
 module.exports = {
-  meta: { type: 'problem' },
+  meta: upstreamRule.meta,
 
   create(context) {
     if (isApp(context) || isTemplate(context)) return {}

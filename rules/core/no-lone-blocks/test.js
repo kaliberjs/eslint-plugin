@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-lone-blocks', rule, {
   valid: [
@@ -19,4 +19,4 @@ ruleTester.run('no-lone-blocks', rule, {
       errors: [{ message: 'Nested block is redundant.' }],
     },
   ],
-});
+})

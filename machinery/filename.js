@@ -6,26 +6,28 @@ module.exports = {
 }
 
 function isApp(context) {
-  const filename = context.getFilename()
+  const filename = context.filename
   return !!filename && filename.endsWith('App.js')
 }
 
 function isPage(context) {
-  const filename = context.getFilename()
+  const filename = context.filename
   return /.+\/pages\/[^/]+\.js/.test(filename)
 }
 
 function isTemplate(context) {
-  const filename = context.getFilename()
+  const filename = context.filename
   return /.+\.[^.]+\.js/.test(filename)
 }
 
 function getBaseFilename(context) {
-  const filename = context.getFilename()
+  const filename = context.filename
   const basename = path.basename(filename, '.js')
 
   if (isTemplate(context)) {
     const [name] = basename.split('.')
     return name.slice(0, 1).toUpperCase() + name.slice(1)
-  } else return basename
+  }
+
+  return basename
 }

@@ -1,17 +1,7 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint-plugin-import').rules.first
+const rule = require('eslint-plugin-import-x').rules.first
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-      generators: true,
-      experimentalObjectRestSpread: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('import/first', rule, {
   valid: [
@@ -21,7 +11,7 @@ ruleTester.run('import/first', rule, {
   invalid: [
     {
       code: `const a = 1; import { b } from 'b';`,
-      errors: [{ message: 'Import in body of module; reorder to top.', type: 'ImportDeclaration' }],
+      errors: [{ message: 'Import in body of module; reorder to top.' }],
       output: `import { b } from 'b'; const a = 1;`,
     },
   ],

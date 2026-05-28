@@ -1,24 +1,24 @@
 {
   "name": "@kaliber/eslint-plugin",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint --config eslint.self.config.js .",
+    "lint:fix": "eslint --config eslint.self.config.js --fix ."
   },
-  "version": "1.1.0-beta.4",
+  "version": "2.0.0-beta.1",
   "dependencies": {
-    "@babel/core": "^7.11.6",
-    "@babel/eslint-parser": "^7.16.5",
+    "@babel/core": "^7.26.0",
+    "@babel/eslint-parser": "^7.26.0",
     "@babel/preset-react": "^7.26.3",
-    "eslint": "^7.9.0",
-    "eslint-config-standard": "^16.0.3",
-    "eslint-config-standard-react": "^11.0.1",
-    "eslint-import-resolver-node": "^0.3.4",
-    "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-jsx-a11y": "^6.3.1",
-    "eslint-plugin-node": "^11.0.0",
-    "eslint-plugin-promise": "^5.1.0",
-    "eslint-plugin-react": "^7.21.0",
-    "eslint-plugin-react-hooks": "^4.1.2",
-    "eslint-plugin-standard": "^5.0.0",
+    "@eslint/js": "^10.0.0",
+    "@stylistic/eslint-plugin": "^5.0.0",
+    "eslint": "^10.0.0",
+    "eslint-import-resolver-node": "^0.3.9",
+    "eslint-plugin-import-x": "^4.0.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.0.0",
     "jsx-ast-utils": "^3.3.5",
     "prop-types": "^15.8.1"
   }

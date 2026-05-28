@@ -18,7 +18,7 @@ module.exports = {
     return {
       JSXOpeningElement(node) {
         const elementName = node.name.name
-        
+
         // Only check <a> and <button> elements
         if (elementName !== 'a' && elementName !== 'button') return
 
@@ -30,13 +30,13 @@ module.exports = {
 
         // Check if this looks like an on-page action (starts with a known verb)
         const onpageActionPattern = new RegExp(`^(cta-)?(${verbPattern})($|-)`, 'i')
-        
+
         if (!onpageActionPattern.test(dataXValue)) return
 
         // Valid format: "verb-target" or "cta-verb-target"
         // The verb must be followed by a hyphen and a target name
         const validFormat = new RegExp(`^(cta-)?(${verbPattern})-[a-z0-9_-]+$`, 'i')
-        
+
         const standaloneActionPattern = standaloneVerbPattern
           ? new RegExp(`^(cta-)?(${standaloneVerbPattern})$`, 'i')
           : null
@@ -49,7 +49,7 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'invalidOnpageFormat',
-            data: { 
+            data: {
               action: dataXValue.match(onpageActionPattern)?.[2] || 'action',
               target: 'target',
               value: dataXValue

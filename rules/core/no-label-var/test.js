@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-label-var', rule, {
   valid: [
@@ -10,7 +10,7 @@ ruleTester.run('no-label-var', rule, {
   invalid: [
     {
       code: 'var x = 1; x: while(true) { break x; }',
-      errors: [{ message: "Found identifier with same name as label." }],
+      errors: [{ message: 'Found identifier with same name as label.' }],
     },
   ],
-});
+})

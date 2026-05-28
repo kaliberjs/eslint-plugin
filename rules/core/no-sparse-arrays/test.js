@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-sparse-arrays')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-sparse-arrays')
 
 const ruleTester = new RuleTester()
 
@@ -13,7 +12,7 @@ ruleTester.run('no-sparse-arrays', rule, {
   invalid: [
     {
       code: '[1, , 3]',
-      errors: [{ message: "Unexpected comma in middle of array." }],
+      errors: [{ message: 'Unexpected comma in middle of array.' }],
     },
   ],
 })

@@ -11,12 +11,12 @@ module.exports = {
     {
       filename: 'Test.js',
       code: `import styles from './Something.css'`,
-      errors: [{ message: messages['invalid css file name']('./Something.css', './Test.css'), type: 'Literal' }]
+      errors: [{ message: messages['invalid css file name']('./Something.css', './Test.css') }]
     },
     {
       filename: 'Test.js',
       code: `import notStyles from './Test.css'`,
-      errors: [{ message: messages['invalid styles variable name']('notStyles', 'styles'), type: 'Identifier' }]
+      errors: [{ message: messages['invalid styles variable name']('notStyles', 'styles') }]
     },
   ]
 }

@@ -13,7 +13,7 @@ module.exports = {
     return {
       JSXOpeningElement(node) {
         const elementName = node.name.name
-        
+
         // Only check <a> elements for external links
         if (elementName !== 'a') return
 

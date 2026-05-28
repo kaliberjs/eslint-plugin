@@ -1,5 +1,6 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-floating-decimal')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-floating-decimal')
 const { test } = require('node:test')
 
 test('no-floating-decimal', () => {
@@ -15,12 +16,12 @@ test('no-floating-decimal', () => {
       {
         code: 'var x = .5;',
         output: 'var x = 0.5;',
-        errors: [{ message: "A leading decimal point can be confused with a dot." }],
+        errors: [{ message: 'A leading decimal point can be confused with a dot.' }],
       },
       {
         code: 'var x = 5.;',
         output: 'var x = 5.0;',
-        errors: [{ message: "A trailing decimal point can be confused with a dot." }],
+        errors: [{ message: 'A trailing decimal point can be confused with a dot.' }],
       },
     ],
   })

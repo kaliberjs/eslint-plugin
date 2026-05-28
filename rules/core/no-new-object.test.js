@@ -1,4 +1,22 @@
-const test = require('node:test')
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-object-constructor')
 
-// The `no-new-object` rule has been deprecated and its successor, `no-object-constructor`, is not available in the current ESLint version.
-test.skip('no-new-object', () => {})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
+
+ruleTester.run('no-object-constructor', rule, {
+  valid: [
+    'const obj = {}',
+    'const obj = { a: 1 }',
+    'const obj = Object.create(null)',
+  ],
+  invalid: [
+    {
+      code: 'const obj = new Object()',
+      errors: [{
+        messageId: 'preferLiteral',
+        suggestions: [{ messageId: 'useLiteral', output: 'const obj = {}' }],
+      }],
+    },
+  ],
+})

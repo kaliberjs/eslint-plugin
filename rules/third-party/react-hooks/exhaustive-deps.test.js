@@ -1,15 +1,7 @@
 const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-react-hooks').rules['exhaustive-deps']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('react-hooks/exhaustive-deps', rule, {
   valid: [
@@ -32,7 +24,7 @@ ruleTester.run('react-hooks/exhaustive-deps', rule, {
           return <div />;
         }
       `,
-      errors: [{ message: "React Hook useEffect has a missing dependency: 'value'. Either include it or remove the dependency array." }],
+      errors: [{ message: "React Hook useEffect has a missing dependency: 'value'. Either include it or remove the dependency array.", suggestions: 1 }],
     },
   ],
 })

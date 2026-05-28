@@ -1,19 +1,21 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-dupe-args')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-dupe-args')
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
+  languageOptions: {
+    ecmaVersion: 2020,
+    sourceType: 'script',
   }
 })
 
 ruleTester.run('no-dupe-args', rule, {
   valid: [
-    `function foo(a, b, c) {}`,
+    'function foo(a, b, c) {}',
   ],
   invalid: [
     {
-      code: `function foo(a, b, a) {}`,
+      code: 'function foo(a, b, a) {}',
       errors: [{ message: "Duplicate param 'a'." }],
     },
   ],

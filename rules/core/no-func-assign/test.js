@@ -1,9 +1,10 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-func-assign')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-func-assign')
 const { test } = require('node:test')
 
 test('no-func-assign', () => {
-  const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 2017 } })
+  const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
   ruleTester.run('no-func-assign', rule, {
     valid: [

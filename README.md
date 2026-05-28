@@ -4,12 +4,15 @@ This ESLint plugin enforces Kaliber's code conventions, helping maintain consist
 
 ## Usage
 
-To use this plugin in your project, create an `.eslintrc` file with the following content:
+To use this plugin in your project, create an `eslint.config.js` file with the following content:
 
-```json
-{
-  "extends": "./node_modules/@kaliber/eslint-plugin/.eslintrc"
-}
+```js
+const kaliberConfig = require('@kaliber/eslint-plugin/eslint.config')
+
+module.exports = [
+  ...kaliberConfig,
+  // your project-specific overrides here
+]
 ```
 
 ## Publishing a new version

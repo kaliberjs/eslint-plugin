@@ -1,9 +1,8 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('require-yield')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('require-yield')
 
-const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('require-yield', rule, {
   valid: [

@@ -1,20 +1,16 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-compare-neg-zero')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-compare-neg-zero')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('no-compare-neg-zero', rule, {
   valid: [
-    `x > 0`,
+    'x > 0',
   ],
   invalid: [
     {
-      code: `x === -0`,
+      code: 'x === -0',
       errors: [{ message: "Do not use the '===' operator to compare against -0." }],
     },
   ],

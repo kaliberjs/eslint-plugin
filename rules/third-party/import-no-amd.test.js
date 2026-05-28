@@ -1,12 +1,7 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint-plugin-import').rules['no-amd']
+const rule = require('eslint-plugin-import-x').rules['no-amd']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('import/no-amd', rule, {
   valid: [
@@ -17,11 +12,11 @@ ruleTester.run('import/no-amd', rule, {
   invalid: [
     {
       code: `define(['a'], function (a) {})`,
-      errors: [{ message: 'Expected imports instead of AMD define().', type: 'CallExpression' }],
+      errors: [{ message: 'Expected imports instead of AMD define().' }],
     },
     {
       code: `require(['a'], function (a) {})`,
-      errors: [{ message: 'Expected imports instead of AMD require().', type: 'CallExpression' }],
+      errors: [{ message: 'Expected imports instead of AMD require().' }],
     },
   ],
 })

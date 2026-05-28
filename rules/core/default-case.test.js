@@ -1,5 +1,6 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/default-case')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('default-case')
 
 const ruleTester = new RuleTester()
 

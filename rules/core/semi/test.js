@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('semi', rule, {
   valid: [
@@ -22,4 +22,4 @@ ruleTester.run('semi', rule, {
       errors: [{ message: 'Extra semicolon.' }],
     },
   ],
-});
+})

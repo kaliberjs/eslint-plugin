@@ -1,25 +1,21 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-empty-pattern')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-empty-pattern')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('no-empty-pattern', rule, {
   valid: [
-    `const { a } = {}`,
+    'const { a } = {}',
   ],
   invalid: [
     {
-      code: `const {} = {}`,
-      errors: [{ message: "Unexpected empty object pattern." }],
+      code: 'const {} = {}',
+      errors: [{ message: 'Unexpected empty object pattern.' }],
     },
     {
-      code: `const [] = []`,
-      errors: [{ message: "Unexpected empty array pattern." }],
+      code: 'const [] = []',
+      errors: [{ message: 'Unexpected empty array pattern.' }],
     },
   ],
 })

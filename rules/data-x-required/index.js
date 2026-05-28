@@ -12,7 +12,7 @@ module.exports = {
     return {
       JSXOpeningElement(node) {
         const elementName = node.name.name
-        
+
         // Only check <a> and <button> elements
         if (elementName !== 'a' && elementName !== 'button') return
 

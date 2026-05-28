@@ -1,15 +1,7 @@
 const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-jsx-a11y').rules['aria-proptypes']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('jsx-a11y/aria-proptypes', rule, {
   valid: [
@@ -18,7 +10,7 @@ ruleTester.run('jsx-a11y/aria-proptypes', rule, {
   invalid: [
     {
       code: `<div aria-hidden="baz" />`,
-      errors: [{ message: `The value for aria-hidden must be a boolean.`, type: 'JSXAttribute' }],
+      errors: [{ message: 'The value for aria-hidden must be a boolean.' }],
     },
   ],
 })

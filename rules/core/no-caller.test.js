@@ -1,25 +1,21 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-caller')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-caller')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('no-caller', rule, {
   valid: [
-    `function foo() {}`,
+    'function foo() {}',
   ],
   invalid: [
     {
-      code: `function foo() { return arguments.caller; }`,
-      errors: [{ message: "Avoid arguments.caller." }],
+      code: 'function foo() { return arguments.caller; }',
+      errors: [{ message: 'Avoid arguments.caller.' }],
     },
     {
-      code: `function foo() { return arguments.callee; }`,
-      errors: [{ message: "Avoid arguments.callee." }],
+      code: 'function foo() { return arguments.callee; }',
+      errors: [{ message: 'Avoid arguments.callee.' }],
     },
   ],
 })

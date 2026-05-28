@@ -1,21 +1,17 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-empty-character-class')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-empty-character-class')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('no-empty-character-class', rule, {
   valid: [
-    `const regex = /[a]/`,
+    'const regex = /[a]/',
   ],
   invalid: [
     {
-      code: `const regex = /[]/`,
-      errors: [{ message: "Empty class." }],
+      code: 'const regex = /[]/',
+      errors: [{ message: 'Empty class.' }],
     },
   ],
 })

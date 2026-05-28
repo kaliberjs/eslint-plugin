@@ -1,9 +1,8 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-useless-computed-key')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-useless-computed-key')
 
-const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('no-useless-computed-key', rule, {
   valid: [

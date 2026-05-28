@@ -13,7 +13,7 @@ module.exports = {
     return {
       JSXOpeningElement(node) {
         const elementName = node.name.name
-        
+
         // Only check <a> and <button> elements
         if (elementName !== 'a' && elementName !== 'button') return
 
@@ -29,11 +29,11 @@ module.exports = {
         // Check for toggle-like patterns
         const togglePatterns = /^(accordion|menu|dropdown|collapse|expand|faq|question|answer|drawer|sidebar|panel)/i
         const baseValue = dataXValue.replace(/^(open-|close-|show-|hide-)/, '')
-        
+
         // Also check for aria-expanded attribute which indicates a toggle
         const ariaExpanded = getProp(node.attributes, 'aria-expanded')
         const hasAriaExpanded = !!ariaExpanded
-        
+
         // Only report if it matches the pattern OR has aria-expanded (but not both to avoid duplicates)
         if (togglePatterns.test(baseValue)) {
           context.report({

@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-self-compare')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-self-compare')
 
 const ruleTester = new RuleTester()
 
@@ -13,11 +12,11 @@ ruleTester.run('no-self-compare', rule, {
   invalid: [
     {
       code: 'if (a === a) {}',
-      errors: [{ message: "Comparing to itself is potentially pointless." }],
+      errors: [{ message: 'Comparing to itself is potentially pointless.' }],
     },
     {
       code: 'if (a > a) {}',
-      errors: [{ message: "Comparing to itself is potentially pointless." }],
+      errors: [{ message: 'Comparing to itself is potentially pointless.' }],
     },
   ],
 })

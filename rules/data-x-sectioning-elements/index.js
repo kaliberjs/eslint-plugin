@@ -14,10 +14,10 @@ module.exports = {
         if (!node.name || node.name.type !== 'JSXIdentifier') return
 
         const elementName = node.name.name
-        
+
         // Check for sectioning elements defined in documentation
         const sectioningElements = ['form', 'section', 'header', 'footer', 'nav', 'main', 'aside']
-        
+
         if (!sectioningElements.includes(elementName)) return
 
         // Check if data-x attribute exists

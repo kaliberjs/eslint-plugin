@@ -1,9 +1,8 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-useless-constructor')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-useless-constructor')
 
-const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('no-useless-constructor', rule, {
   valid: [
@@ -13,11 +12,11 @@ ruleTester.run('no-useless-constructor', rule, {
   invalid: [
     {
       code: 'class A { constructor() {} }',
-      errors: [{ message: "Useless constructor." }],
+      errors: [{ message: 'Useless constructor.', suggestions: 1 }],
     },
     {
       code: 'class A extends B { constructor() { super(); } }',
-      errors: [{ message: "Useless constructor." }],
+      errors: [{ message: 'Useless constructor.', suggestions: 1 }],
     },
   ],
 })

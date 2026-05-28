@@ -1,21 +1,17 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-duplicate-case')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-duplicate-case')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('no-duplicate-case', rule, {
   valid: [
-    `switch (a) { case 1: break; case 2: break; }`,
+    'switch (a) { case 1: break; case 2: break; }',
   ],
   invalid: [
     {
-      code: `switch (a) { case 1: break; case 1: break; }`,
-      errors: [{ message: "Duplicate case label." }],
+      code: 'switch (a) { case 1: break; case 1: break; }',
+      errors: [{ message: 'Duplicate case label.' }],
     },
   ],
 })

@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-throw-literal')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-throw-literal')
 
 const ruleTester = new RuleTester()
 
@@ -14,15 +13,15 @@ ruleTester.run('no-throw-literal', rule, {
   invalid: [
     {
       code: 'throw "error";',
-      errors: [{ message: "Expected an error object to be thrown." }],
+      errors: [{ message: 'Expected an error object to be thrown.' }],
     },
     {
       code: 'throw 1;',
-      errors: [{ message: "Expected an error object to be thrown." }],
+      errors: [{ message: 'Expected an error object to be thrown.' }],
     },
     {
       code: 'throw undefined;',
-      errors: [{ message: "Do not throw undefined." }],
+      errors: [{ message: 'Do not throw undefined.' }],
     },
   ],
 })

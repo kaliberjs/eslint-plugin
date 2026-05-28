@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-mixed-spaces-and-tabs', rule, {
   valid: [
@@ -18,4 +18,4 @@ ruleTester.run('no-mixed-spaces-and-tabs', rule, {
       errors: [{ message: 'Mixed spaces and tabs.' }],
     },
   ],
-});
+})

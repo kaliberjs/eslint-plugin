@@ -234,7 +234,7 @@ module.exports = {
         return <div className={styles.test} />
       }
       `,
-      errors: [{ message: messages['invalid className']('test', 'component'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid className']('test', 'component') }],
     },
     {
       filename: 'Test.js',
@@ -244,7 +244,7 @@ module.exports = {
       }
       `,
       errors: [
-        { message: messages['invalid className']('test', 'component'), type: 'Identifier' },
+        { message: messages['invalid className']('test', 'component') },
       ],
     },
     {
@@ -255,8 +255,8 @@ module.exports = {
       }
       `,
       errors: [
-        { message: messages['invalid className']('test', 'component'), type: 'Identifier' },
-        { message: messages['invalid className']('componentTest', 'component'), type: 'Identifier' },
+        { message: messages['invalid className']('test', 'component') },
+        { message: messages['invalid className']('componentTest', 'component') },
       ],
     },
     {
@@ -267,7 +267,7 @@ module.exports = {
       }
       `,
       errors: [
-        { message: messages['invalid className']('componentTest', 'component'), type: 'Identifier' },
+        { message: messages['invalid className']('componentTest', 'component') },
       ],
     },
     {
@@ -280,7 +280,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['no root className']('componentX'), type: 'Identifier' }]
+      errors: [{ message: messages['no root className']('componentX') }]
     },
     {
       filename: 'Test.js',
@@ -291,7 +291,7 @@ module.exports = {
         }
       }
       `,
-      errors: [{ message: messages['invalid className']('test', 'component???'), type: 'Identifier'}]
+      errors: [{ message: messages['invalid className']('test', 'component???')}]
     },
     {
       filename: 'App.js',
@@ -300,7 +300,7 @@ module.exports = {
         return <div className={styles.test} />
       }
       `,
-      errors: [{ message: messages['invalid className']('test', 'app'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid className']('test', 'app') }],
     },
     {
       filename: 'App.js',
@@ -309,7 +309,7 @@ module.exports = {
         return <div className={styles.test} />
       }
       `,
-      errors: [{ message: messages['invalid className']('test', 'componentInput'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid className']('test', 'componentInput') }],
     },
     {
       filename: 'src/pages/Something.js',
@@ -318,7 +318,7 @@ module.exports = {
         return <div className={styles.test} />
       }
       `,
-      errors: [{ message: messages['invalid className']('test', 'page'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid className']('test', 'page') }],
     },
     {
       filename: 'Test.js',
@@ -331,7 +331,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['invalid className']('test', 'component2'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid className']('test', 'component2') }],
     },
     {
       filename: 'Test.js',
@@ -344,7 +344,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['invalid className']('test', 'component2'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid className']('test', 'component2') }],
     },
     {
       filename: 'Test.js',
@@ -358,7 +358,7 @@ module.exports = {
           )
         }
       `,
-      errors: Array(2).fill({ message: messages['no root className']('component'), type: 'Identifier' }),
+      errors: Array(2).fill({ message: messages['no root className']('component') }),
     },
     {
       filename: 'Test.js',
@@ -372,7 +372,7 @@ module.exports = {
           )
         }
       `,
-      errors: Array(2).fill({ message: messages['no root className']('component2'), type: 'Identifier' }),
+      errors: Array(2).fill({ message: messages['no root className']('component2') }),
     },
     {
       filename: 'Test.js',
@@ -386,7 +386,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['no root className']('componentAbc'), type: 'Identifier' }],
+      errors: [{ message: messages['no root className']('componentAbc') }],
     },
     {
       filename: 'Test.js',
@@ -402,7 +402,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['no root className']('component2'), type: 'Identifier' }],
+      errors: [{ message: messages['no root className']('component2') }],
     },
     {
       filename: 'Test.js',
@@ -416,7 +416,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['no root className']('component2'), type: 'Identifier' }],
+      errors: [{ message: messages['no root className']('component2') }],
     },
     {
       filename: 'Test.js',
@@ -430,7 +430,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['no root className']('component2'), type: 'Identifier' }],
+      errors: [{ message: messages['no root className']('component2') }],
     },
     {
       filename: 'Test.js',
@@ -444,7 +444,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['no root className']('component2'), type: 'Identifier' }],
+      errors: [{ message: messages['no root className']('component2') }],
     },
     {
       filename: 'Test.js',
@@ -457,7 +457,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['invalid className']('component_rootTest2', 'component_root2'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid className']('component_rootTest2', 'component_root2') }],
     },
     {
       filename: 'Menu.js',
@@ -478,7 +478,7 @@ module.exports = {
           )
         }
       `,
-      errors: [{ message: messages['no root className']('component_root'), type: 'Identifier' }],
+      errors: [{ message: messages['no root className']('component_root') }],
     }
   ]
 }

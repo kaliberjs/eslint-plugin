@@ -19,7 +19,7 @@ const messages = {
 
   'invalid layoutClassName':
     (found, expected) => `Unexpected layoutClassName '${found}', expected '${expected}'`,
-  
+
   'no export base':
     `Unexpected 'export', Base components can not be exported - remove the 'export' keyword`,
 }
@@ -34,15 +34,15 @@ module.exports = {
     const foundRootReferences = new Map()
 
     return {
-      [`ReturnStatement JSXAttribute[name.name = 'className'] Identifier[name = 'layoutClassName']`](node) {
+      "ReturnStatement JSXAttribute[name.name = 'className'] Identifier[name = 'layoutClassName']"(node) {
         const jsxElement = getParentJSXElement(node)
         if (hasLayoutClassName.has(jsxElement)) return
-        else hasLayoutClassName.add(jsxElement)
+        hasLayoutClassName.add(jsxElement)
 
         if (isRootJSXElement(jsxElement)) reportInvalidComboFromClassName(jsxElement)
         else reportLayoutClassNameInChild(node)
       },
-      [`ReturnStatement JSXAttribute[name.name = 'className'] MemberExpression[object.name = 'styles']`](node) {
+      "ReturnStatement JSXAttribute[name.name = 'className'] MemberExpression[object.name = 'styles']"(node) {
         const jsxElement = getParentJSXElement(node)
 
         const property = findRootProperty(jsxElement, node)
@@ -51,19 +51,19 @@ module.exports = {
 
         reportInvalidComboFromStyles(jsxElement, property)
       },
-      [`JSXSpreadAttribute Property[key.name = 'className']`](node) {
+      "JSXSpreadAttribute Property[key.name = 'className']"(node) {
         reportClassNameOnCustomComponent(node)
       },
-      [`JSXAttribute[name.name = 'className']`](node) {
+      "JSXAttribute[name.name = 'className']"(node) {
         reportClassNameOnCustomComponent(node)
       },
-      [`JSXAttribute[name.name = 'layoutClassName'] MemberExpression[object.name = 'styles']`](node) {
+      "JSXAttribute[name.name = 'layoutClassName'] MemberExpression[object.name = 'styles']"(node) {
         reportInvalidLayoutClassName(node.property, node.property.name)
       },
-      [`JSXAttribute[name.name = 'layoutClassName'] Literal`](node) {
+      "JSXAttribute[name.name = 'layoutClassName'] Literal"(node) {
         reportInvalidLayoutClassName(node, node.value)
       },
-      [`ExportNamedDeclaration > FunctionDeclaration`](node) {
+      'ExportNamedDeclaration > FunctionDeclaration'(node) {
         reportExportedBase(node)
       },
     }
@@ -98,8 +98,8 @@ module.exports = {
       const name = getJSXElementName(jsxElement)
 
       if (
-        firstLetterLowerCase(name) 
-        || name.endsWith('Base') 
+        firstLetterLowerCase(name)
+        || name.endsWith('Base')
         || name === 'FloatingOverlay'
       ) return
 
@@ -111,7 +111,7 @@ module.exports = {
 
     function reportInvalidLayoutClassName(node, className) {
       if (typeof className !== 'string') return
-      const expectedClassName = className.endsWith('Layout') ? className : className + 'Layout'
+      const expectedClassName = className.endsWith('Layout') ? className : `${className}Layout`
 
       if (className === expectedClassName) return
       context.report({

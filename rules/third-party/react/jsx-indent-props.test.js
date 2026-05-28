@@ -1,15 +1,7 @@
 const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-react').rules['jsx-indent-props']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('react/jsx-indent-props', rule, {
   valid: [
@@ -31,7 +23,7 @@ ruleTester.run('react/jsx-indent-props', rule, {
             prop="value"
         />
       `,
-      errors: [{ message: "Expected indentation of 12 space characters but found 10." }],
+      errors: [{ message: 'Expected indentation of 12 space characters but found 10.' }],
     },
   ],
 })
