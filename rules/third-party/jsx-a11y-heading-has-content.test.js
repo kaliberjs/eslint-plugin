@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/heading-has-content', rule, {
   invalid: [
     {
       code: `<h1 />`,
-      errors: [{ message: 'Headings must have content and the content must be accessible by a screen reader.', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'Headings must have content and the content must be accessible by a screen reader.' }],
     },
   ],
 })

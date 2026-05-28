@@ -11,7 +11,7 @@ ruleTester.run('import/first', rule, {
   invalid: [
     {
       code: `const a = 1; import { b } from 'b';`,
-      errors: [{ message: 'Import in body of module; reorder to top.', type: 'ImportDeclaration' }],
+      errors: [{ message: 'Import in body of module; reorder to top.' }],
       output: `import { b } from 'b'; const a = 1;`,
     },
   ],

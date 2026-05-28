@@ -11,7 +11,7 @@ module.exports = {
   invalid: [
     {
       code: `<div test1={test1} />`,
-      errors: [ { message: messages['incorrect variable passing']('test1'), type: 'JSXAttribute' }]
+      errors: [ { message: messages['incorrect variable passing']('test1') }]
     },
   ],
 }

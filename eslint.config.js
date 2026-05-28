@@ -90,7 +90,7 @@ module.exports = [
       '@stylistic/no-trailing-spaces': 'warn',
       '@stylistic/no-whitespace-before-property': 'warn',
       '@stylistic/object-curly-spacing': ['warn', 'always'],
-      '@stylistic/quotes': ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+      '@stylistic/quotes': ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: 'always' }],
       '@stylistic/semi': ['warn', 'never'],
       '@stylistic/semi-spacing': ['warn', { before: false, after: true }],
       '@stylistic/space-before-blocks': 'warn',
@@ -242,8 +242,8 @@ module.exports = [
 
       // ─── react rules ─────────────────────────────────────────────
       'react/jsx-boolean-value': 'warn',
-      'react/jsx-curly-spacing': ['warn', 'never'],
-      'react/jsx-equals-spacing': 'warn',
+      '@stylistic/jsx-curly-spacing': ['warn', 'never'],
+      '@stylistic/jsx-equals-spacing': 'warn',
       'react/jsx-indent': ['warn', 2],
       'react/jsx-indent-props': ['warn', 2],
       'react/jsx-key': 'off',
@@ -252,7 +252,7 @@ module.exports = [
       'react/jsx-no-target-blank': 'warn',
       'react/jsx-no-undef': ['warn', { allowGlobals: true }],
       'react/jsx-pascal-case': ['warn', { allowAllCaps: true }],
-      'react/jsx-tag-spacing': 'warn',
+      '@stylistic/jsx-tag-spacing': 'warn',
       'react/jsx-uses-react': 'off',
       'react/jsx-uses-vars': 'warn',
       'react/jsx-wrap-multilines': ['warn', {

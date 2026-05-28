@@ -11,11 +11,11 @@ module.exports = {
   invalid: [
     {
       code: `<div {...{ setState }} />`,
-      errors: [ { message: messages['no setters']('setState'), type: 'JSXSpreadAttribute' }]
+      errors: [ { message: messages['no setters']('setState') }]
     },
     {
       code: `<div setState={test1} />`,
-      errors: [ { message: messages['no setters']('setState'), type: 'JSXAttribute' }]
+      errors: [ { message: messages['no setters']('setState') }]
     },
   ],
 }

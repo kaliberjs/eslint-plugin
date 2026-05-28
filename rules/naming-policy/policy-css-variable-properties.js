@@ -19,20 +19,20 @@ module.exports = {
   invalid: [
     {
       code: `styles._test`,
-      errors: [{ message: messages['no styles properties with _']('_test'), type: 'Identifier' }]
+      errors: [{ message: messages['no styles properties with _']('_test') }]
     },
     {
       code: `styles['_test' + index]`,
-      errors: [{ message: messages['no styles properties with _']('_test'), type: 'BinaryExpression' }]
+      errors: [{ message: messages['no styles properties with _']('_test') }]
     },
     {
       code: 'styles[`_test${index}`]',
-      errors: [{ message: messages['no styles properties with _']('_test'), type: 'TemplateLiteral' }]
+      errors: [{ message: messages['no styles properties with _']('_test') }]
     },
     {
       filename: 'Test.js',
       code: `export function Test() { return <div className={cx(styles.component, styles._test)} /> }`,
-      errors: [{ message: messages['no styles properties with _']('_test'), type: 'Identifier' }]
+      errors: [{ message: messages['no styles properties with _']('_test') }]
     },
   ]
 }

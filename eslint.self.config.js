@@ -13,7 +13,7 @@ module.exports = [
 
     rules: {
       '@stylistic/semi': ['warn', 'never'],
-      '@stylistic/quotes': ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+      '@stylistic/quotes': ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: 'always' }],
       '@stylistic/comma-dangle': ['warn', 'only-multiline'],
       '@stylistic/eol-last': 'warn',
       '@stylistic/no-trailing-spaces': 'warn',

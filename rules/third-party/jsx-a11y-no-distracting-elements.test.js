@@ -10,11 +10,11 @@ ruleTester.run('jsx-a11y/no-distracting-elements', rule, {
   invalid: [
     {
       code: `<marquee />`,
-      errors: [{ message: 'Do not use <marquee> elements as they can create visual accessibility issues and are deprecated.', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'Do not use <marquee> elements as they can create visual accessibility issues and are deprecated.' }],
     },
     {
       code: `<blink />`,
-      errors: [{ message: 'Do not use <blink> elements as they can create visual accessibility issues and are deprecated.', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'Do not use <blink> elements as they can create visual accessibility issues and are deprecated.' }],
     },
   ],
 })

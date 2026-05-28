@@ -33,53 +33,52 @@ test('layout-class-name', {
   invalid: [
     {
       code: `function Test({ layoutClassName }) { return <div><div className={layoutClassName} /></div> }`,
-      errors: [{ message: messages['no layoutClassName in child'], type: 'Identifier' }]
+      errors: [{ message: messages['no layoutClassName in child'] }]
     },
     {
       code: `function Test({ layoutClassName }) { return <div><div className={cx(layoutClassName, styles.test)} /></div> }`,
-      errors: [{ message: messages['no layoutClassName in child'], type: 'Identifier' }]
+      errors: [{ message: messages['no layoutClassName in child'] }]
     },
     {
       code: `function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.component_root)} /> }`,
-      errors: [{ message: messages['no _root with layoutClassName'], type: 'Identifier' }]
+      errors: [{ message: messages['no _root with layoutClassName'] }]
     },
     {
       code: `function Test({ layoutClassName }) { return <div className={cx(styles.component_root, layoutClassName)} /> }`,
-      errors: [{ message: messages['no _root with layoutClassName'], type: 'Identifier' }]
+      errors: [{ message: messages['no _root with layoutClassName'] }]
     },
     {
       code: `function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.component, styles._root)} /> }`,
-      errors: [{ message: messages['no _root with layoutClassName'], type: 'Identifier' }]
+      errors: [{ message: messages['no _root with layoutClassName'] }]
     },
     {
       code: `<Test className='test' />`,
-      errors: [{ message: messages['no className on custom component'], type: 'JSXAttribute' }]
+      errors: [{ message: messages['no className on custom component'] }]
     },
     {
       code: `<Test className={styles.test} />`,
-      errors: [{ message: messages['no className on custom component'], type: 'JSXAttribute' }]
+      errors: [{ message: messages['no className on custom component'] }]
     },
     {
       code: `<Test {...{ className }} />`,
-      errors: [{ message: messages['no className on custom component'], type: 'Property' }]
+      errors: [{ message: messages['no className on custom component'] }]
     },
     {
       code: `<Test layoutClassName={styles.test} />`,
-      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Identifier' }]
+      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout') }]
     },
     {
       code: `<Test layoutClassName={cx(styles.test, styles.testLayout)} />`,
-      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Identifier' }]
+      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout') }]
     },
     {
       code: `<Test layoutClassName='test' />`,
-      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Literal' }]
+      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout') }]
     },
     {
       code: `export function TestBase() {}`,
       errors: [{
         message: messages['no export base'],
-        type: 'ExportNamedDeclaration',
         line: 1,
         endLine: 1,
         column: 1,

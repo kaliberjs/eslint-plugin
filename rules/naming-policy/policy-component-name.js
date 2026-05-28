@@ -12,12 +12,12 @@ module.exports = {
     {
       filename: 'Test.js',
       code: `export function Something() {}`,
-      errors: [{ message: messages['invalid component name']('Something', 'TestSomething'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid component name']('Something', 'TestSomething') }],
     },
     {
       filename: 'App.js',
       code: `export default function Something() {}`,
-      errors: [{ message: messages['invalid component name']('Something', 'App'), type: 'Identifier' }],
+      errors: [{ message: messages['invalid component name']('Something', 'App') }],
     },
   ]
 }

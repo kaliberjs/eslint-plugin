@@ -25,7 +25,6 @@ test('position-center', {
       code: `const styles = { placeContent: 'center' }`,
       errors: [{
         message: messages['no place-content center'],
-        type: 'Literal'
       }]
     },
 
@@ -34,7 +33,6 @@ test('position-center', {
       code: `const styles = { 'place-content': 'center' }`,
       errors: [{
         message: messages['no place-content center'],
-        type: 'Literal'
       }]
     },
 
@@ -43,7 +41,6 @@ test('position-center', {
       code: 'const styles = { placeContent: `center` }',
       errors: [{
         message: messages['no place-content center'],
-        type: 'TemplateLiteral'
       }]
     },
   ]

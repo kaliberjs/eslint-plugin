@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/aria-proptypes', rule, {
   invalid: [
     {
       code: `<div aria-hidden="baz" />`,
-      errors: [{ message: `The value for aria-hidden must be a boolean.`, type: 'JSXAttribute' }],
+      errors: [{ message: `The value for aria-hidden must be a boolean.` }],
     },
   ],
 })

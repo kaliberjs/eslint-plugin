@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/alt-text', rule, {
   invalid: [
     {
       code: `<img src="foo.jpg" />`,
-      errors: [{ message: 'img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.' }],
     },
   ],
 })

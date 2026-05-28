@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/no-access-key', rule, {
   invalid: [
     {
       code: `<div accessKey="a" />`,
-      errors: [{ message: 'No access key attribute allowed. Inconsistencies between keyboard shortcuts and keyboard commands used by screen readers and keyboard-only users create a11y complications.', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'No access key attribute allowed. Inconsistencies between keyboard shortcuts and keyboard commands used by screen readers and keyboard-only users create a11y complications.' }],
     },
   ],
 })

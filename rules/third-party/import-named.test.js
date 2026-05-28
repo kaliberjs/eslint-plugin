@@ -10,7 +10,7 @@ ruleTester.run('import/named', rule, {
   invalid: [
     {
       code: `import { b } from './rules/third-party/mocks/export-a';`,
-      errors: [{ message: `b not found in './rules/third-party/mocks/export-a'`, type: 'Identifier' }],
+      errors: [{ message: `b not found in './rules/third-party/mocks/export-a'` }],
     },
   ],
 })

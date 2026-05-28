@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/anchor-has-content', rule, {
   invalid: [
     {
       code: `<a></a>`,
-      errors: [{ message: 'Anchors must have content and the content must be accessible by a screen reader.', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'Anchors must have content and the content must be accessible by a screen reader.' }],
     },
   ],
 })
