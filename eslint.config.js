@@ -88,7 +88,7 @@ module.exports = [
       '@stylistic/no-trailing-spaces': 'warn',
       '@stylistic/no-whitespace-before-property': 'warn',
       '@stylistic/object-curly-spacing': ['warn', 'always'],
-      '@stylistic/quotes': ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+      '@stylistic/quotes': ['warn', 'single', { avoidEscape: true, allowTemplateLiterals: 'always' }],
       '@stylistic/semi': ['warn', 'never'],
       '@stylistic/semi-spacing': ['warn', { before: false, after: true }],
       '@stylistic/space-before-blocks': 'warn',
