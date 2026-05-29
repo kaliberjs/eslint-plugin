@@ -127,7 +127,7 @@ The migration script will:
 
 ## Globals
 
-Instead of depending on the [`globals`](https://www.npmjs.com/package/globals) npm package, this plugin uses an inlined [`machinery/globals.json`](machinery/globals.json) containing only the environments we need (`browser`, `node`, `jest`).
+This plugin uses the [`globals`](https://www.npmjs.com/package/globals) npm package for environment globals (`browser`, `node`, `jest`). It previously inlined a trimmed-down `machinery/globals.json`; that was dropped during the ESLint v10 upgrade.
 
 ## Publishing
 

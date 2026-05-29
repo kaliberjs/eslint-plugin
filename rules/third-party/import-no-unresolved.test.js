@@ -10,7 +10,7 @@ ruleTester.run('import/no-unresolved', rule, {
   invalid: [
     {
       code: `import a from './rules/third-party/mocks/non-existent';`,
-      errors: [{ message: `Unable to resolve path to module './rules/third-party/mocks/non-existent'.`, type: 'Literal' }],
+      errors: [{ message: `Unable to resolve path to module './rules/third-party/mocks/non-existent'.` }],
     },
   ],
 })

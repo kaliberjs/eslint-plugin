@@ -2,7 +2,7 @@ const { RuleTester } = require('eslint')
 const { builtinRules } = require('eslint/use-at-your-own-risk')
 const rule = builtinRules.get('no-global-assign')
 const { test } = require('node:test')
-const globals = require('../../../machinery/globals.json')
+const globals = require('globals')
 
 test('no-global-assign', () => {
   const ruleTester = new RuleTester({

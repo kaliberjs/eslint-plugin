@@ -33,7 +33,7 @@ module.exports = {
         let currentNode = node
         let isInMap = false
 
-        while (currentNode && currentNode.parent) {
+        while (currentNode?.parent) {
           currentNode = currentNode.parent
 
           // Check for .map( pattern

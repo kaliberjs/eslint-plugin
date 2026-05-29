@@ -1,4 +1,35 @@
-const test = require('node:test')
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-extra-label')
 
-// The `no-extra-label` rule is incorrectly flagging a valid use of a label with a `break` statement as an error.
-test.skip('no-extra-label', () => {})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
+
+ruleTester.run('no-extra-label', rule, {
+  valid: [
+    `
+      outer:
+      for (const a of items) {
+        for (const b of other) {
+          if (b) break outer
+        }
+      }
+    `,
+  ],
+  invalid: [
+    {
+      code: `
+        label:
+        while (true) {
+          break label
+        }
+      `,
+      output: `
+        label:
+        while (true) {
+          break
+        }
+      `,
+      errors: [{ messageId: 'unexpected' }],
+    },
+  ],
+})

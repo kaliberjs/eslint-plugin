@@ -11,7 +11,7 @@ const pluginReactHooks = require('eslint-plugin-react-hooks')
 const pluginJsxA11y = require('eslint-plugin-jsx-a11y')
 const pluginImportX = require('eslint-plugin-import-x')
 const stylistic = require('@stylistic/eslint-plugin')
-const globals = require('./machinery/globals.json')
+const globals = require('globals')
 const kaliberPlugin = require('./index')
 
 const gitignorePath = path.resolve(process.cwd(), '.gitignore')
@@ -44,8 +44,10 @@ module.exports = [
       },
       globals: {
         ...globals.browser,
-        ...globals.node,
+        ...globals.commonjs,
+        ...globals.es2015,
         ...globals.jest,
+        ...globals.node,
         Component: 'readonly',
         React: 'readonly',
         cx: 'readonly',
@@ -247,8 +249,8 @@ module.exports = [
 
       // ─── react rules ─────────────────────────────────────────────
       'react/jsx-boolean-value': 'warn',
-      'react/jsx-curly-spacing': ['warn', 'never'],
-      'react/jsx-equals-spacing': 'warn',
+      '@stylistic/jsx-curly-spacing': ['warn', 'never'],
+      '@stylistic/jsx-equals-spacing': 'warn',
       'react/jsx-indent': ['warn', 2],
       'react/jsx-indent-props': ['warn', 2],
       'react/jsx-key': 'off',
@@ -257,7 +259,7 @@ module.exports = [
       'react/jsx-no-target-blank': 'warn',
       'react/jsx-no-undef': ['warn', { allowGlobals: true }],
       'react/jsx-pascal-case': ['warn', { allowAllCaps: true }],
-      'react/jsx-tag-spacing': 'warn',
+      '@stylistic/jsx-tag-spacing': 'warn',
       'react/jsx-uses-react': 'off',
       'react/jsx-uses-vars': 'warn',
       'react/jsx-wrap-multilines': ['warn', {

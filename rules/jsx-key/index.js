@@ -54,7 +54,7 @@ module.exports = {
           node.callee.type !== 'OptionalMemberExpression'
         ) return
 
-        if (node.callee && node.callee.property && node.callee.property.name !== 'map') return
+        if (node.callee?.property && node.callee.property.name !== 'map') return
 
         const fn = node.arguments[0]
         const isFn = fn && fn.type === 'FunctionExpression'

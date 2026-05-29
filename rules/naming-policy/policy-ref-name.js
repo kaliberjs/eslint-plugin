@@ -14,34 +14,34 @@ module.exports = {
     {
       code: `const x = React.useRef()`,
       output: `const xRef = React.useRef()`,
-      errors: [{ message: messages['ref should end with Ref']('x', 'xRef'), type: 'Identifier' }],
+      errors: [{ message: messages['ref should end with Ref']('x', 'xRef') }],
     },
     {
       code: `const x = useXyzRef()`,
       output: `const xRef = useXyzRef()`,
-      errors: [{ message: messages['ref should end with Ref']('x', 'xRef'), type: 'Identifier' }],
+      errors: [{ message: messages['ref should end with Ref']('x', 'xRef') }],
     },
     {
       code: `const xRefx = useXyzRef()`,
       output: `const xRefxRef = useXyzRef()`,
-      errors: [{ message: messages['ref should end with Ref']('xRefx', 'xRefxRef'), type: 'Identifier' }],
+      errors: [{ message: messages['ref should end with Ref']('xRefx', 'xRefxRef') }],
     },
     // Descriptive ref name
     {
       code: `const containerElement = React.useRef()`,
       output: `const containerElementRef = React.useRef()`,
-      errors: [{ message: messages['ref should end with Ref']('containerElement', 'containerElementRef'), type: 'Identifier' }],
+      errors: [{ message: messages['ref should end with Ref']('containerElement', 'containerElementRef') }],
     },
     // References in same scope should also be renamed
     {
       code: `const x = React.useRef(); console.log(x)`,
       output: `const xRef = React.useRef(); console.log(xRef)`,
-      errors: [{ message: messages['ref should end with Ref']('x', 'xRef'), type: 'Identifier' }],
+      errors: [{ message: messages['ref should end with Ref']('x', 'xRef') }],
     },
     {
       code: `const container = useRef(); container.current = 'test'; doSomething(container)`,
       output: `const containerRef = useRef(); containerRef.current = 'test'; doSomething(containerRef)`,
-      errors: [{ message: messages['ref should end with Ref']('container', 'containerRef'), type: 'Identifier' }],
+      errors: [{ message: messages['ref should end with Ref']('container', 'containerRef') }],
     },
   ]
 }

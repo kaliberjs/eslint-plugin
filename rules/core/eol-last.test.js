@@ -6,12 +6,12 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('eol-last', rule, {
   valid: [
-    `const a = 1;\n`,
+    'const a = 1;\n',
   ],
   invalid: [
     {
-      code: `const a = 1;`,
-      output: `const a = 1;\n`,
+      code: 'const a = 1;',
+      output: 'const a = 1;\n',
       errors: [{ message: 'Newline required at end of file but not found.' }],
     },
   ],
