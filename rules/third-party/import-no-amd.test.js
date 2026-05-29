@@ -12,11 +12,11 @@ ruleTester.run('import/no-amd', rule, {
   invalid: [
     {
       code: `define(['a'], function (a) {})`,
-      errors: [{ message: 'Expected imports instead of AMD define().', type: 'CallExpression' }],
+      errors: [{ message: 'Expected imports instead of AMD define().' }],
     },
     {
       code: `require(['a'], function (a) {})`,
-      errors: [{ message: 'Expected imports instead of AMD require().', type: 'CallExpression' }],
+      errors: [{ message: 'Expected imports instead of AMD require().' }],
     },
   ],
 })

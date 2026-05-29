@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-duplicate-case', rule, {
   valid: [
-    `switch (a) { case 1: break; case 2: break; }`,
+    'switch (a) { case 1: break; case 2: break; }',
   ],
   invalid: [
     {
-      code: `switch (a) { case 1: break; case 1: break; }`,
+      code: 'switch (a) { case 1: break; case 1: break; }',
       errors: [{ message: 'Duplicate case label.' }],
     },
   ],

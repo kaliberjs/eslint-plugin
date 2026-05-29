@@ -11,11 +11,11 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('no-delete-var', rule, {
   valid: [
-    `const obj = { a: 1 }; delete obj.a;`,
+    'const obj = { a: 1 }; delete obj.a;',
   ],
   invalid: [
     {
-      code: `let a; delete a;`,
+      code: 'let a; delete a;',
       errors: [{ message: 'Variables should not be deleted.' }],
     },
   ],

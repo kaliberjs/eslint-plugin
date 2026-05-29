@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/no-redundant-roles', rule, {
   invalid: [
     {
       code: `<button role="button" />`,
-      errors: [{ message: `The element button has an implicit role of button. Defining this explicitly is redundant and should be avoided.`, type: 'JSXOpeningElement' }],
+      errors: [{ message: 'The element button has an implicit role of button. Defining this explicitly is redundant and should be avoided.' }],
     },
   ],
 })

@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-cond-assign', rule, {
   valid: [
-    `if (x === 0) {}`,
+    'if (x === 0) {}',
   ],
   invalid: [
     {
-      code: `if (x = 0) {}`,
+      code: 'if (x = 0) {}',
       errors: [{ message: 'Expected a conditional expression and instead saw an assignment.' }],
     },
   ],

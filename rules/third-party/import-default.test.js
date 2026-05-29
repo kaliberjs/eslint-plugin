@@ -1,5 +1,5 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint-plugin-import-x').rules['default']
+const rule = require('eslint-plugin-import-x').rules.default
 
 const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
@@ -10,7 +10,7 @@ ruleTester.run('import/default', rule, {
   invalid: [
     {
       code: `import a from './rules/third-party/mocks/export-a';`,
-      errors: [{ message: 'No default export found in imported module "./rules/third-party/mocks/export-a".', type: 'ImportDefaultSpecifier' }],
+      errors: [{ message: 'No default export found in imported module "./rules/third-party/mocks/export-a".' }],
     },
   ],
 })

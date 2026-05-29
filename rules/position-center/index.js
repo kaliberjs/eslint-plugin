@@ -3,7 +3,7 @@ const { getPropertyName } = require('../../machinery/ast')
 const messages = {
   'no place-content center':
     `Avoid using 'place-content: center'. It only aligns tracks when there is extra space ` +
-    `and often does nothing in single-line flex or simple grid layouts. ` +
+    'and often does nothing in single-line flex or simple grid layouts. ' +
     `In most cases you probably want 'place-items: center' (for centering items) ` +
     `or 'align-items' / 'justify-content' instead.`
 }

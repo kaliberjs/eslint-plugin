@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-dupe-class-members', rule, {
   valid: [
-    `class A { a() {} b() {} }`,
+    'class A { a() {} b() {} }',
   ],
   invalid: [
     {
-      code: `class A { a() {} a() {} }`,
+      code: 'class A { a() {} a() {} }',
       errors: [{ message: "Duplicate name 'a'." }],
     },
   ],

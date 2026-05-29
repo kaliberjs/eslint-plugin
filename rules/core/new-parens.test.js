@@ -6,12 +6,12 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('new-parens', rule, {
   valid: [
-    `function Person() {}; new Person();`,
+    'function Person() {}; new Person();',
   ],
   invalid: [
     {
-      code: `function Person() {}; new Person`,
-      output: `function Person() {}; new Person()`,
+      code: 'function Person() {}; new Person',
+      output: 'function Person() {}; new Person()',
       errors: [{ message: "Missing '()' invoking a constructor." }],
     },
   ],

@@ -1,9 +1,8 @@
-const globals = require('../../../machinery/globals.json')
+const globals = require('globals')
 const { RuleTester } = require('eslint')
 const rule = require('.')
 
 const ruleTester = new RuleTester({
-  languageOptions: { ecmaVersion: 2020 },
   languageOptions: { globals: globals.node },
 })
 

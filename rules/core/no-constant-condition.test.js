@@ -6,15 +6,15 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-constant-condition', rule, {
   valid: [
-    `if (a === 0) {}`,
+    'if (a === 0) {}',
   ],
   invalid: [
     {
-      code: `if (true) {}`,
+      code: 'if (true) {}',
       errors: [{ message: 'Unexpected constant condition.' }],
     },
     {
-      code: `for (;-2;){}`,
+      code: 'for (;-2;){}',
       errors: [{ message: 'Unexpected constant condition.' }],
     },
   ],
