@@ -19,6 +19,22 @@ module.exports = [
 
 If your project still uses a legacy `.eslintrc` / `.eslintrc.json` / `.eslintrc.js` file, you can automatically migrate to the flat config format:
 
+### Change package.json
+
+Update the lint script in your `package.json` — the new flat config picks up `eslint.config.js` automatically, and `.gitignore` is used as the ignore file:
+
+```json
+"lint.javascript": "eslint"
+```
+
+Was:
+
+```json
+"lint.javascript": "eslint -c .eslintrc --ignore-path .gitignore './**/*.js'"
+```
+
+### Run the migration script
+
 ```sh
 # In your project directory:
 npx kaliber-eslint-migrate
