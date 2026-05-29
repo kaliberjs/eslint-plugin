@@ -110,7 +110,7 @@ module.exports = {
       const { property } = node
       const name = getPropertyName(property)
 
-      if (!name.startsWith('_') || name.startsWith('_root')) return
+      if (!name || !name.startsWith('_') || name.startsWith('_root')) return
 
       context.report({
         message: messages['no styles properties with _'](name),
@@ -122,6 +122,7 @@ module.exports = {
       const expectedClassNames = getValidRootElementClassNames(context, sourceCode, scopeNode)
 
       const className = getPropertyName(property)
+      if (!className) return
       if (expectedClassNames.includes(className)) {
         elementsWithValidRootElementClassName.add(jsxElement)
         return
@@ -141,6 +142,7 @@ module.exports = {
 
     function reportUnexpectedRootName(property) {
       const className = getPropertyName(property)
+      if (!className) return
       const forbidden = ['app', 'page', 'component']
       if (!forbidden.some(x => className.startsWith(x))) return
 
