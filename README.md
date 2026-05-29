@@ -21,16 +21,16 @@ If your project still uses a legacy `.eslintrc` / `.eslintrc.json` / `.eslintrc.
 
 ```sh
 # In your project directory:
-npx @kaliber/eslint-plugin migrate
+npx kaliber-eslint-migrate
 
 # Preview without writing any files:
-npx @kaliber/eslint-plugin migrate --dry-run
+npx kaliber-eslint-migrate --dry-run
 
 # Print the generated config to stdout:
-npx @kaliber/eslint-plugin migrate --stdout
+npx kaliber-eslint-migrate --stdout
 
 # Overwrite an existing eslint.config.js:
-npx @kaliber/eslint-plugin migrate --force
+npx kaliber-eslint-migrate --force
 ```
 
 The migration script will:
