@@ -1,6 +1,6 @@
 const { RuleTester } = require('eslint')
 const { builtinRules } = require('eslint/use-at-your-own-risk')
-const globals = require('globals')
+const globals = require('../../../machinery/globals.json')
 const rule = builtinRules.get('no-implied-eval')
 
 // In ESLint 9 flat config, setTimeout/setInterval are not global by default.

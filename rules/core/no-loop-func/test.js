@@ -1,4 +1,4 @@
-const globals = require('globals')
+const globals = require('../../../machinery/globals.json')
 const { RuleTester } = require('eslint')
 const rule = require('.')
 

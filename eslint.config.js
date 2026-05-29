@@ -8,7 +8,7 @@ const pluginReactHooks = require('eslint-plugin-react-hooks')
 const pluginJsxA11y = require('eslint-plugin-jsx-a11y')
 const pluginImportX = require('eslint-plugin-import-x')
 const stylistic = require('@stylistic/eslint-plugin')
-const globals = require('globals')
+const globals = require('./machinery/globals.json')
 const kaliberPlugin = require('./index')
 
 module.exports = [
@@ -38,10 +38,8 @@ module.exports = [
       },
       globals: {
         ...globals.browser,
-        ...globals.commonjs,
-        ...globals.es2015,
-        ...globals.jest,
         ...globals.node,
+        ...globals.jest,
         Component: 'readonly',
         React: 'readonly',
         cx: 'readonly',
