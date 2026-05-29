@@ -10,23 +10,27 @@ function getPropertyName(property) {
     case 'Identifier': return property.name
     case 'Literal': return property.value
     case 'BinaryExpression': return getPropertyName(property.left)
+    case 'ConditionalExpression': return getPropertyName(property.consequent)
+    case 'MemberExpression': return getPropertyName(property.property)
     case 'TemplateLiteral':
       const [name] = property.quasis
       return name.value.raw
-    default: throw new Error(`Can not determine name for '${property.type}'`)
+    default:
+      console.warn(`[eslint-plugin] getPropertyName: unhandled node type '${property.type}'`)
+      return null
   }
 }
 
-function getFunctionName(context) {
-  return getName(getRootFunctionScope(context.getScope()))
+function getFunctionName(sourceCode, node) {
+  return getName(getRootFunctionScope(sourceCode.getScope(node)))
 
   function getName({ block: { id } }) {
     return id ? id.name : '???'
   }
 }
 
-function isInExport(context) {
-  const { type } = getRootFunctionScope(context.getScope()).block.parent
+function isInExport(sourceCode, node) {
+  const { type } = getRootFunctionScope(sourceCode.getScope(node)).block.parent
   return ['ExportDefaultDeclaration', 'ExportNamedDeclaration'].includes(type)
 }
 

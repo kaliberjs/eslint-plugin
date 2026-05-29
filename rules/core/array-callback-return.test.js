@@ -1,7 +1,8 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/array-callback-return')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('array-callback-return')
 
-const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('array-callback-return', rule, {
   valid: [
@@ -11,7 +12,7 @@ ruleTester.run('array-callback-return', rule, {
   invalid: [
     {
       code: '[1, 2, 3].map(x => { })',
-      errors: [{ message: "Array.prototype.map() expects a return value from arrow function." }],
+      errors: [{ message: 'Array.prototype.map() expects a return value from arrow function.' }],
     },
   ],
 })

@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-useless-concat')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-useless-concat')
 
 const ruleTester = new RuleTester()
 
@@ -13,7 +12,7 @@ ruleTester.run('no-useless-concat', rule, {
   invalid: [
     {
       code: 'var a = "a" + "b";',
-      errors: [{ message: "Unexpected string concatenation of literals." }],
+      errors: [{ message: 'Unexpected string concatenation of literals.' }],
     },
   ],
 })

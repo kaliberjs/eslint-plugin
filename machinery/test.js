@@ -2,15 +2,15 @@ const { RuleTester } = require('eslint')
 const { rules } = require('..')
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
+  languageOptions: {
+    ecmaVersion: 2020,
     sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-      generators: true,
-      experimentalObjectRestSpread: true,
-    }
-  }
+    parserOptions: {
+      ecmaFeatures: {
+        jsx: true,
+      },
+    },
+  },
 })
 
 module.exports = {

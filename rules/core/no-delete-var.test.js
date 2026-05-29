@@ -1,9 +1,11 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-delete-var')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-delete-var')
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
+  languageOptions: {
+    ecmaVersion: 2020,
+    sourceType: 'script',
   }
 })
 
@@ -14,7 +16,7 @@ ruleTester.run('no-delete-var', rule, {
   invalid: [
     {
       code: `let a; delete a;`,
-      errors: [{ message: "Variables should not be deleted." }],
+      errors: [{ message: 'Variables should not be deleted.' }],
     },
   ],
 })

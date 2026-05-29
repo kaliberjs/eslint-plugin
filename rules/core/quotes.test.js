@@ -1,7 +1,8 @@
-const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/quotes');
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('quotes')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('quotes', rule, {
   valid: [
@@ -15,4 +16,4 @@ ruleTester.run('quotes', rule, {
       errors: [{ message: 'Strings must use singlequote.' }],
     },
   ],
-});
+})

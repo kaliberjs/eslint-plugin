@@ -14,7 +14,7 @@ module.exports = {
     return {
       JSXOpeningElement(node) {
         const elementName = node.name.name
-        
+
         // Only check <a> and <button> elements
         if (elementName !== 'a' && elementName !== 'button') return
 
@@ -27,10 +27,10 @@ module.exports = {
         // Check if this element is inside a map function (indicating a list)
         let currentNode = node
         let isInMap = false
-        
+
         while (currentNode && currentNode.parent) {
           currentNode = currentNode.parent
-          
+
           // Check for .map( pattern
           if (
             (currentNode.type === 'CallExpression' || currentNode.type === 'OptionalCallExpression') &&

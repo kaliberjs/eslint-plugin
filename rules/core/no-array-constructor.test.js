@@ -1,12 +1,8 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-array-constructor')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-array-constructor')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('no-array-constructor', rule, {
   valid: [
@@ -16,11 +12,14 @@ ruleTester.run('no-array-constructor', rule, {
   invalid: [
     {
       code: `const arr = new Array()`,
-      errors: [{ message: "The array literal notation [] is preferable." }],
+      output: `const arr = []`,
+      output: 'const arr = []',
+      errors: [{ message: 'The array literal notation [] is preferable.' }],
     },
     {
       code: `const arr = new Array(1, 2, 3)`,
-      errors: [{ message: "The array literal notation [] is preferable." }],
+      output: `const arr = [1, 2, 3]`,
+      errors: [{ message: 'The array literal notation [] is preferable.' }],
     },
   ],
 })

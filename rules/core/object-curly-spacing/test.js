@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('object-curly-spacing', rule, {
   valid: [
@@ -22,4 +22,4 @@ ruleTester.run('object-curly-spacing', rule, {
       errors: [{ message: "There should be no space after '{'." }, { message: "There should be no space before '}'." }],
     },
   ],
-});
+})

@@ -13,7 +13,7 @@ module.exports = {
     return {
       JSXOpeningElement(node) {
         const elementName = node.name.name
-        
+
         // Only check <a> elements (not <button>)
         if (elementName !== 'a') return
 
@@ -37,7 +37,7 @@ module.exports = {
         // Check if the link looks like a CTA based on common patterns
         // CTAs often have words like: apply, submit, register, signup, download, contact, get, start, join
         const ctaPatterns = /^(apply|submit|register|signup|sign-up|download|contact|get|start|join|book|order|buy|purchase|subscribe|request)/i
-        
+
         if (ctaPatterns.test(dataXValue)) {
           context.report({
             node: dataXProp,

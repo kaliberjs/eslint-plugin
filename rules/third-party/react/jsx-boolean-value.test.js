@@ -1,15 +1,7 @@
 const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-react').rules['jsx-boolean-value']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('react/jsx-boolean-value', rule, {
   valid: [
@@ -19,7 +11,7 @@ ruleTester.run('react/jsx-boolean-value', rule, {
     {
       code: `<MyComponent disabled={true} />`,
       output: `<MyComponent disabled />`,
-      errors: [{ message: "Value must be omitted for boolean attribute `disabled`" }],
+      errors: [{ message: 'Value must be omitted for boolean attribute `disabled`' }],
     },
   ],
 })

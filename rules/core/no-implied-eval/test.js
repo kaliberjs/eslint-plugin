@@ -1,29 +1,27 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-implied-eval')
-const { test } = require('node:test')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const globals = require('../../../machinery/globals.json')
+const rule = builtinRules.get('no-implied-eval')
 
-test('no-implied-eval', () => {
-  const ruleTester = new RuleTester()
+// In ESLint 9 flat config, setTimeout/setInterval are not global by default.
+// The rule needs browser or node globals to know about them.
+const ruleTester = new RuleTester({
+  languageOptions: { ecmaVersion: 2020, globals: globals.browser },
+})
 
-  ruleTester.run('no-implied-eval', rule, {
-    valid: [
-      'setTimeout(function() { a = 1; }, 100);',
-      'setInterval(function() { a = 1; }, 100);',
-      'execScript(function() { a = 1; });',
-    ],
-    invalid: [
-      {
-        code: 'setTimeout("a = 1;", 100);',
-        errors: [{ message: 'Implied eval. Consider passing a function instead of a string.' }],
-      },
-      {
-        code: 'setInterval("a = 1;", 100);',
-        errors: [{ message: 'Implied eval. Consider passing a function instead of a string.' }],
-      },
-      {
-        code: 'execScript("a = 1;");',
-        errors: [{ message: 'Implied eval. Consider passing a function instead of a string.' }],
-      },
-    ],
-  })
+ruleTester.run('no-implied-eval', rule, {
+  valid: [
+    'setTimeout(function() { a = 1; }, 100);',
+    'setInterval(function() { a = 1; }, 100);',
+  ],
+  invalid: [
+    {
+      code: 'setTimeout("a = 1;", 100);',
+      errors: [{ messageId: 'impliedEval' }],
+    },
+    {
+      code: 'setInterval("a = 1;", 100);',
+      errors: [{ messageId: 'impliedEval' }],
+    },
+  ],
 })

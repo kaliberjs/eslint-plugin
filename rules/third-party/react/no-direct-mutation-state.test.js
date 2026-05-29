@@ -1,15 +1,7 @@
 const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-react').rules['no-direct-mutation-state']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('react/no-direct-mutation-state', rule, {
   valid: [
@@ -44,7 +36,7 @@ ruleTester.run('react/no-direct-mutation-state', rule, {
           }
         }
       `,
-      errors: [{ message: "Do not mutate state directly. Use setState()." }],
+      errors: [{ message: 'Do not mutate state directly. Use setState().' }],
     },
   ],
 })

@@ -1,7 +1,7 @@
-const { RuleTester } = require('eslint');
-const rule = require('.');
+const { RuleTester } = require('eslint')
+const rule = require('.')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('semi-spacing', rule, {
   valid: [
@@ -22,4 +22,4 @@ ruleTester.run('semi-spacing', rule, {
       errors: [{ message: 'Missing whitespace before semicolon.' }],
     },
   ],
-});
+})

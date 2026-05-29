@@ -1,7 +1,8 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/arrow-spacing')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('arrow-spacing')
 
-const ruleTester = new RuleTester({ parserOptions: { ecmaVersion: 6 } })
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020 } })
 
 ruleTester.run('arrow-spacing', rule, {
   valid: [
@@ -14,19 +15,19 @@ ruleTester.run('arrow-spacing', rule, {
       code: '()=>{}',
       output: '() => {}',
       errors: [
-        { message: "Missing space before =>." },
-        { message: "Missing space after =>." },
+        { message: 'Missing space before =>.' },
+        { message: 'Missing space after =>.' },
       ],
     },
     {
       code: '()=> {}',
       output: '() => {}',
-      errors: [{ message: "Missing space before =>." }],
+      errors: [{ message: 'Missing space before =>.' }],
     },
     {
       code: '() =>{}',
       output: '() => {}',
-      errors: [{ message: "Missing space after =>." }],
+      errors: [{ message: 'Missing space after =>.' }],
     },
   ],
 })

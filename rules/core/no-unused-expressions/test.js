@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-unused-expressions')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-unused-expressions')
 
 const ruleTester = new RuleTester()
 
@@ -16,11 +15,11 @@ ruleTester.run('no-unused-expressions', rule, {
   invalid: [
     {
       code: '0;',
-      errors: [{ message: "Expected an assignment or function call and instead saw an expression." }],
+      errors: [{ message: 'Expected an assignment or function call and instead saw an expression.' }],
     },
     {
       code: 'a && b;',
-      errors: [{ message: "Expected an assignment or function call and instead saw an expression." }],
+      errors: [{ message: 'Expected an assignment or function call and instead saw an expression.' }],
     },
   ],
 })

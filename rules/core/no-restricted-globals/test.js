@@ -1,7 +1,8 @@
-const { RuleTester } = require('eslint');
-const rule = require('eslint/lib/rules/no-restricted-globals');
+const { RuleTester } = require('eslint')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-restricted-globals')
 
-const ruleTester = new RuleTester();
+const ruleTester = new RuleTester()
 
 ruleTester.run('no-restricted-globals', rule, {
   valid: [
@@ -17,4 +18,4 @@ ruleTester.run('no-restricted-globals', rule, {
       errors: [{ message: "Unexpected use of 'error'." }],
     },
   ],
-});
+})

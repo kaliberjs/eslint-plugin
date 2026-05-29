@@ -1,7 +1,6 @@
 const { RuleTester } = require('eslint')
-const { Linter } = require('eslint')
-const linter = new Linter()
-const rule = linter.getRules().get('no-whitespace-before-property')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-whitespace-before-property')
 
 const ruleTester = new RuleTester()
 
@@ -14,12 +13,12 @@ ruleTester.run('no-whitespace-before-property', rule, {
     {
       code: 'foo. bar',
       output: 'foo.bar',
-      errors: [{ message: "Unexpected whitespace before property bar." }],
+      errors: [{ message: 'Unexpected whitespace before property bar.' }],
     },
     {
       code: 'foo [bar]',
       output: 'foo[bar]',
-      errors: [{ message: "Unexpected whitespace before property bar." }],
+      errors: [{ message: 'Unexpected whitespace before property bar.' }],
     },
   ],
 })

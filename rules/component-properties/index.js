@@ -6,7 +6,7 @@ const messages = {
 
   'no setters': name =>
     `Unexpected JSX attribute name, you should not directly pass \`${name}\` as a prop. Instead, pass an \`onXxx\` handler.`,
-  
+
   'destructure props':
     `Expected destructured props`,
 }
@@ -58,7 +58,7 @@ module.exports = {
             node,
           })
         }
-      }) 
+      })
     }
 
     function reportIncorrectVariablePassing(node) {

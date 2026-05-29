@@ -2,16 +2,16 @@ const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-react').rules['no-deprecated']
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
+  languageOptions: {
+    ecmaVersion: 2020,
     sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
+    parserOptions: {
+      ecmaFeatures: { jsx: true },
+    },
   },
   settings: {
     react: {
-      version: "17.0",
+      version: '17.0',
     },
   },
 })
@@ -23,7 +23,7 @@ ruleTester.run('react/no-deprecated', rule, {
   invalid: [
     {
       code: `var React = require('react'); React.render(<div />, document.body);`,
-      errors: [{ message: "React.render is deprecated since React 0.14.0, use ReactDOM.render instead" }],
+      errors: [{ message: 'React.render is deprecated since React 0.14.0, use ReactDOM.render instead' }],
     },
   ],
 })

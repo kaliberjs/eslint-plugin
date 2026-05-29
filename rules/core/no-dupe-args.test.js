@@ -1,9 +1,11 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/no-dupe-args')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('no-dupe-args')
 
 const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
+  languageOptions: {
+    ecmaVersion: 2020,
+    sourceType: 'script',
   }
 })
 

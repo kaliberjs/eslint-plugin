@@ -1,15 +1,7 @@
 const { RuleTester } = require('eslint')
 const rule = require('eslint-plugin-jsx-a11y').rules['role-supports-aria-props']
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    ecmaFeatures: {
-      jsx: true,
-    }
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } } })
 
 ruleTester.run('jsx-a11y/role-supports-aria-props', rule, {
   valid: [
@@ -18,7 +10,7 @@ ruleTester.run('jsx-a11y/role-supports-aria-props', rule, {
   invalid: [
     {
       code: `<div role="button" aria-checked="true" />`,
-      errors: [{ message: "The attribute aria-checked is not supported by the role button." }],
+      errors: [{ message: 'The attribute aria-checked is not supported by the role button.' }],
     },
   ],
 })

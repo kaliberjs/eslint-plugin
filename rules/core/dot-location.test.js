@@ -1,12 +1,8 @@
 const { RuleTester } = require('eslint')
-const rule = require('eslint/lib/rules/dot-location')
+const { builtinRules } = require('eslint/use-at-your-own-risk')
+const rule = builtinRules.get('dot-location')
 
-const ruleTester = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'module',
-  }
-})
+const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, sourceType: 'module' } })
 
 ruleTester.run('dot-location', rule, {
   valid: [
@@ -17,7 +13,7 @@ ruleTester.run('dot-location', rule, {
     {
       code: `const obj = { a: { b: 2 } }; const x = obj.a\n.b`,
       output: `const obj = { a: { b: 2 } }; const x = obj.a.\nb`,
-      errors: [{ message: "Expected dot to be on same line as object." }],
+      errors: [{ message: 'Expected dot to be on same line as object.' }],
     },
   ],
 })
