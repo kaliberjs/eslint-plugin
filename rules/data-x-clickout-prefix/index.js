@@ -4,6 +4,10 @@ const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'External links (http/https) must use the clickout- prefix in data-x',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       missingClickoutPrefix: 'External links must use "clickout-" prefix in data-x attribute. Expected "clickout-*" but got "{{value}}"',
     },

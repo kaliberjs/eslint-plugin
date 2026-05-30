@@ -4,6 +4,10 @@ const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Call-to-action <a> elements must use the cta- prefix in data-x',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       ctaNeedsPrefix: 'Call-to-action links (not packaged as buttons) should use "cta-" prefix in data-x attribute. Got "{{value}}", expected "cta-{{value}}"',
     },

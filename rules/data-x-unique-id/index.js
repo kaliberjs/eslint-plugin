@@ -5,6 +5,10 @@ const hasProp = require('jsx-ast-utils/hasProp')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Repeated elements with the same data-x must include data-x-id for disambiguation',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       needsUniqueId: 'Elements with the same data-x="{{dataX}}" in lists or repeated contexts should include "data-x-id" with a unique identifier (e.g., job_id, article_id)',
     },

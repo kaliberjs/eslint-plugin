@@ -4,6 +4,10 @@ const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Form elements must have a data-x value ending with -form',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       formNameSuffix: 'Form data-x attribute must end with "-form". Got "{{value}}", expected "{{value}}-form".',
     },

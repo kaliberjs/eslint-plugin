@@ -2,6 +2,10 @@ module.exports = {
   meta: {
     type: 'suggestion',
     fixable: 'code',
+    docs: {
+      description: 'Enforce grouped and ordered import statements with auto-fix support',
+      url: `file://${__dirname}/readme.md`,
+    },
     schema: [],
     messages: {
       unsorted: 'Imports are not sorted according to the predefined groups',

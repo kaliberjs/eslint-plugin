@@ -4,6 +4,10 @@ const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'data-x values must use ASCII characters only — no accented or non-Latin characters',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       nonLatinDataX: 'The "data-x" attribute must use Latin characters only (A-Z, a-z, 0-9, hyphens, underscores). Found invalid characters in: "{{value}}"',
     },

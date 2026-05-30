@@ -14,7 +14,13 @@ const messages = {
 module.exports = {
   messages,
 
-  meta: { type: 'problem' },
+  meta: {
+    type: 'problem',
+    docs: {
+      description: 'Destructure component props, use spread passing for same-name props, and avoid passing state setters as props',
+      url: `file://${__dirname}/readme.md`,
+    },
+  },
 
   create(context) {
     return {

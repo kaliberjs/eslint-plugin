@@ -13,6 +13,10 @@ module.exports = {
 
   meta: {
     type: 'suggestion',
+    docs: {
+      description: 'Avoid place-content: center — it only aligns tracks and often does nothing',
+      url: `file://${__dirname}/readme.md`,
+    },
   },
 
   create(context) {

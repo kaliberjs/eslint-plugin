@@ -6,7 +6,13 @@ const messages = {
 module.exports = {
   messages,
 
-  meta: { type: 'problem' },
+  meta: {
+    type: 'problem',
+    docs: {
+      description: 'Disallow ../ imports — use root-slash imports that survive file moves',
+      url: `file://${__dirname}/readme.md`,
+    },
+  },
 
   create(context) {
     return {

@@ -35,7 +35,13 @@ const messages = {
 module.exports = {
   messages,
 
-  meta: { type: 'problem' },
+  meta: {
+    type: 'problem',
+    docs: {
+      description: 'Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs',
+      url: `file://${__dirname}/readme.md`,
+    },
+  },
 
   create(context) {
     const sourceCode = context.sourceCode

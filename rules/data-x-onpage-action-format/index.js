@@ -9,6 +9,10 @@ const standaloneVerbPattern = dataXConfig.getStandaloneActionVerbPattern()
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'On-page actions must follow the action-target format (e.g. scroll-applyform, open-modal)',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       invalidOnpageFormat: 'On-page actions should use format "{{action}}-{{target}}". Found: "{{value}}"',
     },

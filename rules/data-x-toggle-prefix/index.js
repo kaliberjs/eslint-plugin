@@ -4,6 +4,10 @@ const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Toggle/accordion elements must use the toggle- prefix in data-x',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       needsTogglePrefix: 'Toggle/accordion components should use "toggle-" prefix in data-x attribute. Expected "toggle-{{value}}" but got "{{value}}"',
     },

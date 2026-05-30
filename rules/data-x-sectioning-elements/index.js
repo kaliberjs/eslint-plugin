@@ -3,6 +3,10 @@ const hasProp = require('jsx-ast-utils/hasProp')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Sectioning HTML elements (section, header, footer, nav, etc.) must have data-x',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       missingSectioningDataX: 'Sectioning element "<{{element}}>" must have a "data-x" attribute for tracking.',
     },

@@ -4,6 +4,10 @@ const propName = require('jsx-ast-utils/propName')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Require key prop in iterators but allow keyless JSX in array-literal DSL patterns',
+      url: `file://${__dirname}/readme.md`,
+    },
     messages: {
       missingIterKey: 'Missing "key" prop for element in iterator',
       missingIterKeyUsePrag: 'Missing "key" prop for element in iterator. Shorthand fragment syntax does not support providing keys. Use React.Fragment instead',

@@ -27,7 +27,13 @@ const messages = {
 module.exports = {
   messages,
 
-  meta: { type: 'problem' },
+  meta: {
+    type: 'problem',
+    docs: {
+      description: 'Components are black boxes — use layoutClassName for positioning instead of className',
+      url: `file://${__dirname}/readme.md`,
+    },
+  },
 
   create(context) {
     const hasLayoutClassName = new Set()
