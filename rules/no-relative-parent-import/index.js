@@ -1,3 +1,4 @@
+const docsUrl = require('../../machinery/docsUrl')
 const messages = {
   'no relative parent import': found =>
     `Unexpected relative parent import '${found}' - use a root slash import`,
@@ -10,7 +11,7 @@ module.exports = {
     type: 'problem',
     docs: {
       description: 'Disallow ../ imports — use root-slash imports that survive file moves',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
   },
 

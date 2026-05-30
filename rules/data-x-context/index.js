@@ -1,11 +1,12 @@
 const getProp = require('jsx-ast-utils/getProp')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
       description: 'Elements with data-x must also include data-x-context to identify page location',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
     schema: [],
     messages: {

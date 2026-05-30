@@ -1,4 +1,5 @@
 const { getPropertyName } = require('../../machinery/ast')
+const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
   'no place-content center':
@@ -15,7 +16,7 @@ module.exports = {
     type: 'suggestion',
     docs: {
       description: 'Avoid place-content: center — it only aligns tracks and often does nothing',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
   },
 

@@ -4,6 +4,7 @@ const {
   getJSXElementName, getParentJSXElement,
   isRootJSXElement
 } = require('../../machinery/ast')
+const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
   'no layoutClassName in child':
@@ -31,7 +32,7 @@ module.exports = {
     type: 'problem',
     docs: {
       description: 'Components are black boxes — use layoutClassName for positioning instead of className',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
   },
 

@@ -1,4 +1,5 @@
 const { firstLetterLowerCase } = require('../../machinery/word')
+const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
   'incorrect variable passing': name =>
@@ -18,7 +19,7 @@ module.exports = {
     type: 'problem',
     docs: {
       description: 'Destructure component props, use spread passing for same-name props, and avoid passing state setters as props',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
   },
 

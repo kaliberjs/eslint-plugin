@@ -1,12 +1,13 @@
 const hasProp = require('jsx-ast-utils/hasProp')
 const propName = require('jsx-ast-utils/propName')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
       description: 'Require key prop in iterators but allow keyless JSX in array-literal DSL patterns',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
     messages: {
       missingIterKey: 'Missing "key" prop for element in iterator',

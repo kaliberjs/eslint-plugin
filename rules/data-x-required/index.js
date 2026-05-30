@@ -1,11 +1,12 @@
 const hasProp = require('jsx-ast-utils/hasProp')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
       description: 'Every <a> and <button> must have a data-x tracking attribute',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
     messages: {
       missingDataX: 'Missing required "data-x" attribute on {{elementType}} element in page template',

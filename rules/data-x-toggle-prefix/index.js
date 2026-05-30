@@ -1,12 +1,13 @@
 const getProp = require('jsx-ast-utils/getProp')
 const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
       description: 'Toggle/accordion elements must use the toggle- prefix in data-x',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
     messages: {
       needsTogglePrefix: 'Toggle/accordion components should use "toggle-" prefix in data-x attribute. Expected "toggle-{{value}}" but got "{{value}}"',

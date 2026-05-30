@@ -1,12 +1,13 @@
 const getProp = require('jsx-ast-utils/getProp')
 const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
       description: 'data-x values must use ASCII characters only — no accented or non-Latin characters',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
     messages: {
       nonLatinDataX: 'The "data-x" attribute must use Latin characters only (A-Z, a-z, 0-9, hyphens, underscores). Found invalid characters in: "{{value}}"',

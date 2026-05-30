@@ -1,6 +1,7 @@
 const getProp = require('jsx-ast-utils/getProp')
 const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 const dataXConfig = require('../../lib/data-x-config')
+const docsUrl = require('../../machinery/docsUrl')
 
 const verbPattern = dataXConfig.getActionVerbPattern()
 const standaloneVerbPattern = dataXConfig.getStandaloneActionVerbPattern()
@@ -11,7 +12,7 @@ module.exports = {
     type: 'problem',
     docs: {
       description: 'On-page actions must follow the action-target format (e.g. scroll-applyform, open-modal)',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
     messages: {
       invalidOnpageFormat: 'On-page actions should use format "{{action}}-{{target}}". Found: "{{value}}"',

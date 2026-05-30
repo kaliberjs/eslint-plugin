@@ -6,6 +6,7 @@ const {
 } = require('../../machinery/ast')
 const { isApp, isPage, getBaseFilename } = require('../../machinery/filename')
 const { firstLetterLowerCase } = require('../../machinery/word')
+const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
   'invalid className': (found, expected) =>
@@ -39,7 +40,7 @@ module.exports = {
     type: 'problem',
     docs: {
       description: 'Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
   },
 

@@ -1,10 +1,11 @@
+const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'suggestion',
     fixable: 'code',
     docs: {
       description: 'Enforce grouped and ordered import statements with auto-fix support',
-      url: `file://${__dirname}/readme.md`,
+      url: docsUrl(__dirname),
     },
     schema: [],
     messages: {
