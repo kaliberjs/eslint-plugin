@@ -1,5 +1,5 @@
-const { resolve, basename } = require('node:path')
+const { resolve } = require('node:path')
 
 module.exports = function docsUrl(ruleDir) {
-  return `file://${resolve(ruleDir, '..', '..', 'docs', basename(ruleDir) + '.md')}`
+  return `file://${resolve(ruleDir, 'readme.md')}`
 }

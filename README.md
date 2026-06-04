@@ -19,43 +19,43 @@ module.exports = [
 
 | Rule | Description |
 |---|---|
-| [`component-properties`](docs/component-properties.md) | Destructure component props, use spread passing for same-name props, and avoid passing state setters as props |
-| [`layout-class-name`](docs/layout-class-name.md) | Components are black boxes — use layoutClassName for positioning instead of className |
-| [`naming-policy`](docs/naming-policy.md) | Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs |
-| [`no-default-export`](docs/no-default-export.md) | Prefer named exports over default exports — except in App, template, and page files |
-| [`no-relative-parent-import`](docs/no-relative-parent-import.md) | Disallow ../ imports — use root-slash imports that survive file moves |
-| [`import-sort`](docs/import-sort.md) | Enforce grouped and ordered import statements with auto-fix support |
-| [`jsx-key`](docs/jsx-key.md) | Require key prop in iterators but allow keyless JSX in array-literal DSL patterns |
-| [`position-center`](docs/position-center.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
-| [`todo-ticket-reference`](docs/todo-ticket-reference.md) | Require TODO comments to reference a Jira ticket |
+| [`component-properties`](rules/component-properties/readme.md) | Destructure component props, use spread passing for same-name props, and avoid passing state setters as props |
+| [`layout-class-name`](rules/layout-class-name/readme.md) | Components are black boxes — use layoutClassName for positioning instead of className |
+| [`naming-policy`](rules/naming-policy/readme.md) | Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs |
+| [`no-default-export`](rules/no-default-export/readme.md) | Prefer named exports over default exports — except in App, template, and page files |
+| [`no-relative-parent-import`](rules/no-relative-parent-import/readme.md) | Disallow ../ imports — use root-slash imports that survive file moves |
+| [`import-sort`](rules/import-sort/readme.md) | Enforce grouped and ordered import statements with auto-fix support |
+| [`jsx-key`](rules/jsx-key/readme.md) | Require key prop in iterators but allow keyless JSX in array-literal DSL patterns |
+| [`position-center`](rules/position-center/readme.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
+| [`todo-ticket-reference`](rules/todo-ticket-reference/readme.md) | Require TODO comments to reference a Jira ticket |
 
 ### Tracking rules (data-x)
 
 | Rule | Description |
 |---|---|
-| [`data-x-required`](docs/data-x-required.md) | Every `<a>` and `<button>` must have a data-x tracking attribute |
-| [`data-x-context`](docs/data-x-context.md) | Elements with data-x must also include data-x-context to identify page location |
-| [`data-x-latin-only`](docs/data-x-latin-only.md) | data-x values must use ASCII characters only — no accented or non-Latin characters |
-| [`data-x-clickout-prefix`](docs/data-x-clickout-prefix.md) | External links (http/https) must use the clickout- prefix in data-x |
-| [`data-x-cta-prefix`](docs/data-x-cta-prefix.md) | Call-to-action `<a>` elements must use the cta- prefix in data-x |
-| [`data-x-toggle-prefix`](docs/data-x-toggle-prefix.md) | Toggle/accordion elements must use the toggle- prefix in data-x |
-| [`data-x-onpage-action-format`](docs/data-x-onpage-action-format.md) | On-page actions must follow the action-target format (e.g. scroll-applyform, open-modal) |
-| [`data-x-unique-id`](docs/data-x-unique-id.md) | Repeated elements with the same data-x must include data-x-id for disambiguation |
-| [`data-x-sectioning-elements`](docs/data-x-sectioning-elements.md) | Sectioning HTML elements (section, header, footer, nav, etc.) must have data-x |
-| [`data-x-form-naming`](docs/data-x-form-naming.md) | Form elements must have a data-x value ending with -form |
+| [`data-x-required`](rules/data-x-required/readme.md) | Every `<a>` and `<button>` must have a data-x tracking attribute |
+| [`data-x-context`](rules/data-x-context/readme.md) | Elements with data-x must also include data-x-context to identify page location |
+| [`data-x-latin-only`](rules/data-x-latin-only/readme.md) | data-x values must use ASCII characters only — no accented or non-Latin characters |
+| [`data-x-clickout-prefix`](rules/data-x-clickout-prefix/readme.md) | External links (http/https) must use the clickout- prefix in data-x |
+| [`data-x-cta-prefix`](rules/data-x-cta-prefix/readme.md) | Call-to-action `<a>` elements must use the cta- prefix in data-x |
+| [`data-x-toggle-prefix`](rules/data-x-toggle-prefix/readme.md) | Toggle/accordion elements must use the toggle- prefix in data-x |
+| [`data-x-onpage-action-format`](rules/data-x-onpage-action-format/readme.md) | On-page actions must follow the action-target format (e.g. scroll-applyform, open-modal) |
+| [`data-x-unique-id`](rules/data-x-unique-id/readme.md) | Repeated elements with the same data-x must include data-x-id for disambiguation |
+| [`data-x-sectioning-elements`](rules/data-x-sectioning-elements/readme.md) | Sectioning HTML elements (section, header, footer, nav, etc.) must have data-x |
+| [`data-x-form-naming`](rules/data-x-form-naming/readme.md) | Form elements must have a data-x value ending with -form |
 
 ## Documentation
 
-Rule documentation lives in [`docs/`](docs/). Each rule has a corresponding markdown file explaining what it enforces, why, and showing valid/invalid examples.
-
-### Convention
-
-The doc filename **must match the rule's directory name** under `rules/`. This is not just a convention — the [`docsUrl`](machinery/docsUrl.js) helper derives the documentation path from the rule's `__dirname`:
+Each rule is self-contained — implementation, tests, and documentation live together:
 
 ```
-rules/data-x-clickout-prefix/index.js  →  docs/data-x-clickout-prefix.md
-rules/naming-policy/index.js           →  docs/naming-policy.md
+rules/naming-policy/
+  index.js     ← rule implementation
+  test.js      ← rule tests
+  readme.md    ← rule documentation
 ```
+
+The [`docsUrl`](machinery/docsUrl.js) helper resolves the `readme.md` from the rule's `__dirname`:
 
 Each rule exposes two pieces of metadata via `meta.docs`:
 
@@ -66,7 +66,7 @@ This makes rule violations self-documenting: a developer hovering over an error 
 
 ### Adding documentation for a new rule
 
-1. Create `docs/{rule-name}.md`
+1. Create `rules/{rule-name}/readme.md`
 2. In the rule's `index.js`, add:
    ```js
    const docsUrl = require('../../machinery/docsUrl')
