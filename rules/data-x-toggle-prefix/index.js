@@ -5,6 +5,7 @@ const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'Toggle/accordion elements must use the toggle- prefix in data-x',
       url: docsUrl(__dirname),
@@ -44,14 +45,20 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'needsTogglePrefix',
-            data: { value: baseValue }
+            data: { value: baseValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"toggle-${baseValue}"`)
+            }
           })
         } else if (hasAriaExpanded) {
           // Only report for aria-expanded if it didn't match the pattern above
           context.report({
             node: dataXProp,
             messageId: 'needsTogglePrefix',
-            data: { value: baseValue }
+            data: { value: baseValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"toggle-${baseValue}"`)
+            }
           })
         }
       }

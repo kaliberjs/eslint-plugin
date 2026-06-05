@@ -5,6 +5,7 @@ const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'Form elements must have a data-x value ending with -form',
       url: docsUrl(__dirname),
@@ -33,7 +34,10 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'formNameSuffix',
-            data: { value: dataXValue }
+            data: { value: dataXValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"${dataXValue}-form"`)
+            }
           })
         }
       }

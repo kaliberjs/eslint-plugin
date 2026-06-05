@@ -13,14 +13,17 @@ module.exports = {
   invalid: [
     {
       code: `const x = React.useRef()`,
+      output: `const xRef = React.useRef()`,
       errors: [{ message: messages['ref should end with Ref']('x', 'xRef'), type: 'Identifier' }],
     },
     {
       code: `const x = useXyzRef()`,
+      output: `const xRef = useXyzRef()`,
       errors: [{ message: messages['ref should end with Ref']('x', 'xRef'), type: 'Identifier' }],
     },
     {
       code: `const xRefx = useXyzRef()`,
+      output: `const xRefxRef = useXyzRef()`,
       errors: [{ message: messages['ref should end with Ref']('xRefx', 'xRefxRef'), type: 'Identifier' }],
     },
   ]

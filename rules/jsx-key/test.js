@@ -49,10 +49,12 @@ test('jsx-key',
     },
     {
       code: '[<App {...obj} key="keyAfterSpread" />];',
+      output: '[<App key="keyAfterSpread" {...obj} />];',
       errors: [{messageId: 'keyBeforeSpread'}]
     },
     {
       code: '[<div {...obj} key="keyAfterSpread" />];',
+      output: '[<div key="keyAfterSpread" {...obj} />];',
       errors: [{messageId: 'keyBeforeSpread'}]
     },
   ]

@@ -12,9 +12,33 @@ test('no-relative-parent-import', {
     `export * from './test'`,
   ],
   invalid: [
-    `import '../test'`,
-    `import x from '../test'`,
-    `export { x } from '../test'`,
-    `export * from '../test'`,
-  ].map(code => ({ code, errors: [{ message: messages['no relative parent import']('../test') }] }))
+    // Without src root → fix returns null (output: null)
+    ...['import', 'import x from', 'export { x } from', 'export * from']
+      .map(keyword => ({
+        code: `${keyword} '../test'`,
+        output: null,
+        errors: [{ message: messages['no relative parent import']('../test') }]
+      })),
+
+    // With src root → fix resolves to root-slash import
+    {
+      filename: '/project/src/features/nested/Component.js',
+      code: `import x from '../shared/utils'`,
+      output: `import x from '/features/shared/utils'`,
+      errors: [{ message: messages['no relative parent import']('../shared/utils') }]
+    },
+    {
+      filename: '/project/src/features/deep/nested/Component.js',
+      code: `import x from '../../machinery/hooks'`,
+      output: `import x from '/features/machinery/hooks'`,
+      errors: [{ message: messages['no relative parent import']('../../machinery/hooks') }]
+    },
+    // Preserves double quotes
+    {
+      filename: '/project/src/features/nested/Component.js',
+      code: `import x from "../shared/utils"`,
+      output: `import x from "/features/shared/utils"`,
+      errors: [{ message: messages['no relative parent import']('../shared/utils') }]
+    },
+  ]
 })

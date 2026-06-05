@@ -65,18 +65,22 @@ test('layout-class-name', {
     },
     {
       code: `<Test layoutClassName={styles.test} />`,
+      output: `<Test layoutClassName={styles.testLayout} />`,
       errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Identifier' }]
     },
     {
       code: `<Test layoutClassName={cx(styles.test, styles.testLayout)} />`,
+      output: `<Test layoutClassName={cx(styles.testLayout, styles.testLayout)} />`,
       errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Identifier' }]
     },
     {
       code: `<Test layoutClassName='test' />`,
+      output: `<Test layoutClassName="testLayout" />`,
       errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Literal' }]
     },
     {
       code: `export function TestBase() {}`,
+      output: `function TestBase() {}`,
       errors: [{
         message: messages['no export base'],
         type: 'ExportNamedDeclaration',

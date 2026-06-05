@@ -5,6 +5,7 @@ const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'External links (http/https) must use the clickout- prefix in data-x',
       url: docsUrl(__dirname),
@@ -43,7 +44,10 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'missingClickoutPrefix',
-            data: { value: dataXValue }
+            data: { value: dataXValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"clickout-${dataXValue}"`)
+            }
           })
         }
       }

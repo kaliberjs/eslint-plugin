@@ -5,6 +5,7 @@ const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'Call-to-action <a> elements must use the cta- prefix in data-x',
       url: docsUrl(__dirname),
@@ -47,7 +48,10 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'ctaNeedsPrefix',
-            data: { value: dataXValue }
+            data: { value: dataXValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"cta-${dataXValue}"`)
+            }
           })
         }
       }

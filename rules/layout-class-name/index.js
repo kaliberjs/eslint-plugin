@@ -30,6 +30,7 @@ module.exports = {
 
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'Components are black boxes — use layoutClassName for positioning instead of className',
       url: docsUrl(__dirname),
@@ -124,6 +125,10 @@ module.exports = {
       context.report({
         message: messages['invalid layoutClassName'](className, expectedClassName),
         node: node,
+        fix(fixer) {
+          if (node.type === 'Literal') return fixer.replaceText(node, `"${expectedClassName}"`)
+          return fixer.replaceText(node, expectedClassName)
+        }
       })
     }
 
@@ -139,6 +144,9 @@ module.exports = {
           start: exportNode.loc.start,
           end: node.loc.start
         },
+        fix(fixer) {
+          return fixer.removeRange([exportNode.range[0], node.range[0]])
+        }
       })
     }
   }

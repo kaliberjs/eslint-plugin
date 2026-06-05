@@ -38,6 +38,7 @@ module.exports = {
 
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs',
       url: docsUrl(__dirname),
@@ -90,6 +91,9 @@ module.exports = {
       context.report({
         message: messages['invalid css file name'](source, expected),
         node: node.source,
+        fix(fixer) {
+          return fixer.replaceText(node.source, `'${expected}'`)
+        }
       })
     }
 
@@ -110,6 +114,9 @@ module.exports = {
       context.report({
         message: messages['invalid styles variable name'](name, expected),
         node: specifier,
+        fix(fixer) {
+          return fixer.replaceText(specifier, expected)
+        }
       })
     }
 
@@ -183,6 +190,9 @@ module.exports = {
       context.report({
         message: messages['ref should end with Ref'](id.name, `${id.name}Ref`),
         node: id,
+        fix(fixer) {
+          return fixer.replaceText(id, `${id.name}Ref`)
+        }
       })
     }
   }

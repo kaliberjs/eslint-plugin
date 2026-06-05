@@ -14,14 +14,17 @@ test('data-x-clickout-prefix', {
   invalid: [
     {
       code: '<a data-x="linkedin" href="https://linkedin.com">LinkedIn</a>',
+      output: '<a data-x="clickout-linkedin" href="https://linkedin.com">LinkedIn</a>',
       errors: [{ messageId: 'missingClickoutPrefix' }]
     },
     {
       code: '<a data-x="external-twitter" href="https://twitter.com">Twitter</a>',
+      output: '<a data-x="clickout-external-twitter" href="https://twitter.com">Twitter</a>',
       errors: [{ messageId: 'missingClickoutPrefix' }]
     },
     {
       code: '<a data-x="social-facebook" href="http://facebook.com">Facebook</a>',
+      output: '<a data-x="clickout-social-facebook" href="http://facebook.com">Facebook</a>',
       errors: [{ messageId: 'missingClickoutPrefix' }]
     },
   ]

@@ -5,6 +5,7 @@ const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'data-x values must use ASCII characters only — no accented or non-Latin characters',
       url: docsUrl(__dirname),
@@ -32,10 +33,19 @@ module.exports = {
         // This rejects spaces, accented characters, and non-ASCII characters
         const latinPattern = /^[a-zA-Z0-9\-_]+$/
         if (!latinPattern.test(value)) {
+          const fixed = value
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/[^a-zA-Z0-9\-_]/g, '')
+
           context.report({
             node: dataXProp,
             messageId: 'nonLatinDataX',
-            data: { value }
+            data: { value },
+            fix(fixer) {
+              if (!fixed) return null
+              return fixer.replaceText(dataXProp.value, `"${fixed}"`)
+            }
           })
         }
       }

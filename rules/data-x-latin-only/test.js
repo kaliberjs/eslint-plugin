@@ -15,18 +15,22 @@ test('data-x-latin-only', {
   invalid: [
     {
       code: '<button data-x="verstuur formulier">Submit</button>',
+      output: '<button data-x="verstuur-formulier">Submit</button>',
       errors: [{ messageId: 'nonLatinDataX' }] // Has space
     },
     {
       code: '<a data-x="über-uns">About</a>',
+      output: '<a data-x="uber-uns">About</a>',
       errors: [{ messageId: 'nonLatinDataX' }] // Has umlaut
     },
     {
       code: '<button data-x="hôtel">Hotel</button>',
+      output: '<button data-x="hotel">Hotel</button>',
       errors: [{ messageId: 'nonLatinDataX' }] // Has circumflex
     },
     {
       code: '<a data-x="café">Cafe</a>',
+      output: '<a data-x="cafe">Cafe</a>',
       errors: [{ messageId: 'nonLatinDataX' }] // Has accent
     },
   ]

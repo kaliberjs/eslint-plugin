@@ -17,6 +17,7 @@ module.exports = {
 
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'Destructure component props, use spread passing for same-name props, and avoid passing state setters as props',
       url: docsUrl(__dirname),
@@ -79,9 +80,36 @@ module.exports = {
         name !== node.value.expression.name
       ) return
 
+      const openingElement = node.parent
+      const sameNameProps = openingElement.attributes.filter(attr =>
+        attr.type === 'JSXAttribute' &&
+        attr.name &&
+        attr.value &&
+        attr.value.type === 'JSXExpressionContainer' &&
+        attr.name.name === attr.value.expression.name &&
+        attr.name.name !== 'key'
+      )
+
       context.report({
-        message: messages['incorrect variable passing'](name),
+        message: messages['incorrect variable passing'](sameNameProps.map(a => a.name.name).join(', ')),
         node,
+        fix(fixer) {
+          const sourceCode = context.sourceCode
+          const names = sameNameProps.map(a => a.name.name)
+          const spread = `{...{ ${names.join(', ')} }}`
+
+          const fixes = []
+          sameNameProps.forEach((attr, i) => {
+            if (i === 0) {
+              fixes.push(fixer.replaceText(attr, spread))
+            } else {
+              const tokenBefore = sourceCode.getTokenBefore(attr)
+              const start = tokenBefore ? tokenBefore.range[1] : attr.range[0]
+              fixes.push(fixer.removeRange([start, attr.range[1]]))
+            }
+          })
+          return fixes
+        }
       })
     }
   }
