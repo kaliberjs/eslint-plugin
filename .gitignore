@@ -9,3 +9,4 @@ node_modules/
 .npm
 .yarn-integrity
 .DS_Store
+.pnpm-store/
