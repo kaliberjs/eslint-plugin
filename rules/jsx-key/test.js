@@ -69,5 +69,11 @@ test('jsx-key',
         output: '[<App key="k" {...obj} className="x" />];',
         errors: [{ messageId: 'keyBeforeSpread' }]
       },
+      // key with expression value (not string literal)
+      {
+        code: '[<App {...obj} key={item.id} />];',
+        output: '[<App key={item.id} {...obj} />];',
+        errors: [{ messageId: 'keyBeforeSpread' }]
+      },
     ]
   })

@@ -26,5 +26,11 @@ module.exports = {
       output: `const xRefxRef = useXyzRef()`,
       errors: [{ message: messages['ref should end with Ref']('xRefx', 'xRefxRef'), type: 'Identifier' }],
     },
+    // Descriptive ref name
+    {
+      code: `const containerElement = React.useRef()`,
+      output: `const containerElementRef = React.useRef()`,
+      errors: [{ message: messages['ref should end with Ref']('containerElement', 'containerElementRef'), type: 'Identifier' }],
+    },
   ]
 }

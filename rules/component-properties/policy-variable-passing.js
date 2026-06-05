@@ -46,5 +46,14 @@ module.exports = {
         { message: twoProps, type: 'JSXAttribute' },
       ]
     },
+    // ref={ref} IS included in merge (not excluded like key)
+    {
+      code: `<div ref={ref} a={a} />`,
+      output: `<div {...{ ref, a }} />`,
+      errors: [
+        { message: messages['incorrect variable passing']('ref, a'), type: 'JSXAttribute' },
+        { message: messages['incorrect variable passing']('ref, a'), type: 'JSXAttribute' },
+      ]
+    },
   ],
 }

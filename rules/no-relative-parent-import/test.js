@@ -40,5 +40,19 @@ test('no-relative-parent-import', {
       output: `import x from "/features/shared/utils"`,
       errors: [{ message: messages['no relative parent import']('../shared/utils') }]
     },
+    // Export with src root
+    {
+      filename: '/project/src/features/nested/Component.js',
+      code: `export { x } from '../shared/utils'`,
+      output: `export { x } from '/features/shared/utils'`,
+      errors: [{ message: messages['no relative parent import']('../shared/utils') }]
+    },
+    // Bare side-effect import with src root
+    {
+      filename: '/project/src/features/nested/Component.js',
+      code: `import '../shared/polyfill'`,
+      output: `import '/features/shared/polyfill'`,
+      errors: [{ message: messages['no relative parent import']('../shared/polyfill') }]
+    },
   ]
 })

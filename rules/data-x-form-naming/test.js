@@ -23,5 +23,11 @@ test('data-x-form-naming', {
       output: '<form data-x="application-form">Form</form>',
       errors: [{ messageId: 'formNameSuffix' }]
     },
+    // Edge case: bare 'form' → appends '-form' producing 'form-form'
+    {
+      code: '<form data-x="form">Form</form>',
+      output: '<form data-x="form-form">Form</form>',
+      errors: [{ messageId: 'formNameSuffix' }]
+    },
   ]
 })
