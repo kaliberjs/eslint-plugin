@@ -178,6 +178,7 @@ module.exports = {
       if (!parent) return
 
       const { id } = parent
+      if (!id.name) return
       if (id.name.endsWith('Ref')) return
       context.report({
         message: messages['ref should end with Ref'](id.name, `${id.name}Ref`),

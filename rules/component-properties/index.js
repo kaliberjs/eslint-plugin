@@ -58,14 +58,16 @@ module.exports = {
     function reportDestructuredSetterProps(node) {
       if (!node.argument.properties) return
 
-      node.argument.properties.forEach(x => {
-        if (isSetter(x.value.name)) {
-          context.report({
-            message: messages['no setters'](x.value.name),
-            node,
-          })
-        }
-      })
+      node.argument.properties
+        .filter(x => x.value)
+        .forEach(x => {
+          if (isSetter(x.value.name)) {
+            context.report({
+              message: messages['no setters'](x.value.name),
+              node,
+            })
+          }
+        })
     }
 
     function reportIncorrectVariablePassing(node) {
