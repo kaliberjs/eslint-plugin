@@ -53,5 +53,16 @@ test('data-x-toggle-prefix', {
       output: '<button data-x="toggle-panel">Panel</button>',
       errors: [{ messageId: 'needsTogglePrefix' }]
     },
+    {
+      code: '<button data-x="hide-drawer">Drawer</button>',
+      output: '<button data-x="toggle-drawer">Drawer</button>',
+      errors: [{ messageId: 'needsTogglePrefix' }]
+    },
+    // aria-expanded triggers toggle prefix even without a known pattern word
+    {
+      code: '<button data-x="filter" aria-expanded="false">Filter</button>',
+      output: '<button data-x="toggle-filter" aria-expanded="false">Filter</button>',
+      errors: [{ messageId: 'needsTogglePrefix' }]
+    },
   ]
 })
