@@ -31,6 +31,7 @@ module.exports = {
   meta: {
     type: 'problem',
     fixable: 'code',
+    hasSuggestions: true,
     docs: {
       description: 'Components are black boxes — use layoutClassName for positioning instead of className',
       url: docsUrl(__dirname),
@@ -125,10 +126,15 @@ module.exports = {
       context.report({
         message: messages['invalid layoutClassName'](className, expectedClassName),
         node: node,
-        fix(fixer) {
-          if (node.type === 'Literal') return fixer.replaceText(node, `"${expectedClassName}"`)
-          return fixer.replaceText(node, expectedClassName)
-        }
+        suggest: [
+          {
+            desc: `Rename to '${expectedClassName}' (also update the CSS class manually)`,
+            fix(fixer) {
+              if (node.type === 'Literal') return fixer.replaceText(node, `"${expectedClassName}"`)
+              return fixer.replaceText(node, expectedClassName)
+            }
+          }
+        ]
       })
     }
 
