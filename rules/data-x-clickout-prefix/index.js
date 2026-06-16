@@ -1,9 +1,15 @@
 const getProp = require('jsx-ast-utils/getProp')
 const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
+    docs: {
+      description: 'External links (http/https) must use the clickout- prefix in data-x',
+      url: docsUrl(__dirname),
+    },
     messages: {
       missingClickoutPrefix: 'External links must use "clickout-" prefix in data-x attribute. Expected "clickout-*" but got "{{value}}"',
     },
@@ -38,7 +44,10 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'missingClickoutPrefix',
-            data: { value: dataXValue }
+            data: { value: dataXValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"clickout-${dataXValue}"`)
+            }
           })
         }
       }

@@ -16,22 +16,27 @@ test('data-x-cta-prefix', {
   invalid: [
     {
       code: '<a data-x="apply">Apply Now</a>',
+      output: '<a data-x="cta-apply">Apply Now</a>',
       errors: [{ messageId: 'ctaNeedsPrefix' }]
     },
     {
       code: '<a data-x="submit-application">Submit</a>',
+      output: '<a data-x="cta-submit-application">Submit</a>',
       errors: [{ messageId: 'ctaNeedsPrefix' }]
     },
     {
       code: '<a data-x="register-now">Register</a>',
+      output: '<a data-x="cta-register-now">Register</a>',
       errors: [{ messageId: 'ctaNeedsPrefix' }]
     },
     {
       code: '<a data-x="download-brochure">Download</a>',
+      output: '<a data-x="cta-download-brochure">Download</a>',
       errors: [{ messageId: 'ctaNeedsPrefix' }]
     },
     {
       code: '<a data-x="contact-us">Contact</a>',
+      output: '<a data-x="cta-contact-us">Contact</a>',
       errors: [{ messageId: 'ctaNeedsPrefix' }]
     },
   ]

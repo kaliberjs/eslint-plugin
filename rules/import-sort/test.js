@@ -146,6 +146,16 @@ import { AlignContentRight } from '/features/buildingBlocks/AlignContent'
 import RewardCalculatorContent from '/features/buildingBlocks/reward-calculator/RewardCalculatorContent.universal'
       `,
       errors: [{ message: messages.unsorted }]
+    },
+    {
+      // Side-effect import present → reports error but fix returns null
+      // (reordering could silently drop the side-effect import)
+      code: `
+import './reset.css'
+import config from '@kaliber/config'
+      `,
+      output: null,
+      errors: [{ message: messages.unsorted }]
     }
   ]
 })

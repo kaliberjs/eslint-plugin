@@ -10,14 +10,23 @@ test('data-x-form-naming', {
   invalid: [
     {
       code: '<form data-x="search">Form</form>',
+      output: '<form data-x="search-form">Form</form>',
       errors: [{ messageId: 'formNameSuffix' }]
     },
     {
       code: '<form data-x="contact">Form</form>',
+      output: '<form data-x="contact-form">Form</form>',
       errors: [{ messageId: 'formNameSuffix' }]
     },
     {
       code: '<form data-x="application">Form</form>',
+      output: '<form data-x="application-form">Form</form>',
+      errors: [{ messageId: 'formNameSuffix' }]
+    },
+    // Edge case: bare 'form' → appends '-form' producing 'form-form'
+    {
+      code: '<form data-x="form">Form</form>',
+      output: '<form data-x="form-form">Form</form>',
       errors: [{ messageId: 'formNameSuffix' }]
     },
   ]

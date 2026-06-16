@@ -1,10 +1,15 @@
 const getProp = require('jsx-ast-utils/getProp')
 const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
 const hasProp = require('jsx-ast-utils/hasProp')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Repeated elements with the same data-x must include data-x-id for disambiguation',
+      url: docsUrl(__dirname),
+    },
     messages: {
       needsUniqueId: 'Elements with the same data-x="{{dataX}}" in lists or repeated contexts should include "data-x-id" with a unique identifier (e.g., job_id, article_id)',
     },

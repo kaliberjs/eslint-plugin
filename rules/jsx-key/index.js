@@ -1,9 +1,15 @@
 const hasProp = require('jsx-ast-utils/hasProp')
 const propName = require('jsx-ast-utils/propName')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
+    docs: {
+      description: 'Require key prop in iterators but allow keyless JSX in array-literal DSL patterns',
+      url: docsUrl(__dirname),
+    },
     messages: {
       missingIterKey: 'Missing "key" prop for element in iterator',
       missingIterKeyUsePrag: 'Missing "key" prop for element in iterator. Shorthand fragment syntax does not support providing keys. Use React.Fragment instead',
@@ -23,7 +29,21 @@ module.exports = {
 
         context.report({
           node,
-          messageId: 'keyBeforeSpread'
+          messageId: 'keyBeforeSpread',
+          fix(fixer) {
+            const sourceCode = context.sourceCode
+            const attributes = node.openingElement.attributes
+            const keyAttr = attributes.find(a => a.type === 'JSXAttribute' && propName(a) === 'key')
+            if (!keyAttr) return null
+
+            const keyText = sourceCode.getText(keyAttr)
+            const tokenBefore = sourceCode.getTokenBefore(keyAttr)
+            const start = tokenBefore ? tokenBefore.range[1] : keyAttr.range[0]
+            return [
+              fixer.removeRange([start, keyAttr.range[1]]),
+              fixer.insertTextBefore(attributes[0], keyText + ' ')
+            ]
+          }
         })
       },
 

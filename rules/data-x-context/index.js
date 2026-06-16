@@ -1,8 +1,13 @@
 const getProp = require('jsx-ast-utils/getProp')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Elements with data-x must also include data-x-context to identify page location',
+      url: docsUrl(__dirname),
+    },
     schema: [],
     messages: {
       missingDataXContext: 'Missing required "data-x-context" attribute on {{elementType}} element with "data-x"',

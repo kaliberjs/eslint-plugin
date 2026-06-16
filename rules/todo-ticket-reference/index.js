@@ -1,6 +1,11 @@
+const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'problem',
+    docs: {
+      description: 'Require TODO comments to reference a Jira ticket',
+      url: docsUrl(__dirname),
+    },
     schema: [
       {
         type: 'object',

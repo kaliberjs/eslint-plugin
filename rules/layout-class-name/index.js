@@ -4,6 +4,7 @@ const {
   getJSXElementName, getParentJSXElement,
   isRootJSXElement
 } = require('../../machinery/ast')
+const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
   'no layoutClassName in child':
@@ -27,7 +28,15 @@ const messages = {
 module.exports = {
   messages,
 
-  meta: { type: 'problem' },
+  meta: {
+    type: 'problem',
+    fixable: 'code',
+    hasSuggestions: true,
+    docs: {
+      description: 'Components are black boxes — use layoutClassName for positioning instead of className',
+      url: docsUrl(__dirname),
+    },
+  },
 
   create(context) {
     const hasLayoutClassName = new Set()
@@ -117,6 +126,15 @@ module.exports = {
       context.report({
         message: messages['invalid layoutClassName'](className, expectedClassName),
         node: node,
+        suggest: [
+          {
+            desc: `Rename to '${expectedClassName}' (also update the CSS class manually)`,
+            fix(fixer) {
+              if (node.type === 'Literal') return fixer.replaceText(node, `"${expectedClassName}"`)
+              return fixer.replaceText(node, expectedClassName)
+            }
+          }
+        ]
       })
     }
 
@@ -132,6 +150,9 @@ module.exports = {
           start: exportNode.loc.start,
           end: node.loc.start
         },
+        fix(fixer) {
+          return fixer.removeRange([exportNode.range[0], node.range[0]])
+        }
       })
     }
   }

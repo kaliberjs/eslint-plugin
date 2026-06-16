@@ -6,6 +6,7 @@ const {
 } = require('../../machinery/ast')
 const { isApp, isPage, getBaseFilename } = require('../../machinery/filename')
 const { firstLetterLowerCase } = require('../../machinery/word')
+const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
   'invalid className': (found, expected) =>
@@ -35,7 +36,14 @@ const messages = {
 module.exports = {
   messages,
 
-  meta: { type: 'problem' },
+  meta: {
+    type: 'problem',
+    fixable: 'code',
+    docs: {
+      description: 'Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs',
+      url: docsUrl(__dirname),
+    },
+  },
 
   create(context) {
     const sourceCode = context.sourceCode
@@ -83,6 +91,9 @@ module.exports = {
       context.report({
         message: messages['invalid css file name'](source, expected),
         node: node.source,
+        fix(fixer) {
+          return fixer.replaceText(node.source, `'${expected}'`)
+        }
       })
     }
 
@@ -103,6 +114,9 @@ module.exports = {
       context.report({
         message: messages['invalid styles variable name'](name, expected),
         node: specifier,
+        fix(fixer) {
+          return fixer.replaceText(specifier, expected)
+        }
       })
     }
 
@@ -171,10 +185,14 @@ module.exports = {
       if (!parent) return
 
       const { id } = parent
+      if (!id.name) return
       if (id.name.endsWith('Ref')) return
       context.report({
         message: messages['ref should end with Ref'](id.name, `${id.name}Ref`),
         node: id,
+        fix(fixer) {
+          return fixer.replaceText(id, `${id.name}Ref`)
+        }
       })
     }
   }

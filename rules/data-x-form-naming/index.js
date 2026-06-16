@@ -1,9 +1,15 @@
 const getProp = require('jsx-ast-utils/getProp')
 const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
+    docs: {
+      description: 'Form elements must have a data-x value ending with -form',
+      url: docsUrl(__dirname),
+    },
     messages: {
       formNameSuffix: 'Form data-x attribute must end with "-form". Got "{{value}}", expected "{{value}}-form".',
     },
@@ -28,7 +34,10 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'formNameSuffix',
-            data: { value: dataXValue }
+            data: { value: dataXValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"${dataXValue}-form"`)
+            }
           })
         }
       }

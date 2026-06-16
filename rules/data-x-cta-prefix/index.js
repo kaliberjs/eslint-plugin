@@ -1,9 +1,15 @@
 const getProp = require('jsx-ast-utils/getProp')
 const getLiteralPropValue = require('jsx-ast-utils/getLiteralPropValue')
+const docsUrl = require('../../machinery/docsUrl')
 
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
+    docs: {
+      description: 'Call-to-action <a> elements must use the cta- prefix in data-x',
+      url: docsUrl(__dirname),
+    },
     messages: {
       ctaNeedsPrefix: 'Call-to-action links (not packaged as buttons) should use "cta-" prefix in data-x attribute. Got "{{value}}", expected "cta-{{value}}"',
     },
@@ -42,7 +48,10 @@ module.exports = {
           context.report({
             node: dataXProp,
             messageId: 'ctaNeedsPrefix',
-            data: { value: dataXValue }
+            data: { value: dataXValue },
+            fix(fixer) {
+              return fixer.replaceText(dataXProp.value, `"cta-${dataXValue}"`)
+            }
           })
         }
       }

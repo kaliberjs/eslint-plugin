@@ -1,7 +1,12 @@
+const docsUrl = require('../../machinery/docsUrl')
 module.exports = {
   meta: {
     type: 'suggestion',
     fixable: 'code',
+    docs: {
+      description: 'Enforce grouped and ordered import statements with auto-fix support',
+      url: docsUrl(__dirname),
+    },
     schema: [],
     messages: {
       unsorted: 'Imports are not sorted according to the predefined groups',

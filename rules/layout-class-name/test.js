@@ -65,18 +65,40 @@ test('layout-class-name', {
     },
     {
       code: `<Test layoutClassName={styles.test} />`,
-      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Identifier' }]
+      errors: [{
+        message: messages['invalid layoutClassName']('test', 'testLayout'),
+        type: 'Identifier',
+        suggestions: [{
+          desc: `Rename to 'testLayout' (also update the CSS class manually)`,
+          output: `<Test layoutClassName={styles.testLayout} />`,
+        }],
+      }]
     },
     {
       code: `<Test layoutClassName={cx(styles.test, styles.testLayout)} />`,
-      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Identifier' }]
+      errors: [{
+        message: messages['invalid layoutClassName']('test', 'testLayout'),
+        type: 'Identifier',
+        suggestions: [{
+          desc: `Rename to 'testLayout' (also update the CSS class manually)`,
+          output: `<Test layoutClassName={cx(styles.testLayout, styles.testLayout)} />`,
+        }],
+      }]
     },
     {
       code: `<Test layoutClassName='test' />`,
-      errors: [{ message: messages['invalid layoutClassName']('test', 'testLayout'), type: 'Literal' }]
+      errors: [{
+        message: messages['invalid layoutClassName']('test', 'testLayout'),
+        type: 'Literal',
+        suggestions: [{
+          desc: `Rename to 'testLayout' (also update the CSS class manually)`,
+          output: `<Test layoutClassName="testLayout" />`,
+        }],
+      }]
     },
     {
       code: `export function TestBase() {}`,
+      output: `function TestBase() {}`,
       errors: [{
         message: messages['no export base'],
         type: 'ExportNamedDeclaration',

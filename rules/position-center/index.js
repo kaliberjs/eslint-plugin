@@ -1,4 +1,5 @@
 const { getPropertyName } = require('../../machinery/ast')
+const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
   'no place-content center':
@@ -13,6 +14,11 @@ module.exports = {
 
   meta: {
     type: 'suggestion',
+    hasSuggestions: true,
+    docs: {
+      description: 'Avoid place-content: center — it only aligns tracks and often does nothing',
+      url: docsUrl(__dirname),
+    },
   },
 
   create(context) {
@@ -43,7 +49,18 @@ module.exports = {
     function reportPlaceContentCenter(node) {
       context.report({
         node,
-        message: messages['no place-content center']
+        message: messages['no place-content center'],
+        suggest: [
+          {
+            desc: 'Replace with place-items: center',
+            fix(fixer) {
+              const keyNode = node.parent.key
+              const keyName = getPropertyName(keyNode)
+              const replacement = keyName === 'place-content' ? 'place-items' : 'placeItems'
+              return fixer.replaceText(keyNode, keyNode.type === 'Literal' ? `'${replacement}'` : replacement)
+            }
+          }
+        ]
       })
     }
   }
