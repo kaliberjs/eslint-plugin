@@ -87,14 +87,34 @@ This makes rule violations self-documenting: a developer hovering over an error 
 
 If your project still uses a legacy `.eslintrc` file, you can automatically migrate to the flat config format:
 
+### Change package.json
+
+Update the lint script in your `package.json` — the new flat config picks up `eslint.config.js` automatically, and `.gitignore` is used as the ignore file:
+
+```json
+"lint.javascript": "eslint"
+```
+
+Was:
+
+```json
+"lint.javascript": "eslint -c .eslintrc --ignore-path .gitignore './**/*.js'"
+```
+
+### Run the migration script
+
 ```sh
-npx @kaliber/eslint-plugin migrate
+# In your project directory:
+npx kaliber-eslint-migrate
 
 # Preview without writing any files:
-npx @kaliber/eslint-plugin migrate --dry-run
+npx kaliber-eslint-migrate --dry-run
+
+# Print the generated config to stdout:
+npx kaliber-eslint-migrate --stdout
 
 # Overwrite an existing eslint.config.js:
-npx @kaliber/eslint-plugin migrate --force
+npx kaliber-eslint-migrate --force
 ```
 
 The migration script will:
