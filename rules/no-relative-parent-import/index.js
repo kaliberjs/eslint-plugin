@@ -38,6 +38,9 @@ module.exports = {
           const srcRoot = findSrcRoot(filePath)
           if (!srcRoot) return null
 
+          // Ensure resolved path is within src directory
+          if (!resolved.startsWith(srcRoot + path.sep)) return null
+
           const rootSlash = '/' + resolved.slice(srcRoot.length + 1)
           const quote = source.raw[0]
           return fixer.replaceText(source, `${quote}${rootSlash}${quote}`)

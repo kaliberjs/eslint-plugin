@@ -1,5 +1,6 @@
 const { resolve } = require('node:path')
+const { pathToFileURL } = require('node:url')
 
 module.exports = function docsUrl(ruleDir) {
-  return `file://${resolve(ruleDir, 'readme.md')}`
+  return pathToFileURL(resolve(ruleDir, 'readme.md')).href
 }
