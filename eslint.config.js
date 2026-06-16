@@ -1,6 +1,9 @@
 // Based on eslint-config-react-app
 // https://github.com/facebookincubator/create-react-app/blob/cd3d04b71e91f533bdbdc3856775e1da81d445cf/packages/eslint-config-react-app/index.js
 
+const fs = require('fs')
+const path = require('path')
+const { includeIgnoreFile } = require('@eslint/compat')
 const js = require('@eslint/js')
 const babelParser = require('@babel/eslint-parser')
 const pluginReact = require('eslint-plugin-react')
@@ -11,7 +14,10 @@ const stylistic = require('@stylistic/eslint-plugin')
 const globals = require('./machinery/globals.json')
 const kaliberPlugin = require('./index')
 
+const gitignorePath = path.resolve(process.cwd(), '.gitignore')
+
 module.exports = [
+  ...(fs.existsSync(gitignorePath) ? [includeIgnoreFile(gitignorePath)] : []),
   js.configs.recommended,
   {
     plugins: {
@@ -65,6 +71,7 @@ module.exports = [
       '@kaliber/no-default-export': 'warn',
       '@kaliber/no-relative-parent-import': 'warn',
       '@kaliber/jsx-key': 'warn',
+      '@kaliber/import-sort': 'warn',
 
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
