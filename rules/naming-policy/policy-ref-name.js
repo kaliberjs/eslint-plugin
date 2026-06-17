@@ -32,5 +32,16 @@ module.exports = {
       output: `const containerElementRef = React.useRef()`,
       errors: [{ message: messages['ref should end with Ref']('containerElement', 'containerElementRef'), type: 'Identifier' }],
     },
+    // References in same scope should also be renamed
+    {
+      code: `const x = React.useRef(); console.log(x)`,
+      output: `const xRef = React.useRef(); console.log(xRef)`,
+      errors: [{ message: messages['ref should end with Ref']('x', 'xRef'), type: 'Identifier' }],
+    },
+    {
+      code: `const container = useRef(); container.current = 'test'; doSomething(container)`,
+      output: `const containerRef = useRef(); containerRef.current = 'test'; doSomething(containerRef)`,
+      errors: [{ message: messages['ref should end with Ref']('container', 'containerRef'), type: 'Identifier' }],
+    },
   ]
 }

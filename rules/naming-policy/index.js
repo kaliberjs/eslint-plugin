@@ -115,7 +115,19 @@ module.exports = {
         message: messages['invalid styles variable name'](name, expected),
         node: specifier,
         fix(fixer) {
-          return fixer.replaceText(specifier, expected)
+          const scope = sourceCode.getScope(specifier)
+          const variable = scope.variables.find(v => v.name === name)
+          const fixes = [fixer.replaceText(specifier, expected)]
+
+          if (variable) {
+            for (const ref of variable.references) {
+              if (ref.identifier !== specifier) {
+                fixes.push(fixer.replaceText(ref.identifier, expected))
+              }
+            }
+          }
+
+          return fixes
         }
       })
     }
@@ -187,11 +199,25 @@ module.exports = {
       const { id } = parent
       if (!id.name) return
       if (id.name.endsWith('Ref')) return
+
+      const newName = `${id.name}Ref`
       context.report({
-        message: messages['ref should end with Ref'](id.name, `${id.name}Ref`),
+        message: messages['ref should end with Ref'](id.name, newName),
         node: id,
         fix(fixer) {
-          return fixer.replaceText(id, `${id.name}Ref`)
+          const scope = sourceCode.getScope(id)
+          const variable = scope.variables.find(v => v.name === id.name)
+          const fixes = [fixer.replaceText(id, newName)]
+
+          if (variable) {
+            for (const ref of variable.references) {
+              if (ref.identifier !== id) {
+                fixes.push(fixer.replaceText(ref.identifier, newName))
+              }
+            }
+          }
+
+          return fixes
         }
       })
     }

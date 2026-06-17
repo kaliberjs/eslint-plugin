@@ -20,6 +20,13 @@ module.exports = {
       output: `import styles from './Test.css'`,
       errors: [{ message: messages['invalid styles variable name']('notStyles', 'styles'), type: 'Identifier' }]
     },
+    // References in same scope should also be renamed
+    {
+      filename: 'Test.js',
+      code: `import css from './Test.css'\nexport default function Test() { return <div className={css.component} /> }`,
+      output: `import styles from './Test.css'\nexport default function Test() { return <div className={styles.component} /> }`,
+      errors: [{ message: messages['invalid styles variable name']('css', 'styles'), type: 'Identifier' }]
+    },
     // Template file (Foo.bar.js → base is 'Foo')
     {
       filename: 'Foo.bar.js',
