@@ -1,5 +1,8 @@
+const path = require('node:path')
 const { test } = require('../../machinery/test')
 const { messages } = require('.')
+
+const fixturesDir = path.resolve(__dirname, 'fixtures')
 
 test('no-null-return-in-universal', {
   valid: [
@@ -51,6 +54,11 @@ test('no-null-return-in-universal', {
           return <div>Content</div>
         }
       `,
+    },
+    {
+      // re-export of a component that never returns null
+      filename: path.join(fixturesDir, 'Wrapper.universal.js'),
+      code: `export { default } from './GoodComponent'`,
     },
   ],
   invalid: [
@@ -150,6 +158,34 @@ test('no-null-return-in-universal', {
         }
       `,
       errors: [{ message: messages['no empty fragment return'] }],
+    },
+    // ── Cross-file: re-export patterns ──────────────────────────────
+    {
+      // re-export of a component that returns null
+      filename: path.join(fixturesDir, 'Wrapper.universal.js'),
+      code: `export { default } from './BadComponent'`,
+      errors: [{ message: messages['source component may return null']('BadComponent') }],
+    },
+    {
+      // named re-export as default: export { X as default } from './X'
+      filename: path.join(fixturesDir, 'Wrapper.universal.js'),
+      code: `export { NamedBadComponent as default } from './NamedBadComponent'`,
+      errors: [{ message: messages['source component may return null']('NamedBadComponent') }],
+    },
+    {
+      // import + re-export: import X from './X'; export default X
+      filename: path.join(fixturesDir, 'Wrapper.universal.js'),
+      code: `
+        import BadComponent from './BadComponent'
+        export default BadComponent
+      `,
+      errors: [{ message: messages['source component may return null']('BadComponent') }],
+    },
+    {
+      // re-export of a component that uses logical &&
+      filename: path.join(fixturesDir, 'Wrapper.universal.js'),
+      code: `export { default } from './LogicalAndComponent'`,
+      errors: [{ message: messages['source component may use logical and']('LogicalAndComponent') }],
     },
   ],
 })
