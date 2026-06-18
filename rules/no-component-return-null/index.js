@@ -67,11 +67,10 @@ function getComponentName(fn) {
   const { parent } = fn
   if (parent && parent.type === 'VariableDeclarator' && parent.id.type === 'Identifier') return parent.id.name
 
-  // const Component = forwardRef(() => …) / memo(() => …)
-  if (parent && parent.type === 'CallExpression') {
-    const grandParent = parent.parent
-    if (grandParent && grandParent.type === 'VariableDeclarator' && grandParent.id.type === 'Identifier') return grandParent.id.name
-  }
+  // const Component = forwardRef(() => …) / memo(forwardRef(() => …))
+  let current = parent
+  while (current && current.type === 'CallExpression') current = current.parent
+  if (current && current.type === 'VariableDeclarator' && current.id.type === 'Identifier') return current.id.name
 
   return null
 }

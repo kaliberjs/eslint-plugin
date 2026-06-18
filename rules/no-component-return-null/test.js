@@ -84,5 +84,15 @@ test('no-component-return-null', {
         suggestions: [{ desc, output: `const Card = React.forwardRef(({ prop }) => { if (!prop) return <></>; return <div /> })` }],
       }],
     },
+
+    // component wrapped in nested memo(forwardRef(...))
+    {
+      code: `const Card = React.memo(React.forwardRef(({ prop }) => { if (!prop) return null; return <div /> }))`,
+      errors: [{
+        message: messages['no return null'],
+        type: 'ReturnStatement',
+        suggestions: [{ desc, output: `const Card = React.memo(React.forwardRef(({ prop }) => { if (!prop) return <></>; return <div /> }))` }],
+      }],
+    },
   ],
 })
