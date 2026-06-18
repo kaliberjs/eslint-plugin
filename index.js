@@ -15,6 +15,7 @@ const plugin = {
     'jsx-key': require('./rules/jsx-key'),
     'import-sort': require('./rules/import-sort'),
     'position-center': require('./rules/position-center'),
+    'no-component-return-null': require('./rules/no-component-return-null'),
 
     'data-x-required': require('./rules/data-x-required'),
     'data-x-latin-only': require('./rules/data-x-latin-only'),
