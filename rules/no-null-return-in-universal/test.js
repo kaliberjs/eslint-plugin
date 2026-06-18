@@ -42,6 +42,16 @@ test('no-null-return-in-universal', {
       filename: 'Component.universal.js',
       code: `export function Component({ children }) { return <React.Fragment>{children}</React.Fragment> }`,
     },
+    {
+      // early return of JSX inside if-guard is fine
+      filename: 'Component.universal.js',
+      code: `
+        export function Component({ loading }) {
+          if (loading) return <span hidden />
+          return <div>Content</div>
+        }
+      `,
+    },
   ],
   invalid: [
     {
@@ -106,6 +116,40 @@ test('no-null-return-in-universal', {
       filename: 'Component.universal.js',
       code: `export default function Component() { return null }`,
       errors: [{ message: messages['no null return'] }],
+    },
+    {
+      // early return null inside if-guard
+      filename: 'Component.universal.js',
+      code: `
+        export function Component({ data }) {
+          if (!data) return null
+          return <div>{data.name}</div>
+        }
+      `,
+      errors: [{ message: messages['no null return'] }],
+    },
+    {
+      // multiple early returns, one is null
+      filename: 'Component.universal.js',
+      code: `
+        export function Component({ status }) {
+          if (status === 'loading') return <span hidden />
+          if (status === 'error') return null
+          return <div>Done</div>
+        }
+      `,
+      errors: [{ message: messages['no null return'] }],
+    },
+    {
+      // early return empty fragment
+      filename: 'Component.universal.js',
+      code: `
+        export function Component({ visible }) {
+          if (!visible) return <></>
+          return <div>Content</div>
+        }
+      `,
+      errors: [{ message: messages['no empty fragment return'] }],
     },
   ],
 })
