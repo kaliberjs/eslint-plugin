@@ -29,6 +29,8 @@ const plugin = {
     'data-x-form-naming': require('./rules/data-x-form-naming'),
 
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
+
+    'no-null-return-in-universal': require('./rules/no-null-return-in-universal'),
   },
 
   configs: {},

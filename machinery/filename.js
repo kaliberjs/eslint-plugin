@@ -1,7 +1,7 @@
 const path = require('node:path')
 
 module.exports = {
-  isApp, isPage, isTemplate,
+  isApp, isPage, isTemplate, isUniversal,
   getBaseFilename,
 }
 
@@ -18,6 +18,11 @@ function isPage(context) {
 function isTemplate(context) {
   const filename = context.filename
   return /.+\.[^.]+\.js/.test(filename)
+}
+
+function isUniversal(context) {
+  const filename = context.filename
+  return !!filename && filename.endsWith('.universal.js')
 }
 
 function getBaseFilename(context) {
