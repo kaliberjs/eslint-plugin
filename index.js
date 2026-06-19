@@ -1,4 +1,5 @@
 const pkg = require('./package.json')
+const pluginJsdoc = require('eslint-plugin-jsdoc')
 
 const plugin = {
   meta: {
@@ -29,9 +30,30 @@ const plugin = {
     'data-x-form-naming': require('./rules/data-x-form-naming'),
 
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
+
+    'tanstack-query/stable-client': require('./rules/tanstack-query/stable-client'),
   },
 
   configs: {},
+}
+
+plugin.configs.jsdoc = {
+  plugins: {
+    'jsdoc': pluginJsdoc,
+  },
+  rules: {
+    'jsdoc/require-jsdoc': ['warn', {
+      require: {
+        FunctionDeclaration: true,
+        ArrowFunctionExpression: true,
+        FunctionExpression: true,
+      },
+      publicOnly: true,
+    }],
+    'jsdoc/valid-types': 'warn',
+    'jsdoc/check-param-names': 'warn',
+    'jsdoc/no-undefined-types': 'warn',
+  },
 }
 
 module.exports = plugin
