@@ -9,6 +9,11 @@
 | @kaliber/naming-policy | Enforces a consistent naming policy for components, CSS files, variables, and refs to improve readability and enable tooling. | Custom | [rules/naming-policy/test.js](rules/naming-policy/test.js) | `"warn"` |
 | @kaliber/no-default-export | Prefers named exports over default exports to avoid ambiguity and refactoring issues. | Custom | [rules/no-default-export/test.js](rules/no-default-export/test.js) | `"warn"` |
 | @kaliber/no-relative-parent-import | Disallows relative parent imports (`../`) in favor of root-slash imports to prevent broken paths when moving files. | Custom | [rules/no-relative-parent-import/test.js](rules/no-relative-parent-import/test.js) | `"warn"` |
+| **JSDoc Baseline Rules** | | | | |
+| jsdoc/require-jsdoc | Exported functions must have a JSDoc comment. | [eslint-plugin-jsdoc](https://github.com/gajus/eslint-plugin-jsdoc) | [tests](https://github.com/gajus/eslint-plugin-jsdoc/tree/main/test) | opt-in `configs.jsdoc` |
+| jsdoc/valid-types | Validates JSDoc type expressions for syntax correctness. | [eslint-plugin-jsdoc](https://github.com/gajus/eslint-plugin-jsdoc) | [tests](https://github.com/gajus/eslint-plugin-jsdoc/tree/main/test) | opt-in `configs.jsdoc` |
+| jsdoc/check-param-names | Ensures @param names match the actual function parameters. | [eslint-plugin-jsdoc](https://github.com/gajus/eslint-plugin-jsdoc) | [tests](https://github.com/gajus/eslint-plugin-jsdoc/tree/main/test) | opt-in `configs.jsdoc` |
+| jsdoc/no-undefined-types | Disallows undefined type references in JSDoc. | [eslint-plugin-jsdoc](https://github.com/gajus/eslint-plugin-jsdoc) | [tests](https://github.com/gajus/eslint-plugin-jsdoc/tree/main/test) | opt-in `configs.jsdoc` |
 | **Third-Party Rules** | | | | |
 | **eslint-plugin-import** | | | | |
 | import/first | Ensure all imports appear before other statements | [eslint-plugin-import](https://github.com/import-js/eslint-plugin-import) | [tests](https://github.com/import-js/eslint-plugin-import/tree/main/tests) | `"warn"` |

@@ -34,4 +34,44 @@ const plugin = {
   configs: {},
 }
 
+// `configs.jsdoc` is opt-in, so eslint-plugin-jsdoc is an optional peer rather than a
+// dependency — requiring this plugin must not pull it in for projects that don't use it.
+// The getter defers the require until the preset is actually read.
+Object.defineProperty(plugin.configs, 'jsdoc', {
+  enumerable: true,
+  configurable: true,
+  get: createJsdocConfig,
+})
+
+function createJsdocConfig() {
+  let pluginJsdoc
+  try {
+    pluginJsdoc = require('eslint-plugin-jsdoc')
+  } catch {
+    throw new Error(
+      `configs.jsdoc requires eslint-plugin-jsdoc, which is an optional peer dependency.\n` +
+      `Install it in your project: pnpm add -D eslint-plugin-jsdoc`
+    )
+  }
+
+  return {
+    plugins: {
+      'jsdoc': pluginJsdoc,
+    },
+    rules: {
+      'jsdoc/require-jsdoc': ['warn', {
+        require: {
+          FunctionDeclaration: true,
+          ArrowFunctionExpression: true,
+          FunctionExpression: true,
+        },
+        publicOnly: true,
+      }],
+      'jsdoc/valid-types': 'warn',
+      'jsdoc/check-param-names': 'warn',
+      'jsdoc/no-undefined-types': 'warn',
+    },
+  }
+}
+
 module.exports = plugin
