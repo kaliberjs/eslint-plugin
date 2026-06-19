@@ -44,6 +44,29 @@ module.exports = [
 | [`data-x-sectioning-elements`](rules/data-x-sectioning-elements/readme.md) | Sectioning HTML elements (section, header, footer, nav, etc.) must have data-x |
 | [`data-x-form-naming`](rules/data-x-form-naming/readme.md) | Form elements must have a data-x value ending with -form |
 
+### JSDoc baseline
+
+Available through the opt-in `configs.jsdoc` preset. This wires up a curated
+subset of [`eslint-plugin-jsdoc`](https://github.com/gajus/eslint-plugin-jsdoc)
+rules for contract hygiene — valid type syntax, param name matching, and defined
+type references.
+
+```js
+const kaliberPlugin = require('@kaliber/eslint-plugin')
+
+module.exports = [
+  ...kaliberConfig,
+  kaliberPlugin.configs.jsdoc,
+]
+```
+
+| Rule | Description |
+|---|---|
+| `jsdoc/require-jsdoc` | Exported functions must have a JSDoc comment (`publicOnly: true`) |
+| `jsdoc/valid-types` | Validates JSDoc type expressions for syntax correctness |
+| `jsdoc/check-param-names` | Ensures `@param` names match the actual function parameters |
+| `jsdoc/no-undefined-types` | Disallows undefined type references in JSDoc |
+
 ## Documentation
 
 Each rule is self-contained — implementation, tests, and documentation live together:

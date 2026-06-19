@@ -1,4 +1,5 @@
 const pkg = require('./package.json')
+const pluginJsdoc = require('eslint-plugin-jsdoc')
 
 const plugin = {
   meta: {
@@ -32,6 +33,25 @@ const plugin = {
   },
 
   configs: {},
+}
+
+plugin.configs.jsdoc = {
+  plugins: {
+    'jsdoc': pluginJsdoc,
+  },
+  rules: {
+    'jsdoc/require-jsdoc': ['warn', {
+      require: {
+        FunctionDeclaration: true,
+        ArrowFunctionExpression: true,
+        FunctionExpression: true,
+      },
+      publicOnly: true,
+    }],
+    'jsdoc/valid-types': 'warn',
+    'jsdoc/check-param-names': 'warn',
+    'jsdoc/no-undefined-types': 'warn',
+  },
 }
 
 module.exports = plugin
