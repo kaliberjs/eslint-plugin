@@ -29,6 +29,8 @@ const plugin = {
     'data-x-form-naming': require('./rules/data-x-form-naming'),
 
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
+
+    'tanstack-query/stable-client': require('./rules/tanstack-query/stable-client'),
   },
 
   configs: {},
