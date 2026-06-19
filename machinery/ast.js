@@ -1,8 +1,10 @@
 module.exports = {
   getPropertyName,
-  getFunctionName,
+  getFunctionName, getFunctionNodeName,
   getJSXElementName, getParentJSXElement,
   isRootJSXElement, hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
+  isFunctionNode, isPascalCase,
+  isInsideComponent, isArrowConciseBody, isUseStateCall,
 }
 
 function getPropertyName(property) {
@@ -94,4 +96,67 @@ function getParentJSXElement({ parent }) {
 function isInJSXFragment({ parent }) {
   if (!parent) return false
   return parent.type === 'JSXFragment' || isInJSXFragment(parent)
+}
+
+function isFunctionNode(node) {
+  return [
+    'FunctionDeclaration',
+    'FunctionExpression',
+    'ArrowFunctionExpression',
+  ].includes(node.type)
+}
+
+function getFunctionNodeName(node) {
+  if (node.id) return node.id.name
+
+  const { parent } = node
+  if (
+    parent &&
+    parent.type === 'VariableDeclarator' &&
+    parent.id.type === 'Identifier'
+  ) return parent.id.name
+
+  return null
+}
+
+function isPascalCase(name) {
+  return /^[A-Z][a-zA-Z0-9]*$/.test(name)
+}
+
+/**
+ * Walk up the AST to determine if this node is inside a function that
+ * looks like a React component (PascalCase name, or arrow assigned to PascalCase).
+ */
+function isInsideComponent(node) {
+  let current = node.parent
+
+  while (current) {
+    if (isFunctionNode(current)) {
+      const name = getFunctionNodeName(current)
+      if (name && isPascalCase(name)) return true
+    }
+
+    current = current.parent
+  }
+
+  return false
+}
+
+function isArrowConciseBody(arrowFn, bodyNode) {
+  return arrowFn.type === 'ArrowFunctionExpression' && arrowFn.body === bodyNode
+}
+
+function isUseStateCall(node) {
+  if (!node || node.type !== 'CallExpression') return false
+  const { callee } = node
+
+  if (callee.type === 'Identifier' && callee.name === 'useState') return true
+
+  if (
+    callee.type === 'MemberExpression' &&
+    callee.object.type === 'Identifier' && callee.object.name === 'React' &&
+    callee.property.type === 'Identifier' && callee.property.name === 'useState'
+  ) return true
+
+  return false
 }
