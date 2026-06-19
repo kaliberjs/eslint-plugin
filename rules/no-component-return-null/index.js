@@ -5,7 +5,7 @@ const messages = {
   'no return null':
     `Avoid returning \`null\` from a component. When this component is rendered universally ` +
     `(client-side), the build tool calls \`.slice()\` on its result and \`null\` will throw. ` +
-    `Return an empty fragment \`<></>\` instead, or render this component conditionally from its parent.`,
+    `Render this component conditionally from its parent instead of returning \`null\`.`,
 }
 
 module.exports = {
@@ -13,7 +13,6 @@ module.exports = {
 
   meta: {
     type: 'problem',
-    hasSuggestions: true,
     docs: {
       description: 'Disallow returning `null` from components — it breaks `.slice()` during universal (client-side) rendering',
       url: docsUrl(__dirname),
@@ -28,29 +27,21 @@ module.exports = {
         const fn = getEnclosingFunction(node)
         if (!fn || !isComponent(fn)) return
 
-        report(node, node.argument)
+        report(node)
       },
 
       ArrowFunctionExpression(node) {
         if (node.body.type === 'BlockStatement' || !yieldsNull(node.body)) return
         if (!isComponent(node)) return
 
-        report(node.body, node.body)
+        report(node.body)
       },
     }
 
-    function report(node, valueNode) {
+    function report(node) {
       context.report({
         node,
         message: messages['no return null'],
-        suggest: [
-          {
-            desc: 'Replace `null` with an empty fragment `<></>`',
-            fix(fixer) {
-              return getNullNodes(valueNode).map(nullNode => fixer.replaceText(nullNode, '<></>'))
-            },
-          },
-        ],
       })
     }
   },
@@ -89,12 +80,6 @@ function yieldsNull(node) {
   if (isNullLiteral(node)) return true
   if (node.type === 'ConditionalExpression') return yieldsNull(node.consequent) || yieldsNull(node.alternate)
   return false
-}
-
-function getNullNodes(node) {
-  if (isNullLiteral(node)) return [node]
-  if (node.type === 'ConditionalExpression') return [...getNullNodes(node.consequent), ...getNullNodes(node.alternate)]
-  return []
 }
 
 function isNullLiteral(node) {

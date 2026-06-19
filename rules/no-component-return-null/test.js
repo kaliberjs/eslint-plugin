@@ -1,8 +1,6 @@
 const { messages } = require('./')
 const { test } = require('../../machinery/test')
 
-const desc = 'Replace `null` with an empty fragment `<></>`'
-
 test('no-component-return-null', {
   valid: [
     // component returning JSX
@@ -31,7 +29,6 @@ test('no-component-return-null', {
       errors: [{
         message: messages['no return null'],
         type: 'ReturnStatement',
-        suggestions: [{ desc, output: `function Card({ prop }) { if (!prop) return <></>; return <div /> }` }],
       }],
     },
 
@@ -41,7 +38,6 @@ test('no-component-return-null', {
       errors: [{
         message: messages['no return null'],
         type: 'ReturnStatement',
-        suggestions: [{ desc, output: `const Card = ({ prop }) => { if (!prop) return <></>; return <div /> }` }],
       }],
     },
 
@@ -51,7 +47,6 @@ test('no-component-return-null', {
       errors: [{
         message: messages['no return null'],
         type: 'Literal',
-        suggestions: [{ desc, output: `const Card = () => <></>` }],
       }],
     },
 
@@ -61,7 +56,6 @@ test('no-component-return-null', {
       errors: [{
         message: messages['no return null'],
         type: 'ReturnStatement',
-        suggestions: [{ desc, output: `function Card({ prop }) { return prop ? <div /> : <></> }` }],
       }],
     },
 
@@ -71,7 +65,6 @@ test('no-component-return-null', {
       errors: [{
         message: messages['no return null'],
         type: 'ConditionalExpression',
-        suggestions: [{ desc, output: `const Card = ({ prop }) => prop ? <div /> : <></>` }],
       }],
     },
 
@@ -81,7 +74,6 @@ test('no-component-return-null', {
       errors: [{
         message: messages['no return null'],
         type: 'ReturnStatement',
-        suggestions: [{ desc, output: `const Card = React.forwardRef(({ prop }) => { if (!prop) return <></>; return <div /> })` }],
       }],
     },
 
@@ -91,7 +83,6 @@ test('no-component-return-null', {
       errors: [{
         message: messages['no return null'],
         type: 'ReturnStatement',
-        suggestions: [{ desc, output: `const Card = React.memo(React.forwardRef(({ prop }) => { if (!prop) return <></>; return <div /> }))` }],
       }],
     },
   ],
