@@ -9,6 +9,18 @@
 | @kaliber/naming-policy | Enforces a consistent naming policy for components, CSS files, variables, and refs to improve readability and enable tooling. | Custom | [rules/naming-policy/test.js](rules/naming-policy/test.js) | `"warn"` |
 | @kaliber/no-default-export | Prefers named exports over default exports to avoid ambiguity and refactoring issues. | Custom | [rules/no-default-export/test.js](rules/no-default-export/test.js) | `"warn"` |
 | @kaliber/no-relative-parent-import | Disallows relative parent imports (`../`) in favor of root-slash imports to prevent broken paths when moving files. | Custom | [rules/no-relative-parent-import/test.js](rules/no-relative-parent-import/test.js) | `"warn"` |
+| **Code-as-Prose Rules** | | | | |
+| @kaliber/prose-no-opaque-condition | Requires complex conditions to be named predicates. | Custom | [rules/prose-no-opaque-condition/test.js](rules/prose-no-opaque-condition/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-negated-property-chain | Disallows negated property access such as `!response.data._type`. | Custom | [rules/prose-no-negated-property-chain/test.js](rules/prose-no-negated-property-chain/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-prefer-named-array-callback | Requires named callbacks for complex array operations. | Custom | [rules/prose-prefer-named-array-callback/test.js](rules/prose-prefer-named-array-callback/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-magic-condition | Disallows magic string, number, and regexp literals in conditions. | Custom | [rules/prose-no-magic-condition/test.js](rules/prose-no-magic-condition/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-boolean-literal-arguments | Disallows bare true/false arguments at call sites. | Custom | [rules/prose-no-boolean-literal-arguments/test.js](rules/prose-no-boolean-literal-arguments/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-opaque-identifiers | Disallows short and generic identifiers that hide intent. | Custom | [rules/prose-no-opaque-identifiers/test.js](rules/prose-no-opaque-identifiers/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-predicate-names | Requires obvious boolean helpers and values to use predicate names. | Custom | [rules/prose-predicate-names/test.js](rules/prose-predicate-names/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-section-comments | Disallows section comments inside functions when extraction would be clearer. | Custom | [rules/prose-no-section-comments/test.js](rules/prose-no-section-comments/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-generic-function-names | Disallows implementation-detail and generic function names. | Custom | [rules/prose-no-generic-function-names/test.js](rules/prose-no-generic-function-names/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-require-type-predicate-jsdoc | Requires type predicate JSDoc on predicate-named functions. | Custom | [rules/prose-require-type-predicate-jsdoc/test.js](rules/prose-require-type-predicate-jsdoc/test.js) | opt-in `configs.prose` |
+
 | **Third-Party Rules** | | | | |
 | **eslint-plugin-import** | | | | |
 | import/first | Ensure all imports appear before other statements | [eslint-plugin-import](https://github.com/import-js/eslint-plugin-import) | [tests](https://github.com/import-js/eslint-plugin-import/tree/main/tests) | `"warn"` |

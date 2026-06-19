@@ -1,5 +1,18 @@
 const pkg = require('./package.json')
 
+const proseRules = {
+  'prose-no-opaque-condition': require('./rules/prose-no-opaque-condition'),
+  'prose-no-negated-property-chain': require('./rules/prose-no-negated-property-chain'),
+  'prose-prefer-named-array-callback': require('./rules/prose-prefer-named-array-callback'),
+  'prose-no-magic-condition': require('./rules/prose-no-magic-condition'),
+  'prose-no-boolean-literal-arguments': require('./rules/prose-no-boolean-literal-arguments'),
+  'prose-no-opaque-identifiers': require('./rules/prose-no-opaque-identifiers'),
+  'prose-predicate-names': require('./rules/prose-predicate-names'),
+  'prose-no-section-comments': require('./rules/prose-no-section-comments'),
+  'prose-no-generic-function-names': require('./rules/prose-no-generic-function-names'),
+  'prose-require-type-predicate-jsdoc': require('./rules/prose-require-type-predicate-jsdoc'),
+}
+
 const plugin = {
   meta: {
     name: '@kaliber/eslint-plugin',
@@ -29,9 +42,20 @@ const plugin = {
     'data-x-form-naming': require('./rules/data-x-form-naming'),
 
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
+
+    ...proseRules,
   },
 
   configs: {},
+}
+
+plugin.configs.prose = {
+  plugins: {
+    '@kaliber': plugin,
+  },
+  rules: Object.fromEntries(
+    Object.keys(proseRules).map(ruleName => [`@kaliber/${ruleName}`, 'warn'])
+  ),
 }
 
 module.exports = plugin
