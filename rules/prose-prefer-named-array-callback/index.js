@@ -1,6 +1,7 @@
 const docsUrl = require('../../machinery/docsUrl')
 const {
   getMemberExpressionDepth,
+  getPropertyName,
   isArrayMethodCall,
   unwrapExpression,
 } = require('../../machinery/prose/ast')
@@ -28,7 +29,9 @@ module.exports = {
 
         const [callback] = node.arguments
         if (!isInlineFunction(callback)) return
-        if (!isComplexCallback(callback)) return
+
+        const methodName = getPropertyName(node.callee.property)
+        if (!isComplexCallback(callback, methodName)) return
 
         context.report({
           node: callback,
@@ -47,16 +50,15 @@ function isInlineFunction(node) {
   )
 }
 
-function isComplexCallback(callback) {
+function isComplexCallback(callback, methodName) {
   const body = getCallbackBody(callback)
   if (!body) return true
   if (isSimpleProjection(body)) return false
 
   return (
     hasNodeType(body, ['LogicalExpression', 'ConditionalExpression']) ||
-    hasComparison(body) ||
-    hasNestedMemberExpression(body) ||
-    hasMultiPropertyObjectExpression(body)
+    (methodName !== 'map' && hasNestedMemberExpression(body)) ||
+    hasComplexObjectExpression(body)
   )
 }
 
@@ -68,10 +70,11 @@ function isSimpleProjection(node) {
   if (expression.type === 'Identifier') return true
   if (expression.type === 'MemberExpression') return getMemberExpressionDepth(expression) <= 1
 
-  // item => ({ id: item.id }) — single-property object
+  // item => ({ id: item.id }) — single-property object with a plain key
   if (expression.type === 'ObjectExpression' && expression.properties.length === 1) {
     const prop = expression.properties[0]
     if (prop.type !== 'Property') return false
+    if (prop.computed) return false
     return isSimpleProjection(prop.value)
   }
 
@@ -90,14 +93,6 @@ function getCallbackBody(callback) {
   return statement.type === 'ReturnStatement' ? statement.argument : null
 }
 
-function hasComparison(node) {
-  const expression = unwrapExpression(node)
-  if (!expression) return false
-  if (expression.type === 'BinaryExpression') return true
-
-  return getChildNodes(expression).some(hasComparison)
-}
-
 function hasNestedMemberExpression(node) {
   const expression = unwrapExpression(node)
   if (!expression) return false
@@ -106,12 +101,29 @@ function hasNestedMemberExpression(node) {
   return getChildNodes(expression).some(hasNestedMemberExpression)
 }
 
-function hasMultiPropertyObjectExpression(node) {
+function hasComplexObjectExpression(node) {
   const expression = unwrapExpression(node)
   if (!expression) return false
-  if (expression.type === 'ObjectExpression') return expression.properties.length > 1
+  if (expression.type === 'ObjectExpression')
+    return expression.properties.some(isComplexProperty)
 
-  return getChildNodes(expression).some(hasMultiPropertyObjectExpression)
+  return getChildNodes(expression).some(hasComplexObjectExpression)
+}
+
+function isComplexProperty(property) {
+  if (property.type === 'SpreadElement') return true
+  if (property.type !== 'Property') return true
+  if (property.computed) return true
+  if (property.method) return true
+
+  const value = unwrapExpression(property.value)
+  return Boolean(
+    value && (
+      value.type === 'LogicalExpression' ||
+      value.type === 'ConditionalExpression' ||
+      value.type === 'CallExpression'
+    )
+  )
 }
 
 function hasNodeType(node, types) {

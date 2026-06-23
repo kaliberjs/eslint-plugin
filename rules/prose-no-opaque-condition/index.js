@@ -49,7 +49,7 @@ module.exports = {
     const sourceCode = context.sourceCode
     const options = context.options[0] || {}
     const maxLength = options.maxLength || 60
-    const maxNamedPredicateClauses = options.maxNamedPredicateClauses || 2
+    const maxNamedPredicateClauses = options.maxNamedPredicateClauses || 3
     const ignoreForLoopTests = options.ignoreForLoopTests !== false
     const ignoreTypeofComparisons = options.ignoreTypeofComparisons !== false
 
@@ -106,11 +106,13 @@ function isReadableCondition(node) {
     case 'Identifier':
       return true
     case 'MemberExpression':
-      return getMemberExpressionDepth(expression) <= 1
+      return getMemberExpressionDepth(expression) <= 1 || isLengthAccess(expression)
     case 'CallExpression':
       return isReadablePredicateCall(expression)
     case 'UnaryExpression':
       return isReadableUnaryExpression(expression)
+    case 'BinaryExpression':
+      return isSimpleNamedComparison(expression)
     default:
       return false
   }
@@ -166,8 +168,18 @@ function isSimpleOperand(node) {
   const expression = unwrapExpression(node)
   if (!expression) return false
   if (expression.type === 'Identifier') return true
+  if (expression.type === 'Literal') return true
   if (expression.type === 'MemberExpression') return getMemberExpressionDepth(expression) <= 1
   return false
+}
+
+function isLengthAccess(node) {
+  return (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    node.property.type === 'Identifier' &&
+    node.property.name === 'length'
+  )
 }
 
 function getLogicalClauses(node) {
