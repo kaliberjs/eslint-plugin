@@ -29,9 +29,29 @@ const plugin = {
     'data-x-form-naming': require('./rules/data-x-form-naming'),
 
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
+
+    'no-restricted-layer-import': require('./rules/no-restricted-layer-import'),
+    'no-nested-component': require('./rules/no-nested-component'),
+    'no-universal-in-universal': require('./rules/no-universal-in-universal'),
   },
 
   configs: {},
+}
+
+plugin.configs.architecture = {
+  plugins: {
+    '@kaliber': plugin,
+  },
+  rules: {
+    '@kaliber/no-restricted-layer-import': 'error',
+    '@kaliber/no-nested-component': ['warn', {
+      deny: [
+        { parent: 'Container*', child: 'Container*' },
+        { parent: 'Heading*', child: 'Heading*' },
+      ]
+    }],
+    '@kaliber/no-universal-in-universal': 'error',
+  },
 }
 
 module.exports = plugin
