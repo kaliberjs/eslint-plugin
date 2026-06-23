@@ -228,42 +228,294 @@ describe('scanForDuplication', () => {
   })
 })
 
-// ─── §3: Canonical source selection ─────────────────────────────────────────
+// ─── §3: selectCanonical ────────────────────────────────────────────────────
 
-describe('canonical source selection', () => {
-  // We test the heuristic indirectly through the module's internal logic
-  // by requiring the index.js and checking the exported structure
+describe('selectCanonical', () => {
+  const { selectCanonical } = require('./buildFindings')
+
+  const loc = (filePath) => ({ filePath, startLine: 1, endLine: 10 })
+
+  it('prefers files in shared/ directories', () => {
+    const canonical = selectCanonical([
+      loc('/project/src/features/Button.js'),
+      loc('/project/src/shared/components/Button.js'),
+    ])
+    assert.ok(canonical.filePath.includes('shared'))
+  })
+
+  it('prefers files in machinery/ directories', () => {
+    const canonical = selectCanonical([
+      loc('/project/src/features/deep/utils.js'),
+      loc('/project/src/machinery/utils.js'),
+    ])
+    assert.ok(canonical.filePath.includes('machinery'))
+  })
+
+  it('prefers files in lib/ directories', () => {
+    const canonical = selectCanonical([
+      loc('/project/src/pages/helpers.js'),
+      loc('/project/src/lib/helpers.js'),
+    ])
+    assert.ok(canonical.filePath.includes('lib'))
+  })
+
+  it('prefers shallower path when neither is shared', () => {
+    const canonical = selectCanonical([
+      loc('/project/src/features/deep/nested/Component.js'),
+      loc('/project/src/components/Component.js'),
+    ])
+    assert.strictEqual(canonical.filePath, '/project/src/components/Component.js')
+  })
+
+  it('uses alphabetical order as tiebreaker', () => {
+    const canonical = selectCanonical([
+      loc('/project/src/B.js'),
+      loc('/project/src/A.js'),
+    ])
+    assert.strictEqual(canonical.filePath, '/project/src/A.js')
+  })
+
+  it('shared always beats shallow non-shared', () => {
+    const canonical = selectCanonical([
+      loc('/project/src/X.js'),
+      loc('/project/src/features/deep/shared/X.js'),
+    ])
+    assert.ok(canonical.filePath.includes('shared'))
+  })
+
+  it('handles single location', () => {
+    const canonical = selectCanonical([loc('/project/src/only.js')])
+    assert.strictEqual(canonical.filePath, '/project/src/only.js')
+  })
+
+  it('does not mutate the input array', () => {
+    const locations = [loc('/project/src/B.js'), loc('/project/src/A.js')]
+    selectCanonical(locations)
+    assert.strictEqual(locations[0].filePath, '/project/src/B.js')
+  })
+})
+
+// ─── §4: buildFindings ──────────────────────────────────────────────────────
+
+describe('buildFindings', () => {
+  const { buildFindings } = require('./buildFindings')
+
+  const makeGroup = (locations, lineCount = 8) => ({
+    signature: Array.from({ length: lineCount }, (_, i) => `line${i}`).join('\n'),
+    locations,
+  })
+
+  it('creates findings for non-canonical locations only', () => {
+    const groups = [makeGroup([
+      { filePath: '/project/src/shared/A.js', startLine: 1, endLine: 8 },
+      { filePath: '/project/src/features/B.js', startLine: 10, endLine: 17 },
+      { filePath: '/project/src/features/C.js', startLine: 5, endLine: 12 },
+    ])]
+
+    const findings = buildFindings(groups, '/project/')
+    // shared/A.js is canonical — should have no findings
+    assert.strictEqual(findings.has('/project/src/shared/A.js'), false)
+    // B and C should have findings pointing to A
+    assert.strictEqual(findings.get('/project/src/features/B.js').length, 1)
+    assert.strictEqual(findings.get('/project/src/features/C.js').length, 1)
+  })
+
+  it('message includes line count and canonical reference', () => {
+    const groups = [makeGroup([
+      { filePath: '/project/src/shared/X.js', startLine: 1, endLine: 8 },
+      { filePath: '/project/src/features/Y.js', startLine: 20, endLine: 27 },
+    ])]
+
+    const findings = buildFindings(groups, '/project/')
+    const msg = findings.get('/project/src/features/Y.js')[0].message
+
+    assert.ok(msg.includes('8 lines'), `Expected "8 lines" in: ${msg}`)
+    assert.ok(msg.includes('src/shared/X.js:1-8'), `Expected canonical ref in: ${msg}`)
+  })
+
+  it('preserves correct start and end lines in findings', () => {
+    const groups = [makeGroup([
+      { filePath: '/project/src/shared/A.js', startLine: 1, endLine: 8 },
+      { filePath: '/project/src/features/B.js', startLine: 42, endLine: 49 },
+    ])]
+
+    const findings = buildFindings(groups, '/project/')
+    const finding = findings.get('/project/src/features/B.js')[0]
+    assert.strictEqual(finding.line, 42)
+    assert.strictEqual(finding.endLine, 49)
+  })
+
+  it('handles multiple groups for the same file', () => {
+    const groups = [
+      makeGroup([
+        { filePath: '/project/src/shared/A.js', startLine: 1, endLine: 8 },
+        { filePath: '/project/src/features/B.js', startLine: 10, endLine: 17 },
+      ]),
+      makeGroup([
+        { filePath: '/project/src/shared/C.js', startLine: 1, endLine: 8 },
+        { filePath: '/project/src/features/B.js', startLine: 30, endLine: 37 },
+      ]),
+    ]
+
+    const findings = buildFindings(groups, '/project/')
+    assert.strictEqual(findings.get('/project/src/features/B.js').length, 2)
+  })
+
+  it('returns empty map for empty groups', () => {
+    const findings = buildFindings([], '/project/')
+    assert.strictEqual(findings.size, 0)
+  })
+
+  it('strips the project prefix from canonical reference in message', () => {
+    const groups = [makeGroup([
+      { filePath: '/long/project/path/src/A.js', startLine: 1, endLine: 8 },
+      { filePath: '/long/project/path/src/B.js', startLine: 1, endLine: 8 },
+    ])]
+
+    const findings = buildFindings(groups, '/long/project/path/')
+    const msg = findings.get('/long/project/path/src/B.js')[0].message
+    assert.ok(msg.includes('src/A.js'), 'Should use relative path')
+    assert.ok(!msg.includes('/long/project/path'), 'Should not contain absolute prefix')
+  })
+})
+
+// ─── §5: collectFiles ───────────────────────────────────────────────────────
+
+describe('collectFiles', () => {
+  const { mkdirSync, writeFileSync, rmSync } = require('node:fs')
+  const { join } = require('node:path')
+  const { collectFiles } = require('./collectFiles')
+
+  const testDir = join(__dirname, '_test_fixtures')
+
+  function setup(files) {
+    rmSync(testDir, { recursive: true, force: true })
+    for (const [relativePath, content] of Object.entries(files)) {
+      const fullPath = join(testDir, relativePath)
+      mkdirSync(join(fullPath, '..'), { recursive: true })
+      writeFileSync(fullPath, content || 'const x = 1')
+    }
+  }
+
+  function cleanup() {
+    rmSync(testDir, { recursive: true, force: true })
+  }
+
+  it('finds .js files', () => {
+    setup({ 'a.js': 'x', 'b.js': 'y' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 2)
+    cleanup()
+  })
+
+  it('finds .jsx, .ts, .tsx, .mjs, .cjs files', () => {
+    setup({
+      'a.jsx': 'x', 'b.ts': 'x', 'c.tsx': 'x',
+      'd.mjs': 'x', 'e.cjs': 'x',
+    })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 5)
+    cleanup()
+  })
+
+  it('ignores non-JS files', () => {
+    setup({ 'a.js': 'x', 'b.css': 'x', 'c.json': 'x', 'd.md': 'x' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 1)
+    cleanup()
+  })
+
+  it('ignores node_modules', () => {
+    setup({ 'a.js': 'x', 'node_modules/b.js': 'x' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 1)
+    cleanup()
+  })
+
+  it('ignores .git and other dot directories', () => {
+    setup({ 'a.js': 'x', '.git/b.js': 'x', '.cache/c.js': 'x' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 1)
+    cleanup()
+  })
+
+  it('ignores test files', () => {
+    setup({ 'a.js': 'x', 'a.test.js': 'x', 'a.spec.js': 'x' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 1)
+    cleanup()
+  })
+
+  it('ignores .min.js files', () => {
+    setup({ 'a.js': 'x', 'bundle.min.js': 'x' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 1)
+    cleanup()
+  })
+
+  it('ignores .d.ts files', () => {
+    setup({ 'a.js': 'x', 'types.d.ts': 'x' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 1)
+    cleanup()
+  })
+
+  it('walks subdirectories recursively', () => {
+    setup({ 'a.js': 'x', 'sub/b.js': 'x', 'sub/deep/c.js': 'x' })
+    const files = collectFiles(testDir)
+    assert.strictEqual(files.length, 3)
+    cleanup()
+  })
+
+  it('returns empty array for non-existent directory', () => {
+    const files = collectFiles('/does/not/exist')
+    assert.deepStrictEqual(files, [])
+  })
+
+  it('returns absolute paths', () => {
+    setup({ 'a.js': 'x' })
+    const files = collectFiles(testDir)
+    assert.ok(files[0].startsWith('/'), `Expected absolute path, got: ${files[0]}`)
+    cleanup()
+  })
+})
+
+// ─── §6: rule meta ─────────────────────────────────────────────────────────
+
+describe('rule meta', () => {
   const rule = require('./index')
 
-  it('exports a valid ESLint rule with meta', () => {
+  it('exports type suggestion', () => {
     assert.strictEqual(rule.meta.type, 'suggestion')
+  })
+
+  it('has docs URL pointing to readme', () => {
     assert.ok(rule.meta.docs.url.includes('readme.md'))
+  })
+
+  it('has description mentioning duplication', () => {
     assert.ok(rule.meta.docs.description.includes('duplication'))
   })
 
-  it('has a create function that returns a Program visitor', () => {
-    assert.strictEqual(typeof rule.create, 'function')
-    // Mock context
-    const visitor = rule.create({
-      filename: '/tmp/test.js',
-      getFilename: () => '/tmp/test.js',
-      sourceCode: { getIndexFromLoc: () => 0 },
-      getSourceCode: () => ({ getIndexFromLoc: () => 0 }),
-      report: () => {},
-    })
-    assert.ok('Program' in visitor)
-  })
-
-  it('has schema as empty array', () => {
+  it('has empty schema (no options)', () => {
     assert.deepStrictEqual(rule.meta.schema, [])
   })
 
   it('uses duplicateCode messageId', () => {
     assert.ok('duplicateCode' in rule.meta.messages)
   })
+
+  it('create returns a Program visitor', () => {
+    const visitor = rule.create({
+      filename: '/tmp/test.js',
+      getFilename: () => '/tmp/test.js',
+      report: () => {},
+    })
+    assert.ok('Program' in visitor)
+  })
 })
 
-// ─── §4: Edge cases ─────────────────────────────────────────────────────────
+// ─── §7: edge cases ────────────────────────────────────────────────────────
 
 describe('edge cases', () => {
   it('handles JSX correctly', () => {
@@ -316,16 +568,15 @@ describe('edge cases', () => {
   })
 
   it('does not crash on binary-like content', () => {
-    const binary = '\x00\x01\x02\x03\x04\x05'
     assert.doesNotThrow(() => {
       scanForDuplication([
-        { filePath: 'a.js', content: binary },
-        { filePath: 'b.js', content: binary },
+        { filePath: 'a.js', content: '\x00\x01\x02\x03\x04\x05' },
+        { filePath: 'b.js', content: '\x00\x01\x02\x03\x04\x05' },
       ], 6)
     })
   })
 
-  it('handles very long lines without crashing', () => {
+  it('does not crash on very long lines', () => {
     const longLine = 'const x = ' + 'a'.repeat(10000)
     const code = Array.from({ length: 6 }, () => longLine).join('\n')
     assert.doesNotThrow(() => {
@@ -336,3 +587,4 @@ describe('edge cases', () => {
     })
   })
 })
+
