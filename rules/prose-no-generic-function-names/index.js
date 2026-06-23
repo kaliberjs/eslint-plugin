@@ -20,6 +20,7 @@ const defaultGenericVerbs = [
   'make',
   'manage',
   'map',
+  'parse',
   'perform',
   'process',
   'run',

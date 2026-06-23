@@ -26,8 +26,10 @@ module.exports = {
             type: 'array',
             items: {},
           },
+          allowStructural: { type: 'boolean' },
           ignoreBoolean: { type: 'boolean' },
           ignoreNullish: { type: 'boolean' },
+          ignoreTypeof: { type: 'boolean' },
         },
         additionalProperties: false,
       },
@@ -37,9 +39,12 @@ module.exports = {
 
   create(context) {
     const options = context.options[0] || {}
-    const allowedValues = new Set(options.allow || [])
+    const allowStructural = options.allowStructural !== false
+    const structuralValues = allowStructural ? [0, 1, -1] : []
+    const allowedValues = new Set([...structuralValues, ...(options.allow || [])])
     const ignoreBoolean = options.ignoreBoolean !== false
     const ignoreNullish = options.ignoreNullish !== false
+    const ignoreTypeof = options.ignoreTypeof !== false
 
     return {
       IfStatement: node => reportMagicLiterals(node.test),
@@ -64,6 +69,12 @@ module.exports = {
       const expression = unwrapExpression(node)
       if (!expression) return []
       if (isSkippablePropertyKey(expression, parent)) return []
+      if (ignoreTypeof && isTypeofComparisonLiteral(expression, parent)) return []
+      if (isStaticTemplateLiteral(expression)) {
+        const value = expression.quasis[0].value.cooked
+        if (!allowedValues.has(value)) return [expression]
+        return []
+      }
       if (isMagicLiteral(expression)) return [expression]
 
       return Object.entries(expression).flatMap(([key, value]) => {
@@ -78,9 +89,9 @@ module.exports = {
 
     function isMagicLiteral(node) {
       if (!isLiteral(node)) return false
-      if (ignoreNullish && isNullishLiteral(node)) return false
-      if (ignoreBoolean && isBooleanLiteral(node)) return false
       if (allowedValues.has(node.value)) return false
+      if (isNullishLiteral(node)) return !ignoreNullish
+      if (isBooleanLiteral(node)) return !ignoreBoolean
 
       return (
         typeof node.value === 'number' ||
@@ -98,5 +109,36 @@ function isSkippablePropertyKey(node, parent) {
     parent.type === 'Property' &&
     parent.key === node &&
     !parent.computed
+  )
+}
+
+function isTypeofComparisonLiteral(node, parent) {
+  if (!parent || parent.type !== 'BinaryExpression') return false
+  if (!['==', '===', '!=', '!=='].includes(parent.operator)) return false
+
+  return (
+    parent.left === node &&
+    isTypeofExpression(parent.right)
+  ) || (
+    parent.right === node &&
+    isTypeofExpression(parent.left)
+  )
+}
+
+function isTypeofExpression(node) {
+  const expression = unwrapExpression(node)
+  return Boolean(
+    expression &&
+    expression.type === 'UnaryExpression' &&
+    expression.operator === 'typeof'
+  )
+}
+
+function isStaticTemplateLiteral(node) {
+  const expression = unwrapExpression(node)
+  return Boolean(
+    expression &&
+    expression.type === 'TemplateLiteral' &&
+    expression.expressions.length === 0
   )
 }

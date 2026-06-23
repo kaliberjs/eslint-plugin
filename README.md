@@ -35,6 +35,9 @@ These rules are available through the opt-in `configs.prose` preset. They are
 strict readability checks, so adopt them per project before considering them for
 the default Kaliber config.
 
+For gradual adoption, use `configs.proseCore` — a lower-noise subset with the
+six most actionable rules.
+
 | Rule | Description |
 |---|---|
 | [`prose-no-opaque-condition`](rules/prose-no-opaque-condition/readme.md) | Require complex conditions to be named predicates |
@@ -46,7 +49,10 @@ the default Kaliber config.
 | [`prose-predicate-names`](rules/prose-predicate-names/readme.md) | Require obvious boolean helpers and values to use predicate names |
 | [`prose-no-section-comments`](rules/prose-no-section-comments/readme.md) | Disallow section comments inside functions when extraction would be clearer |
 | [`prose-no-generic-function-names`](rules/prose-no-generic-function-names/readme.md) | Disallow implementation-detail and generic function names |
-| [`prose-require-type-predicate-jsdoc`](rules/prose-require-type-predicate-jsdoc/readme.md) | Require type predicate JSDoc on predicate-named functions |
+| [`prose-require-type-predicate-jsdoc`](rules/prose-require-type-predicate-jsdoc/readme.md) | Require type predicate JSDoc on predicate-named type guards |
+| [`prose-no-opaque-jsx-condition`](rules/prose-no-opaque-jsx-condition/readme.md) | Require simple, readable conditions in JSX render guards |
+| [`prose-prefer-named-reducer`](rules/prose-prefer-named-reducer/readme.md) | Require named functions for complex `.reduce()` callbacks |
+| [`prose-no-explanatory-condition-comments`](rules/prose-no-explanatory-condition-comments/readme.md) | Disallow "what" comments that restate a condition |
 
 ### Tracking rules (data-x)
 

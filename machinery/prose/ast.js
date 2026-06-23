@@ -1,6 +1,6 @@
 const predicatePrefixes = ['is', 'has', 'can', 'should', 'was']
 const proseArrayMethods = ['filter', 'find', 'some', 'every', 'map']
-const nullishValues = new Set([null, 'undefined'])
+const nullishValues = new Set([null])
 
 module.exports = {
   predicatePrefixes,
@@ -77,6 +77,7 @@ function getCalleeName(node) {
   const callee = unwrapExpression(node)
   if (!callee) return null
   if (callee.type === 'Identifier') return callee.name
+  if (callee.type === 'CallExpression') return getCalleeName(callee.callee)
   if (callee.type !== 'MemberExpression') return null
 
   const propertyName = getPropertyName(callee.property)
@@ -132,6 +133,7 @@ function isArrayMethodCall(node) {
   const expression = unwrapExpression(node)
   if (!expression || expression.type !== 'CallExpression') return false
   if (expression.callee.type !== 'MemberExpression') return false
+  if (expression.callee.computed && expression.callee.property.type !== 'Literal') return false
 
   const methodName = getPropertyName(expression.callee.property)
   return proseArrayMethods.includes(methodName)
@@ -147,9 +149,15 @@ function isBooleanishExpression(node) {
     case 'UnaryExpression':
       return ['!', 'delete'].includes(expression.operator)
     case 'BinaryExpression':
-      return true
+      return isComparisonExpression(expression)
     case 'LogicalExpression':
-      return true
+      return isBooleanishLogicalExpression(expression)
+    case 'ConditionalExpression':
+      return (
+        isBooleanishExpression(expression.test) &&
+        isBooleanishExpression(expression.consequent) &&
+        isBooleanishExpression(expression.alternate)
+      )
     case 'CallExpression': {
       const name = getCalleeName(expression.callee)
       return name === 'Boolean' || isPredicateName(name || '')
@@ -157,4 +165,24 @@ function isBooleanishExpression(node) {
     default:
       return false
   }
+}
+
+function isComparisonExpression(node) {
+  return [
+    '==',
+    '===',
+    '!=',
+    '!==',
+    '<',
+    '<=',
+    '>',
+    '>=',
+    'in',
+    'instanceof',
+  ].includes(node.operator)
+}
+
+function isBooleanishLogicalExpression(node) {
+  if (node.operator === '??') return false
+  return isBooleanishExpression(node.left) && isBooleanishExpression(node.right)
 }

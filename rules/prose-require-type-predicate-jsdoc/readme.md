@@ -1,13 +1,13 @@
 # Prose: require type predicate JSDoc
 
-When a function is named as a type guard (`isUser`, `hasPermissions`, `canEdit`),
-its JSDoc should declare it as a TypeScript-style type predicate using
+When a predicate-named function narrows a value's type (`isUser`, `isElement`,
+`hasId`), its JSDoc should declare it as a TypeScript-style type predicate using
 `@returns {paramName is TypeName}`. This makes the contract explicit and enables
 type narrowing for tools that understand JSDoc.
 
 This rule complements [`prose-predicate-names`](../prose-predicate-names/readme.md):
 that rule ensures boolean-returning functions *have* a predicate name; this rule
-ensures predicate-named functions *have* the right JSDoc.
+ensures type guards *have* the right JSDoc.
 
 ## Correct
 
@@ -17,12 +17,14 @@ function isUser(value) {
   return value && value.type === 'user'
 }
 
-/** @returns {item is ActiveItem} */
-const isActive = (item) => item.status === 'active'
+/** @returns {value is string} */
+function isString(value) {
+  return typeof value === 'string'
+}
 
-/** @returns {obj is WithPermissions} */
-function hasPermissions(obj) {
-  return Boolean(obj.permissions)
+/** @returns {value is WithId} */
+function hasId(value) {
+  return 'id' in value
 }
 ```
 
@@ -47,10 +49,23 @@ function isUser(value) {
 }
 ```
 
+## Ignored
+
+```js
+function isExpired(subscription) {
+  return subscription.age > 30
+}
+
+function canEdit(user) {
+  return user.role === 'admin'
+}
+```
+
 ## Notes
 
 - Functions with zero parameters are ignored — type predicates need a subject
   to narrow.
+- Domain predicates that do not narrow a value's type are ignored.
 - Non-predicate-named functions are not checked — use `prose-predicate-names`
   to enforce naming.
 - Both `@returns` and `@return` are accepted.

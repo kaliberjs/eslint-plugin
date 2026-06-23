@@ -32,6 +32,12 @@ module.exports = {
             type: 'integer',
             minimum: 1,
           },
+          ignoreForLoopTests: {
+            type: 'boolean',
+          },
+          ignoreTypeofComparisons: {
+            type: 'boolean',
+          },
         },
         additionalProperties: false,
       },
@@ -44,6 +50,8 @@ module.exports = {
     const options = context.options[0] || {}
     const maxLength = options.maxLength || 60
     const maxNamedPredicateClauses = options.maxNamedPredicateClauses || 2
+    const ignoreForLoopTests = options.ignoreForLoopTests !== false
+    const ignoreTypeofComparisons = options.ignoreTypeofComparisons !== false
 
     return {
       IfStatement: node => reportOpaqueCondition(node.test),
@@ -51,6 +59,7 @@ module.exports = {
       WhileStatement: node => reportOpaqueCondition(node.test),
       DoWhileStatement: node => reportOpaqueCondition(node.test),
       ForStatement(node) {
+        if (ignoreForLoopTests) return
         if (node.test) reportOpaqueCondition(node.test)
       },
     }
@@ -68,11 +77,12 @@ module.exports = {
       const expression = unwrapExpression(test)
       if (!expression) return false
       if (isReadableCondition(expression)) return false
+      if (ignoreTypeofComparisons && isTypeofComparison(expression)) return false
       if (sourceCode.getText(expression).length > maxLength) return true
       if (expression.type === 'LogicalExpression')
         return isOpaqueLogicalExpression(expression)
       if (expression.type === 'BinaryExpression')
-        return !isSimpleNullishComparison(expression)
+        return !isSimpleNullishComparison(expression) && !isSimpleNamedComparison(expression)
       if (expression.type === 'UnaryExpression')
         return isOpaqueUnaryExpression(expression)
 
@@ -106,6 +116,23 @@ function isReadableCondition(node) {
   }
 }
 
+function isTypeofComparison(node) {
+  const expression = unwrapExpression(node)
+  if (!expression || expression.type !== 'BinaryExpression') return false
+  if (!['==', '===', '!=', '!=='].includes(expression.operator)) return false
+
+  return isTypeofExpression(expression.left) || isTypeofExpression(expression.right)
+}
+
+function isTypeofExpression(node) {
+  const expression = unwrapExpression(node)
+  return Boolean(
+    expression &&
+    expression.type === 'UnaryExpression' &&
+    expression.operator === 'typeof'
+  )
+}
+
 function isReadablePredicateCall(node) {
   const name = getCalleeName(node.callee)
   return Boolean(name && isPredicateName(name.split('.').pop()))
@@ -128,6 +155,19 @@ function isReadableUnaryExpression(node) {
 function isOpaqueUnaryExpression(node) {
   if (node.operator !== '!') return false
   return !isReadableUnaryExpression(node)
+}
+
+function isSimpleNamedComparison(node) {
+  if (!['==', '===', '!=', '!==', '<', '<=', '>', '>='].includes(node.operator)) return false
+  return isSimpleOperand(node.left) && isSimpleOperand(node.right)
+}
+
+function isSimpleOperand(node) {
+  const expression = unwrapExpression(node)
+  if (!expression) return false
+  if (expression.type === 'Identifier') return true
+  if (expression.type === 'MemberExpression') return getMemberExpressionDepth(expression) <= 1
+  return false
 }
 
 function getLogicalClauses(node) {

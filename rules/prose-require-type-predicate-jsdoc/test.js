@@ -14,6 +14,24 @@ test('prose-require-type-predicate-jsdoc', {
     `/** @returns {item is ActiveItem} */
      const isActive = (item) => item.status === 'active'`,
 
+    `/** @returns {value is string} */
+     function isString(value) { return typeof value === 'string' }`,
+
+    `/** @returns {value is Record<string, unknown>} */
+     function isRecord(value) { return typeof value === 'object' && value !== null }`,
+
+    `/** @returns {value is Error} */
+     const isError = value => value instanceof Error`,
+
+    `/** @returns {value is WithId} */
+     const hasId = value => 'id' in value`,
+
+    `/** @returns {node is Element} */
+     const isElementNode = node => node.nodeType === 1`,
+
+    `/** @returns {document is SanityDocument} */
+     function isSanityDocument(document) { return document._type === 'article' }`,
+
     // Non-predicate name — no JSDoc required
     `function getUser(id) { return users[id] }`,
 
@@ -23,13 +41,17 @@ test('prose-require-type-predicate-jsdoc', {
     // Not a function — just a boolean variable (other rule's territory)
     `const isReady = status === 'ready'`,
 
-    // has-prefix with correct JSDoc
-    `/** @returns {obj is WithPermissions} */
-     function hasPermissions(obj) { return Boolean(obj.permissions) }`,
-
-    // can-prefix
-    `/** @returns {user is AdminUser} */
-     function canEdit(user) { return user.role === 'admin' }`,
+    // Domain predicates do not narrow an unknown type.
+    `function isExpired(subscription) { return subscription.age > 30 }`,
+    `function hasItems(collection) { return collection.length > 0 }`,
+    `function canEdit(user) { return user.role === 'admin' }`,
+    `const isEnabled = feature => feature.enabled`,
+    `const isActive = item => item.status === 'active'`,
+    `const hasPermissions = user => Boolean(user.permissions)`,
+    `const shouldRender = props => props.visible !== false`,
+    `function isEmpty(items) { return items.length === 0 }`,
+    `function isReady(state) { return state.ready === true }`,
+    `function hasAcceptedTerms(form) { return form.acceptedTerms }`,
 
     // Function expression assigned to variable
     `/** @returns {node is TextNode} */
@@ -39,6 +61,26 @@ test('prose-require-type-predicate-jsdoc', {
     // No JSDoc at all
     {
       code: `function isUser(value) { return value && value.type === 'user' }`,
+      errors: [{ messageId: 'missingTypePredicateJsdoc' }],
+    },
+    {
+      code: `function isString(value) { return typeof value === 'string' }`,
+      errors: [{ messageId: 'missingTypePredicateJsdoc' }],
+    },
+    {
+      code: `const isError = value => value instanceof Error`,
+      errors: [{ messageId: 'missingTypePredicateJsdoc' }],
+    },
+    {
+      code: `const hasId = value => 'id' in value`,
+      errors: [{ messageId: 'missingTypePredicateJsdoc' }],
+    },
+    {
+      code: `const isTextNode = node => node.type === 'text'`,
+      errors: [{ messageId: 'missingTypePredicateJsdoc' }],
+    },
+    {
+      code: `const isSanityDocument = document => document._type === 'article'`,
       errors: [{ messageId: 'missingTypePredicateJsdoc' }],
     },
     // JSDoc present but no @returns
@@ -53,21 +95,32 @@ test('prose-require-type-predicate-jsdoc', {
              function isUser(value) { return value && value.type === 'user' }`,
       errors: [{ messageId: 'missingTypePredicateReturn' }],
     },
-    // Arrow function without JSDoc
+    // Arrow type guard without JSDoc
     {
-      code: `const isValid = (x) => x !== null`,
+      code: `const isElement = (x) => x instanceof HTMLElement`,
       errors: [{ messageId: 'missingTypePredicateJsdoc' }],
     },
-    // has-prefix without JSDoc
+    // has-prefix type guard without JSDoc
     {
-      code: `function hasItems(collection) { return collection.length > 0 }`,
+      code: `function hasName(value) { return 'name' in value }`,
       errors: [{ messageId: 'missingTypePredicateJsdoc' }],
     },
     // Arrow with JSDoc but missing type predicate return
     {
       code: `/** Validates the input */
-             const isEnabled = (feature) => feature.enabled`,
+             const isElement = (node) => node instanceof HTMLElement`,
       errors: [{ messageId: 'missingTypePredicateReturn' }],
+    },
+    // Bogus subject — 'boolean' is not a parameter name
+    {
+      code: `/** @returns {boolean is fine} */
+             function isUser(value) { return value && value.type === 'user' }`,
+      errors: [{ messageId: 'missingTypePredicateReturn' }],
+    },
+    // Detached JSDoc — comment is too far from the function node
+    {
+      code: `/** @returns {value is User} */\n\n\nfunction isUser(value) { return value && value.type === 'user' }`,
+      errors: [{ messageId: 'missingTypePredicateJsdoc' }],
     },
   ],
 })

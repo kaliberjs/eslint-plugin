@@ -97,7 +97,10 @@ function returnsBooleanishValue(functionNode) {
   if (functionNode.type === 'ArrowFunctionExpression' && functionNode.body.type !== 'BlockStatement')
     return isBooleanishExpression(functionNode.body)
 
-  return getReturnArguments(functionNode.body).some(isBooleanishExpression)
+  const returnArgs = getReturnArguments(functionNode.body)
+    .filter(arg => arg != null)
+  if (returnArgs.length === 0) return false
+  return returnArgs.every(isBooleanishExpression)
 }
 
 function getReturnArguments(node) {

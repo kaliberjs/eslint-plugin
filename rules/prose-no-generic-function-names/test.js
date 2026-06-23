@@ -7,6 +7,14 @@ test('prose-no-generic-function-names', {
     `function processDocument(document) { return document }`,
     `const handleSubmit = formData => formData`,
     `const helpers = { normalizeUserInput(input) { return input } }`,
+    `function getActiveItems(items) { return items.filter(isActiveItem) }`,
+    `function updateSubscriptionStatus(subscription) { return subscription }`,
+    `const processCheckoutPayment = payment => payment`,
+    `const makeTrackingPayload = event => event`,
+    `const helpers = { transformSanityDocument(document) { return document } }`,
+    `class ArticleRepository { getArticleBySlug(slug) { return slug } }`,
+    `const handlers = { handleClick(event) { return event } }`,
+    `const process = value => value`,
   ],
   invalid: [
     {
@@ -27,6 +35,40 @@ test('prose-no-generic-function-names', {
     },
     {
       code: `class Processor { transformInput(input) { return input } }`,
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `function mapAndFilter(items) { return items }`,
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `function reduceAndSort(items) { return items }`,
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `function getItems(items) { return items }`,
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `function updateValue(value) { return value }`,
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `const executeThing = thing => thing`,
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `const helpers = { runTask(task) { return task } }`,
+      options: [{ genericNouns: ['task'] }],
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `const helpers = { sendPayload(payload) { return payload } }`,
+      options: [{ genericVerbs: ['send'], genericNouns: ['payload'] }],
+      errors: [{ messageId: 'genericFunctionName' }],
+    },
+    {
+      code: `const helpers = { parse_thing(value) { return value } }`,
       errors: [{ messageId: 'genericFunctionName' }],
     },
   ],

@@ -33,7 +33,7 @@ module.exports = {
 
   create(context) {
     const options = context.options[0] || {}
-    const minDepth = options.minDepth || 1
+    const minDepth = options.minDepth || 2
 
     return {
       UnaryExpression(node) {

@@ -19,7 +19,10 @@
 | @kaliber/prose-predicate-names | Requires obvious boolean helpers and values to use predicate names. | Custom | [rules/prose-predicate-names/test.js](rules/prose-predicate-names/test.js) | opt-in `configs.prose` |
 | @kaliber/prose-no-section-comments | Disallows section comments inside functions when extraction would be clearer. | Custom | [rules/prose-no-section-comments/test.js](rules/prose-no-section-comments/test.js) | opt-in `configs.prose` |
 | @kaliber/prose-no-generic-function-names | Disallows implementation-detail and generic function names. | Custom | [rules/prose-no-generic-function-names/test.js](rules/prose-no-generic-function-names/test.js) | opt-in `configs.prose` |
-| @kaliber/prose-require-type-predicate-jsdoc | Requires type predicate JSDoc on predicate-named functions. | Custom | [rules/prose-require-type-predicate-jsdoc/test.js](rules/prose-require-type-predicate-jsdoc/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-require-type-predicate-jsdoc | Requires type predicate JSDoc on predicate-named type guards. | Custom | [rules/prose-require-type-predicate-jsdoc/test.js](rules/prose-require-type-predicate-jsdoc/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-opaque-jsx-condition | Requires simple, readable conditions in JSX render guards. | Custom | [rules/prose-no-opaque-jsx-condition/test.js](rules/prose-no-opaque-jsx-condition/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-prefer-named-reducer | Requires named functions for complex `.reduce()` callbacks. | Custom | [rules/prose-prefer-named-reducer/test.js](rules/prose-prefer-named-reducer/test.js) | opt-in `configs.prose` |
+| @kaliber/prose-no-explanatory-condition-comments | Disallows "what" comments that restate a condition before it. | Custom | [rules/prose-no-explanatory-condition-comments/test.js](rules/prose-no-explanatory-condition-comments/test.js) | opt-in `configs.prose` |
 
 | **Third-Party Rules** | | | | |
 | **eslint-plugin-import** | | | | |

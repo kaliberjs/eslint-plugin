@@ -10,6 +10,7 @@ predicate.
 if (isMissingDocumentType(response)) return
 if (isReady(user) && canSubmit(form)) submitForm()
 if (value === null) return
+if (typeof value === 'string') return
 ```
 
 ## Incorrect
@@ -25,7 +26,9 @@ if (user && user.role === 'admin' && user.active && !user.suspended) grantAccess
 ```js
 {
   maxLength: 60,
-  maxNamedPredicateClauses: 2
+  maxNamedPredicateClauses: 2,
+  ignoreForLoopTests: true,
+  ignoreTypeofComparisons: true
 }
 ```
 

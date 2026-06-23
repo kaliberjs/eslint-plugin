@@ -9,6 +9,7 @@ or `/pattern/` usually encode a rule that deserves a name.
 if (isAdult(person)) grantAccess()
 if (exceededMaxRetries(retries)) throw new Error('Failed')
 if (status === ACTIVE_STATUS) renderActiveState()
+if (typeof value === 'string') renderString(value)
 ```
 
 ## Incorrect
@@ -25,8 +26,9 @@ if (status === 'active') renderActiveState()
 {
   allow: ['idle'],
   ignoreBoolean: true,
-  ignoreNullish: true
+  ignoreNullish: true,
+  ignoreTypeof: true
 }
 ```
 
-`ignoreBoolean` and `ignoreNullish` default to `true`.
+`ignoreBoolean`, `ignoreNullish`, and `ignoreTypeof` default to `true`.

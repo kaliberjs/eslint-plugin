@@ -50,6 +50,7 @@ function isInlineFunction(node) {
 function isComplexCallback(callback) {
   const body = getCallbackBody(callback)
   if (!body) return true
+  if (isSimpleProjection(body)) return false
 
   return (
     hasNodeType(body, ['LogicalExpression', 'ConditionalExpression']) ||
@@ -57,6 +58,24 @@ function isComplexCallback(callback) {
     hasNestedMemberExpression(body) ||
     hasMultiPropertyObjectExpression(body)
   )
+}
+
+function isSimpleProjection(node) {
+  const expression = unwrapExpression(node)
+  if (!expression) return false
+
+  // item => item.name  or  ({ name }) => name
+  if (expression.type === 'Identifier') return true
+  if (expression.type === 'MemberExpression') return getMemberExpressionDepth(expression) <= 1
+
+  // item => ({ id: item.id }) — single-property object
+  if (expression.type === 'ObjectExpression' && expression.properties.length === 1) {
+    const prop = expression.properties[0]
+    if (prop.type !== 'Property') return false
+    return isSimpleProjection(prop.value)
+  }
+
+  return false
 }
 
 function getCallbackBody(callback) {

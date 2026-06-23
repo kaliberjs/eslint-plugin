@@ -11,6 +11,9 @@ const proseRules = {
   'prose-no-section-comments': require('./rules/prose-no-section-comments'),
   'prose-no-generic-function-names': require('./rules/prose-no-generic-function-names'),
   'prose-require-type-predicate-jsdoc': require('./rules/prose-require-type-predicate-jsdoc'),
+  'prose-no-opaque-jsx-condition': require('./rules/prose-no-opaque-jsx-condition'),
+  'prose-prefer-named-reducer': require('./rules/prose-prefer-named-reducer'),
+  'prose-no-explanatory-condition-comments': require('./rules/prose-no-explanatory-condition-comments'),
 }
 
 const plugin = {
@@ -49,12 +52,30 @@ const plugin = {
   configs: {},
 }
 
+const proseCoreRuleNames = [
+  'prose-no-boolean-literal-arguments',
+  'prose-prefer-named-array-callback',
+  'prose-predicate-names',
+  'prose-require-type-predicate-jsdoc',
+  'prose-no-opaque-jsx-condition',
+  'prose-prefer-named-reducer',
+]
+
 plugin.configs.prose = {
   plugins: {
     '@kaliber': plugin,
   },
   rules: Object.fromEntries(
     Object.keys(proseRules).map(ruleName => [`@kaliber/${ruleName}`, 'warn'])
+  ),
+}
+
+plugin.configs.proseCore = {
+  plugins: {
+    '@kaliber': plugin,
+  },
+  rules: Object.fromEntries(
+    proseCoreRuleNames.map(ruleName => [`@kaliber/${ruleName}`, 'warn'])
   ),
 }
 
