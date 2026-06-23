@@ -33,6 +33,8 @@ const plugin = {
     'no-restricted-layer-import': require('./rules/no-restricted-layer-import'),
     'no-nested-component': require('./rules/no-nested-component'),
     'no-universal-in-universal': require('./rules/no-universal-in-universal'),
+
+    'no-duplicate-code': require('./rules/no-duplicate-code'),
   },
 
   configs: {},
