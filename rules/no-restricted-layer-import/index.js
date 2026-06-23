@@ -6,13 +6,19 @@ const messages = {
     `Unexpected import '${importPath}' — '${sourceLayer}' may not import from '${targetLayer}'`,
 }
 
+const sharedRootModules = [
+  'routeMap', 'routeData', 'routeRedirects',
+  'i18n', 'cssGlobal', 'images', 'fonts',
+  'search', 'constants', 'groq', 'head',
+]
+
 const defaultLayers = {
-  'features/buildingBlocks': ['features/buildingBlocks', 'machinery'],
-  'features/*': ['features/*', 'features/buildingBlocks', 'machinery'],
-  'machinery': ['machinery'],
-  'pages': ['pages', 'features', 'machinery', 'templates', 'wrappers'],
-  'templates': ['features', 'machinery'],
-  'wrappers': ['features', 'machinery'],
+  'features/buildingBlocks': ['features/buildingBlocks', 'machinery', ...sharedRootModules],
+  'features/*': ['features/*', 'features/buildingBlocks', 'machinery', ...sharedRootModules],
+  'machinery': ['machinery', ...sharedRootModules],
+  'pages': ['pages', 'features', 'machinery', 'templates', 'wrappers', ...sharedRootModules],
+  'templates': ['features', 'machinery', ...sharedRootModules],
+  'wrappers': ['features', 'machinery', ...sharedRootModules],
 }
 
 module.exports = {
