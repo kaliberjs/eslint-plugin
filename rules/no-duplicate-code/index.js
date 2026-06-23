@@ -200,7 +200,7 @@ module.exports = {
           context.report({
             loc: {
               start: { line: finding.line, column: 0 },
-              end: { line: finding.endLine, column: 0 },
+              end: { line: finding.line, column: 0 },
             },
             messageId: 'duplicateCode',
             data: { message: finding.message },
