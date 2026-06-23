@@ -29,8 +29,10 @@ import { Button } from '/features/buildingBlocks/Button'
 
 ## Default Layer Boundaries
 
-| Layer | May import from |
-|-------|----------------|
+All layers can import from shared root modules (`routeMap`, `i18n`, `cssGlobal`, `images`, `search`, `constants`, `groq`, `head`, etc.).
+
+| Layer | May also import from |
+|-------|---------------------|
 | `features/buildingBlocks` | `features/buildingBlocks`, `machinery` |
 | `features/*` | `features/*`, `features/buildingBlocks`, `machinery` |
 | `machinery` | `machinery` |
