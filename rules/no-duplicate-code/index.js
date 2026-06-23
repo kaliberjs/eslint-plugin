@@ -26,7 +26,6 @@ const { scanForDuplication } = require('./engine')
 
 const MIN_LINES = 6
 const CACHE_TTL = 10_000
-const PREVIEW_LINES = 3
 
 const JS_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'])
 
@@ -141,7 +140,7 @@ function ensureFindings(currentFile) {
 
 /**
  * Build findings: one entry per non-canonical location per group.
- * Each finding has a compact message + a rich suggestion for LLMs.
+ * Only non-canonical files get warnings pointing to the canonical source.
  */
 function buildFindings(groups, absPrefix) {
   /** @type {Map<string, object[]>} */
@@ -150,12 +149,6 @@ function buildFindings(groups, absPrefix) {
   for (const group of groups) {
     const sigLines = group.signature ? group.signature.split('\n') : []
     const lineCount = sigLines.length
-
-    // Code preview for the suggestion (first N lines, readable)
-    const previewRaw = sigLines.slice(0, PREVIEW_LINES).join(', ')
-    const preview = previewRaw.length > 120
-      ? previewRaw.slice(0, 117) + '...'
-      : previewRaw
 
     const canonical = selectCanonical(group.locations)
     const canonicalRel = canonical.filePath.replace(absPrefix, '')
@@ -167,15 +160,7 @@ function buildFindings(groups, absPrefix) {
       const finding = {
         line: location.startLine,
         endLine: location.endLine,
-        // Compact message for Problems panel
         message: `Duplicated code (${lineCount} lines) — consider reusing ${canonicalRef}`,
-        // Rich suggestion for LLMs (code preview + actionable instruction)
-        suggestDesc:
-          `Replace with import from ${canonicalRef}. ` +
-          `The existing code starts with: ${preview}` +
-          (lineCount > PREVIEW_LINES ? ` (${lineCount - PREVIEW_LINES} more lines)` : '') +
-          `. Delete this block and import/reuse from ${canonicalRel} instead.`,
-        canonicalRef,
       }
 
       const key = location.filePath
@@ -192,7 +177,6 @@ function buildFindings(groups, absPrefix) {
 module.exports = {
   meta: {
     type: 'suggestion',
-    hasSuggestions: true,
     docs: {
       description: 'Detect code duplication across project files and suggest reuse of the canonical source',
       url: docsUrl(__dirname),
@@ -212,8 +196,6 @@ module.exports = {
         const fileFindings = findings.get(filename)
         if (!fileFindings || fileFindings.length === 0) return
 
-        const sourceCode = context.sourceCode || context.getSourceCode()
-
         for (const finding of fileFindings) {
           context.report({
             loc: {
@@ -222,19 +204,6 @@ module.exports = {
             },
             messageId: 'duplicateCode',
             data: { message: finding.message },
-            suggest: [
-              {
-                desc: finding.suggestDesc,
-                fix(fixer) {
-                  // Insert a TODO comment as a breadcrumb
-                  const lineStart = sourceCode.getIndexFromLoc({ line: finding.line, column: 0 })
-                  return fixer.insertTextBeforeRange(
-                    [lineStart, lineStart],
-                    `// TODO: Reuse from ${finding.canonicalRef}\n`
-                  )
-                },
-              },
-            ],
           })
         }
       },

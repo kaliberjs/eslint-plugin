@@ -237,7 +237,6 @@ describe('canonical source selection', () => {
 
   it('exports a valid ESLint rule with meta', () => {
     assert.strictEqual(rule.meta.type, 'suggestion')
-    assert.strictEqual(rule.meta.hasSuggestions, true)
     assert.ok(rule.meta.docs.url.includes('readme.md'))
     assert.ok(rule.meta.docs.description.includes('duplication'))
   })
