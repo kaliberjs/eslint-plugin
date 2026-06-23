@@ -45,7 +45,6 @@ six most actionable rules.
 | [`prose-prefer-named-array-callback`](rules/prose-prefer-named-array-callback/readme.md) | Require named callbacks for complex array operations |
 | [`prose-no-magic-condition`](rules/prose-no-magic-condition/readme.md) | Disallow magic string, number, and regexp literals in conditions |
 | [`prose-no-boolean-literal-arguments`](rules/prose-no-boolean-literal-arguments/readme.md) | Disallow bare true/false arguments at call sites |
-| [`prose-no-opaque-identifiers`](rules/prose-no-opaque-identifiers/readme.md) | Disallow short and generic identifiers that hide intent |
 | [`prose-predicate-names`](rules/prose-predicate-names/readme.md) | Require obvious boolean helpers and values to use predicate names |
 | [`prose-no-section-comments`](rules/prose-no-section-comments/readme.md) | Disallow section comments inside functions when extraction would be clearer |
 | [`prose-no-generic-function-names`](rules/prose-no-generic-function-names/readme.md) | Disallow implementation-detail and generic function names |

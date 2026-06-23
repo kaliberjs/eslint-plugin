@@ -15,7 +15,7 @@ module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow magic string, number, and regexp literals in condition expressions',
+      description: 'Disallow magic number, regexp, and (optionally) string literals in condition expressions',
       url: docsUrl(__dirname),
     },
     schema: [
@@ -30,6 +30,7 @@ module.exports = {
           ignoreBoolean: { type: 'boolean' },
           ignoreNullish: { type: 'boolean' },
           ignoreTypeof: { type: 'boolean' },
+          ignoreStringLiterals: { type: 'boolean' },
         },
         additionalProperties: false,
       },
@@ -45,6 +46,7 @@ module.exports = {
     const ignoreBoolean = options.ignoreBoolean !== false
     const ignoreNullish = options.ignoreNullish !== false
     const ignoreTypeof = options.ignoreTypeof !== false
+    const ignoreStringLiterals = options.ignoreStringLiterals !== false
 
     return {
       IfStatement: node => reportMagicLiterals(node.test),
@@ -69,8 +71,13 @@ module.exports = {
       const expression = unwrapExpression(node)
       if (!expression) return []
       if (isSkippablePropertyKey(expression, parent)) return []
-      if (ignoreTypeof && isTypeofComparisonLiteral(expression, parent)) return []
+      if (isTypeofComparisonLiteral(expression, parent)) {
+        if (ignoreTypeof) return []
+        if (!allowedValues.has(expression.value)) return [expression]
+        return []
+      }
       if (isStaticTemplateLiteral(expression)) {
+        if (ignoreStringLiterals) return []
         const value = expression.quasis[0].value.cooked
         if (!allowedValues.has(value)) return [expression]
         return []
@@ -95,7 +102,7 @@ module.exports = {
 
       return (
         typeof node.value === 'number' ||
-        typeof node.value === 'string' ||
+        (typeof node.value === 'string' && !ignoreStringLiterals) ||
         typeof node.value === 'bigint' ||
         Boolean(node.regex)
       )

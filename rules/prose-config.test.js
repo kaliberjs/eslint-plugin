@@ -64,13 +64,12 @@ describe('prose config', () => {
 
       items.filter(item => item.active && !item.archived)
 
-      function renderStatus(status) {
-        if (status === 'expired') {
+      function renderStatus(retries) {
+        if (retries > 3) {
           hideSubscription()
         }
       }
 
-      const d = new Date()
 
       function processData(data) {
         return data
@@ -111,7 +110,6 @@ describe('prose config', () => {
       '@kaliber/prose-prefer-named-array-callback',
       '@kaliber/prose-no-opaque-condition',
       '@kaliber/prose-no-magic-condition',
-      '@kaliber/prose-no-opaque-identifiers',
       '@kaliber/prose-no-generic-function-names',
       '@kaliber/prose-predicate-names',
       '@kaliber/prose-no-section-comments',
@@ -142,7 +140,7 @@ describe('prose config', () => {
 
   it('prose config includes all prose rules', () => {
     const proseRuleNames = Object.keys(plugin.configs.prose.rules)
-    assert.ok(proseRuleNames.length >= 13, `Expected at least 13 rules, got ${proseRuleNames.length}`)
+    assert.ok(proseRuleNames.length >= 12, `Expected at least 12 rules, got ${proseRuleNames.length}`)
 
     for (const ruleName of proseRuleNames) {
       assert.equal(plugin.configs.prose.rules[ruleName], 'warn')

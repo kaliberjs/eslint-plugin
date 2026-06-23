@@ -6,7 +6,6 @@ const proseRules = {
   'prose-prefer-named-array-callback': require('./rules/prose-prefer-named-array-callback'),
   'prose-no-magic-condition': require('./rules/prose-no-magic-condition'),
   'prose-no-boolean-literal-arguments': require('./rules/prose-no-boolean-literal-arguments'),
-  'prose-no-opaque-identifiers': require('./rules/prose-no-opaque-identifiers'),
   'prose-predicate-names': require('./rules/prose-predicate-names'),
   'prose-no-section-comments': require('./rules/prose-no-section-comments'),
   'prose-no-generic-function-names': require('./rules/prose-no-generic-function-names'),
