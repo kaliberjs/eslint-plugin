@@ -72,6 +72,7 @@ module.exports = [
       '@kaliber/no-relative-parent-import': 'warn',
       '@kaliber/jsx-key': 'warn',
       '@kaliber/import-sort': 'warn',
+      '@kaliber/no-null-return-in-universal': 'warn',
 
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
