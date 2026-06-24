@@ -1,4 +1,5 @@
 const { firstLetterLowerCase } = require('../../machinery/word')
+const { isAnonymousFunction } = require('../../machinery/ast')
 const docsUrl = require('../../machinery/docsUrl')
 
 const messages = {
@@ -38,7 +39,7 @@ module.exports = {
 
     function reportNonDestructuredProps(node) {
       const [props] = node.params
-      if (firstLetterLowerCase(node.id.name) || !props || props.type !== 'Identifier') return
+      if (isAnonymousFunction(node) || firstLetterLowerCase(node.id.name) || !props || props.type !== 'Identifier') return
       context.report({
         message: messages['destructure props'],
         node: props,

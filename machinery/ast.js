@@ -3,6 +3,7 @@ module.exports = {
   getFunctionName,
   getJSXElementName, getParentJSXElement,
   isRootJSXElement, hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
+  isAnonymousFunction,
 }
 
 function getPropertyName(property) {
@@ -94,4 +95,8 @@ function getParentJSXElement({ parent }) {
 function isInJSXFragment({ parent }) {
   if (!parent) return false
   return parent.type === 'JSXFragment' || isInJSXFragment(parent)
+}
+
+function isAnonymousFunction(node) {
+  return (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression') && !node.id
 }
