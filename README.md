@@ -29,6 +29,30 @@ module.exports = [
 | [`position-center`](rules/position-center/readme.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
 | [`todo-ticket-reference`](rules/todo-ticket-reference/readme.md) | Require TODO comments to reference a Jira ticket |
 
+### Code-as-prose rules
+
+These rules are available through the opt-in `configs.prose` preset. They are
+strict readability checks, so adopt them per project before considering them for
+the default Kaliber config.
+
+For gradual adoption, use `configs.proseCore` — a lower-noise subset with the
+six most actionable rules.
+
+| Rule | Description |
+|---|---|
+| [`prose-no-opaque-condition`](rules/prose-no-opaque-condition/readme.md) | Require complex conditions to be named predicates |
+| [`prose-no-negated-property-chain`](rules/prose-no-negated-property-chain/readme.md) | Disallow negated property access such as `!response.data._type` |
+| [`prose-prefer-named-array-callback`](rules/prose-prefer-named-array-callback/readme.md) | Require named callbacks for complex array operations |
+| [`prose-no-magic-condition`](rules/prose-no-magic-condition/readme.md) | Disallow magic string, number, and regexp literals in conditions |
+| [`prose-no-boolean-literal-arguments`](rules/prose-no-boolean-literal-arguments/readme.md) | Disallow bare true/false arguments at call sites |
+| [`prose-predicate-names`](rules/prose-predicate-names/readme.md) | Require obvious boolean helpers and values to use predicate names |
+| [`prose-no-section-comments`](rules/prose-no-section-comments/readme.md) | Disallow section comments inside functions when extraction would be clearer |
+| [`prose-no-generic-function-names`](rules/prose-no-generic-function-names/readme.md) | Disallow implementation-detail and generic function names |
+| [`prose-require-type-predicate-jsdoc`](rules/prose-require-type-predicate-jsdoc/readme.md) | Require type predicate JSDoc on predicate-named type guards |
+| [`prose-no-opaque-jsx-condition`](rules/prose-no-opaque-jsx-condition/readme.md) | Require simple, readable conditions in JSX render guards |
+| [`prose-prefer-named-reducer`](rules/prose-prefer-named-reducer/readme.md) | Require named functions for complex `.reduce()` callbacks |
+| [`prose-no-explanatory-condition-comments`](rules/prose-no-explanatory-condition-comments/readme.md) | Disallow "what" comments that restate a condition |
+
 ### Tracking rules (data-x)
 
 | Rule | Description |
@@ -43,6 +67,7 @@ module.exports = [
 | [`data-x-unique-id`](rules/data-x-unique-id/readme.md) | Repeated elements with the same data-x must include data-x-id for disambiguation |
 | [`data-x-sectioning-elements`](rules/data-x-sectioning-elements/readme.md) | Sectioning HTML elements (section, header, footer, nav, etc.) must have data-x |
 | [`data-x-form-naming`](rules/data-x-form-naming/readme.md) | Form elements must have a data-x value ending with -form |
+
 
 ## Documentation
 
