@@ -14,13 +14,6 @@ On first lint, the rule scans all source files and builds a map of duplicated co
 | 2 | Shallowest path depth | More foundational |
 | 3 | Alphabetically first | Deterministic tiebreaker |
 
-### Two-tier messaging
-
-| Layer | Audience | Content |
-|-------|----------|---------|
-| **message** | Humans (Problems panel) | `Duplicated code (27 lines) — consider reusing Content.js:265-291` |
-| **suggest** | LLMs / "Explain and Fix" | Code preview + `Delete this block and import from X instead` |
-
 ## Examples
 
 ### ❌ Duplicating existing code
@@ -39,10 +32,6 @@ function ContentBlock({ data }) {
 ```
 ⚠ Duplicated code (27 lines) — consider reusing src/features/buildingBlocks/Content.js:265-291
   eslint(@kaliber/no-duplicate-code)
-
-💡 Replace with import from Content.js:265-291. The existing code starts with:
-   switch(data._type){, case'introWithTitle':return(, <ContainerLgstyleContext='light'{...containerProps}>
-   (24 more lines). Delete this block and import/reuse from Content.js instead.
 ```
 
 ### ✅ Importing the shared implementation

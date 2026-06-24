@@ -28,6 +28,15 @@ module.exports = [
 | [`jsx-key`](rules/jsx-key/readme.md) | Require key prop in iterators but allow keyless JSX in array-literal DSL patterns |
 | [`position-center`](rules/position-center/readme.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
 | [`todo-ticket-reference`](rules/todo-ticket-reference/readme.md) | Require TODO comments to reference a Jira ticket |
+| [`no-duplicate-code`](rules/no-duplicate-code/readme.md) | Detect code duplication across project files and suggest reuse of the canonical source |
+
+### Architecture rules
+
+| Rule | Description |
+|---|---|
+| [`no-restricted-layer-import`](rules/no-restricted-layer-import/readme.md) | Enforce layer boundaries — prevent features from importing across layers |
+| [`no-nested-component`](rules/no-nested-component/readme.md) | Prevent nesting of structural components (e.g. Container inside Container) |
+| [`no-universal-in-universal`](rules/no-universal-in-universal/readme.md) | Prevent .universal files from importing other .universal files |
 
 ### Tracking rules (data-x)
 
