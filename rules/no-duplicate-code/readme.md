@@ -64,6 +64,23 @@ rules: {
 }
 ```
 
+### Options
+
+```js
+'@kaliber/no-duplicate-code': ['warn', {
+  // Minimum normalised lines for a block to count as duplication (default: 6)
+  minLines: 8,
+
+  // Directories to scan, relative to project root (default: ['src', 'config', 'services'])
+  scanDirs: ['src', 'lib'],
+}]
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `minLines` | integer (≥ 3) | `6` | Minimum normalised lines to consider as duplication |
+| `scanDirs` | string[] | `['src', 'config', 'services']` | Directories to scan (relative to project root) |
+
 ## Detection algorithm
 
 1. **Normalise** each file: strip comments, collapse whitespace, normalise quotes, remove trailing commas

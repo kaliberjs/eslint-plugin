@@ -8,17 +8,38 @@ module.exports = {
       description: 'Detect code duplication across project files and suggest reuse of the canonical source',
       url: docsUrl(__dirname),
     },
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          minLines: {
+            type: 'integer',
+            minimum: 3,
+            default: 6,
+          },
+          scanDirs: {
+            type: 'array',
+            items: { type: 'string' },
+            default: ['src', 'config', 'services'],
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
     messages: {
       duplicateCode: '{{ message }}',
     },
   },
 
   create(context) {
+    const options = context.options[0] || {}
+    const minLines = options.minLines || 6
+    const scanDirs = options.scanDirs || ['src', 'config', 'services']
+
     return {
       Program() {
         const filename = context.filename || context.getFilename()
-        const findings = ensureFindings(filename)
+        const findings = ensureFindings(filename, { minLines, scanDirs })
 
         const fileFindings = findings.get(filename)
         if (!fileFindings || fileFindings.length === 0) return

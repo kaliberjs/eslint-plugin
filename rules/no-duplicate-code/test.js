@@ -480,9 +480,9 @@ describe('collectFiles', () => {
   })
 })
 
-// ─── §6: rule meta ─────────────────────────────────────────────────────────
+// ─── §6: rule meta + schema ─────────────────────────────────────────────────
 
-describe('rule meta', () => {
+describe('rule meta + schema', () => {
   const rule = require('./index')
 
   it('exports type suggestion', () => {
@@ -497,18 +497,56 @@ describe('rule meta', () => {
     assert.ok(rule.meta.docs.description.includes('duplication'))
   })
 
-  it('has empty schema (no options)', () => {
-    assert.deepStrictEqual(rule.meta.schema, [])
-  })
-
   it('uses duplicateCode messageId', () => {
     assert.ok('duplicateCode' in rule.meta.messages)
+  })
+
+  it('schema accepts minLines option', () => {
+    const schema = rule.meta.schema[0]
+    assert.ok(schema.properties.minLines)
+    assert.strictEqual(schema.properties.minLines.type, 'integer')
+    assert.strictEqual(schema.properties.minLines.minimum, 3)
+    assert.strictEqual(schema.properties.minLines.default, 6)
+  })
+
+  it('schema accepts scanDirs option', () => {
+    const schema = rule.meta.schema[0]
+    assert.ok(schema.properties.scanDirs)
+    assert.strictEqual(schema.properties.scanDirs.type, 'array')
+    assert.deepStrictEqual(schema.properties.scanDirs.default, ['src', 'config', 'services'])
+  })
+
+  it('schema rejects unknown properties', () => {
+    const schema = rule.meta.schema[0]
+    assert.strictEqual(schema.additionalProperties, false)
   })
 
   it('create returns a Program visitor', () => {
     const visitor = rule.create({
       filename: '/tmp/test.js',
       getFilename: () => '/tmp/test.js',
+      options: [],
+      report: () => {},
+    })
+    assert.ok('Program' in visitor)
+  })
+
+  it('create uses default options when none provided', () => {
+    // Should not throw
+    const visitor = rule.create({
+      filename: '/tmp/test.js',
+      getFilename: () => '/tmp/test.js',
+      options: [],
+      report: () => {},
+    })
+    assert.ok('Program' in visitor)
+  })
+
+  it('create accepts custom options', () => {
+    const visitor = rule.create({
+      filename: '/tmp/test.js',
+      getFilename: () => '/tmp/test.js',
+      options: [{ minLines: 10, scanDirs: ['src'] }],
       report: () => {},
     })
     assert.ok('Program' in visitor)
