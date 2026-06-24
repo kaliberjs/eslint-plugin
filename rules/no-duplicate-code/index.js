@@ -22,6 +22,10 @@ module.exports = {
             items: { type: 'string' },
             default: ['src', 'config', 'services'],
           },
+          type2: {
+            type: 'boolean',
+            default: true,
+          },
         },
         additionalProperties: false,
       },
@@ -35,11 +39,12 @@ module.exports = {
     const options = context.options[0] || {}
     const minLines = options.minLines || 6
     const scanDirs = options.scanDirs || ['src', 'config', 'services']
+    const type2 = options.type2 !== false  // default true
 
     return {
       Program() {
         const filename = context.filename || context.getFilename()
-        const findings = ensureFindings(filename, { minLines, scanDirs })
+        const findings = ensureFindings(filename, { minLines, scanDirs, type2 })
 
         const fileFindings = findings.get(filename)
         if (!fileFindings || fileFindings.length === 0) return

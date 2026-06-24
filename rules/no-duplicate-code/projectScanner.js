@@ -22,9 +22,9 @@ let projectRoot = null
  * @param {{ minLines: number, scanDirs: string[] }} options
  * @returns {Map<string, Array<{line: number, endLine: number, message: string}>>}
  */
-function ensureFindings(currentFile, { minLines, scanDirs }) {
+function ensureFindings(currentFile, { minLines, scanDirs, type2 = false }) {
   const now = Date.now()
-  const optionsKey = `${minLines}:${scanDirs.join(',')}`
+  const optionsKey = `${minLines}:${scanDirs.join(',')}:t2=${type2}`
 
   if (!projectRoot) projectRoot = findProjectRoot(currentFile)
 
@@ -48,7 +48,7 @@ function ensureFindings(currentFile, { minLines, scanDirs }) {
     content: readFileSync(fp, 'utf-8'),
   }))
 
-  const groups = scanForDuplication(fileEntries, minLines)
+  const groups = scanForDuplication(fileEntries, minLines, { type2 })
   cachedFindings = buildFindings(groups, projectRoot + sep)
   lastScanTime = now
   lastOptionsKey = optionsKey

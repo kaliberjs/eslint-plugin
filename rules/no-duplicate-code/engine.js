@@ -3,14 +3,15 @@
  *
  * Exports:
  *   - normalizeSource(source: string): NormLine[]
- *   - scanForDuplication(files: FileEntry[], minLines?: number): DuplicationGroup[]
+ *   - scanForDuplication(files: FileEntry[], minLines?: number, options?: { type2?: boolean }): DuplicationGroup[]
  *
  * V8-optimised: single-pass charCodeAt state machine, no regex on hot path.
+ * Type 2 detection: regex-based identifier → $ID normalisation (second pass).
  *
  * @typedef {{ filePath: string, content: string }} FileEntry
  * @typedef {{ norm: string, originalLine: number }} NormLine
  * @typedef {{ startLine: number, endLine: number, filePath: string }} Location
- * @typedef {{ signature: string, locations: Location[] }} DuplicationGroup
+ * @typedef {{ signature: string, locations: Location[], detectionType: 'exact' | 'renamed' }} DuplicationGroup
  */
 
 // ─── Character Codes ────────────────────────────────────────────────────────
@@ -40,6 +41,34 @@ function isWhitespace(cc) {
 
 function isClosingBracket(cc) {
   return cc === CH_RBRACE || cc === CH_RBRACKET || cc === CH_RPAREN
+}
+
+// ─── Type 2: Identifier Normalisation ───────────────────────────────────────
+
+/** JS/TS keywords — never replaced during Type 2 normalisation */
+const KEYWORDS = new Set([
+  'abstract', 'arguments', 'async', 'await', 'boolean', 'break', 'byte', 'case',
+  'catch', 'char', 'class', 'const', 'continue', 'debugger', 'default', 'delete',
+  'do', 'double', 'else', 'enum', 'export', 'extends', 'false', 'final',
+  'finally', 'float', 'for', 'from', 'function', 'get', 'goto', 'if',
+  'implements', 'import', 'in', 'instanceof', 'int', 'interface', 'let', 'long',
+  'native', 'new', 'null', 'of', 'package', 'private', 'protected', 'public',
+  'return', 'set', 'short', 'static', 'super', 'switch', 'synchronized',
+  'this', 'throw', 'throws', 'transient', 'true', 'try', 'typeof', 'undefined',
+  'var', 'void', 'volatile', 'while', 'with', 'yield',
+  'any', 'as', 'declare', 'is', 'keyof', 'module', 'namespace', 'never',
+  'readonly', 'require', 'number', 'object', 'string', 'symbol', 'type', 'unknown',
+])
+
+const IDENT_RE = /\b[a-zA-Z_$][a-zA-Z0-9_$]*\b/g
+
+/**
+ * Replace all non-keyword identifiers with $ID.
+ * Operates on already-normalised lines (comments/strings stripped), so
+ * no regex/division ambiguity.
+ */
+function normaliseIdentifiers(line) {
+  return line.replace(IDENT_RE, token => KEYWORDS.has(token) ? token : '$ID')
 }
 
 // ─── Normalisation ──────────────────────────────────────────────────────────
@@ -159,9 +188,10 @@ function normalizeSource(source) {
  *
  * @param {FileEntry[]} files
  * @param {number} [minLines=6]
+ * @param {{ type2?: boolean }} [options]
  * @returns {DuplicationGroup[]}
  */
-function scanForDuplication(files, minLines = 6) {
+function scanForDuplication(files, minLines = 6, { type2 = false } = {}) {
   const signatureMap = new Map()
   const fileNormData = new Map()
 
@@ -198,11 +228,80 @@ function scanForDuplication(files, minLines = 6) {
     if (locations.length < 2) continue
     const deduplicated = deduplicateOverlaps(locations, minLines)
     if (deduplicated.length >= 2) {
-      rawGroups.push({ signature, locations: deduplicated })
+      rawGroups.push({ signature, locations: deduplicated, detectionType: 'exact' })
     }
   }
 
-  return mergeOverlappingGroups(rawGroups, fileNormData)
+  const type1Merged = mergeOverlappingGroups(rawGroups, fileNormData)
+
+  if (!type2) return type1Merged
+
+  // ─── Type 2 Pass: identifier-normalised sliding window ──────────────
+
+  const type2SignatureMap = new Map()
+
+  for (const { filePath, content } of files) {
+    const normLines = fileNormData.get(filePath)
+    if (!normLines || normLines.length < minLines) continue
+
+    const normCount = normLines.length
+    const norms = new Array(normCount)
+    for (let k = 0; k < normCount; k++) norms[k] = normaliseIdentifiers(normLines[k].norm)
+
+    for (let i = 0; i <= normCount - minLines; i++) {
+      const signature = norms.slice(i, i + minLines).join('\n')
+
+      const location = {
+        filePath,
+        startLine: normLines[i].originalLine,
+        endLine: normLines[i + minLines - 1].originalLine,
+      }
+
+      if (!type2SignatureMap.has(signature)) {
+        type2SignatureMap.set(signature, [location])
+      } else {
+        type2SignatureMap.get(signature).push(location)
+      }
+    }
+  }
+
+  // Build Type 1 covered ranges for deduplication (merged, so ranges are maximal)
+  const type1CoveredByFile = new Map()
+  for (const group of type1Merged) {
+    for (const loc of group.locations) {
+      if (!type1CoveredByFile.has(loc.filePath)) type1CoveredByFile.set(loc.filePath, [])
+      type1CoveredByFile.get(loc.filePath).push(loc)
+    }
+  }
+
+  function isCoveredByType1(loc) {
+    const ranges = type1CoveredByFile.get(loc.filePath)
+    if (!ranges) return false
+    return ranges.some(r => r.startLine <= loc.startLine && r.endLine >= loc.endLine)
+  }
+
+  const type2RawGroups = []
+
+  for (const [signature, locations] of type2SignatureMap) {
+    if (locations.length < 2) continue
+    const deduplicated = deduplicateOverlaps(locations, minLines)
+    if (deduplicated.length < 2) continue
+
+    // Skip if all locations are already covered by a Type 1 group
+    const hasNewLocation = deduplicated.some(loc => !isCoveredByType1(loc))
+    if (!hasNewLocation) continue
+
+    type2RawGroups.push({ signature, locations: deduplicated, detectionType: 'renamed' })
+  }
+
+  const type2Merged = mergeOverlappingGroups(type2RawGroups, fileNormData)
+
+  // Final dedup: remove any merged Type 2 groups fully covered by merged Type 1
+  const type2Filtered = type2Merged.filter(group =>
+    group.locations.some(loc => !isCoveredByType1(loc))
+  )
+
+  return [...type1Merged, ...type2Filtered]
 }
 
 // ─── Overlap Prevention ─────────────────────────────────────────────────────
@@ -254,6 +353,7 @@ function mergeOverlappingGroups(groups, fileNormData) {
   for (const [, bucket] of buckets) {
     bucket.sort((a, b) => a.locations[0].startLine - b.locations[0].startLine)
 
+    const detectionType = bucket[0].detectionType
     let mergedLocs = bucket[0].locations.map(l => ({ ...l }))
 
     for (let i = 1; i < bucket.length; i++) {
@@ -276,6 +376,7 @@ function mergeOverlappingGroups(groups, fileNormData) {
         merged.push({
           signature: buildSignature(mergedLocs[0], fileNormData),
           locations: mergedLocs,
+          detectionType,
         })
         mergedLocs = next.locations.map(l => ({ ...l }))
       }
@@ -284,6 +385,7 @@ function mergeOverlappingGroups(groups, fileNormData) {
     merged.push({
       signature: buildSignature(mergedLocs[0], fileNormData),
       locations: mergedLocs,
+      detectionType,
     })
   }
 

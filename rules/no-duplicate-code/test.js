@@ -626,3 +626,189 @@ describe('edge cases', () => {
   })
 })
 
+// ─── §3: Type 2 Detection (Renamed Identifiers) ────────────────────────────
+
+describe('scanForDuplication — Type 2', () => {
+  it('detects renamed variables when type2 is enabled', () => {
+    const a = [
+      'async function fetchUser(userId) {',
+      '  const response = await fetch(userId)',
+      '  const data = await response.json()',
+      '  if (!data.active) {',
+      '    throw new Error("not active")',
+      '  }',
+      '  return data',
+      '}',
+    ].join('\n')
+
+    const b = [
+      'async function getEmployee(employeeId) {',
+      '  const result = await fetch(employeeId)',
+      '  const payload = await result.json()',
+      '  if (!payload.active) {',
+      '    throw new Error("not active")',
+      '  }',
+      '  return payload',
+      '}',
+    ].join('\n')
+
+    const groups = scanForDuplication([
+      { filePath: 'a.js', content: a },
+      { filePath: 'b.js', content: b },
+    ], 6, { type2: true })
+
+    assert.ok(groups.length >= 1, 'Should detect renamed clone')
+    const type2Groups = groups.filter(g => g.detectionType === 'renamed')
+    assert.ok(type2Groups.length >= 1, 'Should have at least one renamed group')
+  })
+
+  it('does NOT detect renamed variables when type2 is disabled', () => {
+    const a = 'function foo(x) {\n  const a = x + 1\n  const b = a * 2\n  const c = b - 3\n  const d = c / 4\n  return d\n}'
+    const b = 'function bar(y) {\n  const e = y + 1\n  const f = e * 2\n  const g = f - 3\n  const h = g / 4\n  return h\n}'
+
+    const groups = scanForDuplication([
+      { filePath: 'a.js', content: a },
+      { filePath: 'b.js', content: b },
+    ], 6, { type2: false })
+
+    // Without type2, renamed identifiers should not match
+    const type2Groups = groups.filter(g => g.detectionType === 'renamed')
+    assert.strictEqual(type2Groups.length, 0)
+  })
+
+  it('does not double-report when Type 1 already matches', () => {
+    const block = Array.from({ length: 8 }, (_, i) => `const line${i} = ${i}`).join('\n')
+    const groups = scanForDuplication([
+      { filePath: 'a.js', content: block },
+      { filePath: 'b.js', content: block },
+    ], 6, { type2: true })
+
+    // Exact duplicates should be reported as 'exact', not 'renamed'
+    const exactGroups = groups.filter(g => g.detectionType === 'exact')
+    const renamedGroups = groups.filter(g => g.detectionType === 'renamed')
+    assert.ok(exactGroups.length >= 1, 'Should have exact groups')
+    // The exact same ranges should not also appear as renamed
+    for (const rg of renamedGroups) {
+      for (const loc of rg.locations) {
+        const coveredByExact = exactGroups.some(eg =>
+          eg.locations.some(el =>
+            el.filePath === loc.filePath &&
+            el.startLine === loc.startLine &&
+            el.endLine === loc.endLine
+          )
+        )
+        assert.ok(!coveredByExact, `Renamed group should not duplicate exact: ${loc.filePath}:${loc.startLine}`)
+      }
+    }
+  })
+
+  it('tags Type 1 groups as exact', () => {
+    const block = Array.from({ length: 6 }, (_, i) => `const x${i} = ${i}`).join('\n')
+    const groups = scanForDuplication([
+      { filePath: 'a.js', content: block },
+      { filePath: 'b.js', content: block },
+    ], 6, { type2: true })
+
+    const exactGroups = groups.filter(g => g.detectionType === 'exact')
+    assert.ok(exactGroups.length >= 1, 'Exact duplicates should be tagged as exact')
+  })
+
+  it('detects renamed debounce/throttle pattern', () => {
+    const a = [
+      'function debounce(func, delay) {',
+      '  let timer = null',
+      '  return function (...args) {',
+      '    clearTimeout(timer)',
+      '    timer = setTimeout(() => {',
+      '      func.apply(this, args)',
+      '    }, delay)',
+      '  }',
+      '}',
+    ].join('\n')
+
+    const b = [
+      'function throttle(callback, wait) {',
+      '  let timeout = null',
+      '  return function (...params) {',
+      '    clearTimeout(timeout)',
+      '    timeout = setTimeout(() => {',
+      '      callback.apply(this, params)',
+      '    }, wait)',
+      '  }',
+      '}',
+    ].join('\n')
+
+    const groups = scanForDuplication([
+      { filePath: 'a.js', content: a },
+      { filePath: 'b.js', content: b },
+    ], 6, { type2: true })
+
+    assert.ok(groups.some(g => g.detectionType === 'renamed'), 'Should detect renamed debounce as type 2')
+  })
+
+  it('does not match completely different code', () => {
+    const a = 'function fib(n) {\n  if (n <= 1) return n\n  let prev = 0\n  let curr = 1\n  for (let i = 2; i <= n; i++) {\n    const next = prev + curr\n    prev = curr\n    curr = next\n  }\n  return curr\n}'
+    const b = 'async function send(to, body) {\n  const transport = create(config)\n  const msg = { from: sender, to, html: body }\n  const result = await transport.send(msg)\n  if (result.rejected.length > 0) {\n    throw new Error("failed")\n  }\n  return result.id\n}'
+
+    const groups = scanForDuplication([
+      { filePath: 'a.js', content: a },
+      { filePath: 'b.js', content: b },
+    ], 6, { type2: true })
+
+    assert.strictEqual(groups.length, 0, 'Completely different code should not match')
+  })
+})
+
+// ─── §4: buildFindings — Type 2 messages ────────────────────────────────────
+
+describe('buildFindings — Type 2 messages', () => {
+  const { buildFindings } = require('./buildFindings')
+
+  it('produces "renamed identifiers" message for Type 2 groups', () => {
+    const groups = [{
+      signature: 'line1\nline2\nline3\nline4\nline5\nline6',
+      detectionType: 'renamed',
+      locations: [
+        { filePath: '/project/src/a.js', startLine: 1, endLine: 6 },
+        { filePath: '/project/src/b.js', startLine: 10, endLine: 15 },
+      ],
+    }]
+
+    const findings = buildFindings(groups, '/project/')
+    const allMessages = []
+    for (const [, fileFindings] of findings) {
+      for (const f of fileFindings) allMessages.push(f.message)
+    }
+
+    assert.ok(
+      allMessages.some(m => m.includes('renamed identifiers')),
+      `Expected "renamed identifiers" in messages, got: ${allMessages.join('; ')}`
+    )
+  })
+
+  it('produces "Duplicated code" message for Type 1 groups', () => {
+    const groups = [{
+      signature: 'line1\nline2\nline3\nline4\nline5\nline6',
+      detectionType: 'exact',
+      locations: [
+        { filePath: '/project/src/a.js', startLine: 1, endLine: 6 },
+        { filePath: '/project/src/b.js', startLine: 10, endLine: 15 },
+      ],
+    }]
+
+    const findings = buildFindings(groups, '/project/')
+    const allMessages = []
+    for (const [, fileFindings] of findings) {
+      for (const f of fileFindings) allMessages.push(f.message)
+    }
+
+    assert.ok(
+      allMessages.some(m => m.includes('Duplicated code')),
+      `Expected "Duplicated code" in messages, got: ${allMessages.join('; ')}`
+    )
+    assert.ok(
+      !allMessages.some(m => m.includes('renamed')),
+      'Type 1 messages should not mention renamed'
+    )
+  })
+})

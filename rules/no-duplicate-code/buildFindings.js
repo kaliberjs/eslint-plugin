@@ -52,14 +52,19 @@ function buildFindings(groups, absPrefix) {
     const lineCount = group.signature ? group.signature.split('\n').length : 0
     const canonical = selectCanonical(group.locations)
     const canonicalRef = formatRef(canonical, absPrefix)
+    const isRenamed = group.detectionType === 'renamed'
 
     for (const location of group.locations) {
       if (location === canonical) continue
 
+      const message = isRenamed
+        ? `Similar code (${lineCount} lines, renamed identifiers) — consider reusing ${canonicalRef}`
+        : `Duplicated code (${lineCount} lines) — consider reusing ${canonicalRef}`
+
       const finding = {
         line: location.startLine,
         endLine: location.endLine,
-        message: `Duplicated code (${lineCount} lines) — consider reusing ${canonicalRef}`,
+        message,
       }
 
       const key = location.filePath
