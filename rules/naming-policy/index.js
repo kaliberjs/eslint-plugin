@@ -179,6 +179,7 @@ module.exports = {
     }
 
     function reportInvalidFunctionName(node, { suggestFilename }) {
+      if (!node.id) return
       const { name } = node.id
       if (firstLetterLowerCase(name)) return
 
