@@ -44,3 +44,16 @@ export default function Menu() {
   return <Button />
 }
 ```
+
+## Transitive detection
+
+This rule also detects **transitive** universal nesting — when a `.universal.js` file reaches another `.universal.js` through intermediate non-universal files:
+
+```
+Outer.universal.js → Wrapper.js → Inner.universal.js
+                                        ↑
+                                   caught by transitive check
+```
+
+This uses the esbuild metafile that `@kaliber/build` writes to `.kaliber-build/server-metafile.json`. If the metafile doesn't exist (build hasn't run yet), the rule gracefully falls back to direct-only checking.
+
