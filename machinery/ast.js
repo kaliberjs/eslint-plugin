@@ -3,6 +3,12 @@ module.exports = {
   getFunctionName,
   getJSXElementName, getParentJSXElement, getParentJSXElements,
   isRootJSXElement, hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
+  isComponentName,
+}
+
+/** A component name starts with an uppercase letter (PascalCase) */
+function isComponentName(name) {
+  return Boolean(name) && name[0] === name[0].toUpperCase() && name[0] !== name[0].toLowerCase()
 }
 
 function getPropertyName(property) {
