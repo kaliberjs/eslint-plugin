@@ -40,7 +40,7 @@ module.exports = {
       JSXOpeningElement(node) {
         const { name } = node
         const elementName = name.type === 'JSXIdentifier' ? name.name
-          : name.type === 'JSXMemberExpression' ? name.property.name
+          : name.type === 'JSXMemberExpression' ? name.object.name
           : null
 
         if (!elementName || !universalImports.has(elementName)) return
