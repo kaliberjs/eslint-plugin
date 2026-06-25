@@ -1,7 +1,7 @@
 module.exports = {
   getPropertyName,
   getFunctionName,
-  getJSXElementName, getParentJSXElement,
+  getJSXElementName, getParentJSXElement, getParentJSXElements,
   isRootJSXElement, hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
   isAnonymousFunction,
 }

@@ -10,3 +10,4 @@ node_modules/
 .yarn-integrity
 .DS_Store
 .pnpm-store/
+.test-fixtures/
