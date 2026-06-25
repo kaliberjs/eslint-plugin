@@ -1,5 +1,8 @@
 const docsUrl = require('../../machinery/docsUrl')
-const { getLayer, findSrcRoot } = require('../../machinery/filename')
+const {
+  getLayer, getLayerFromImportPath,
+  isSublayerOf, matchesLayerPattern,
+} = require('../../machinery/filename')
 
 const messages = {
   'restricted layer import': (importPath, sourceLayer, targetLayer) =>
@@ -43,7 +46,8 @@ module.exports = {
 
   create(context) {
     const options = context.options[0] || {}
-    const layers = options.layers || defaultLayers
+    const layers = buildLayers(options.layers)
+    const sublayerParents = getSublayerParents(layers)
 
     return {
       'ImportDeclaration': checkImport,
@@ -57,18 +61,18 @@ module.exports = {
       const importPath = source.value
       if (!importPath.startsWith('/')) return
 
-      const sourceLayer = getLayer(context.filename)
+      const sourceLayer = getLayer(context.filename, sublayerParents)
       if (!sourceLayer) return
 
-      const targetLayer = getLayerFromImportPath(importPath)
+      const targetLayer = getLayerFromImportPath(importPath, sublayerParents)
       if (!targetLayer) return
 
       if (sourceLayer === targetLayer) return
 
-      const allowList = findAllowList(layers, sourceLayer)
+      const allowList = findAllowList(layers, sourceLayer, sublayerParents)
       if (!allowList) return
 
-      if (isAllowed(allowList, targetLayer)) return
+      if (allowList.some(pattern => matchesLayerPattern(targetLayer, pattern, sublayerParents))) return
 
       context.report({
         message: messages['restricted layer import'](importPath, sourceLayer, targetLayer),
@@ -78,26 +82,44 @@ module.exports = {
   }
 }
 
-function getLayerFromImportPath(importPath) {
-  const withoutSlash = importPath.slice(1)
-  const segments = withoutSlash.split('/')
-  if (!segments.length || !segments[0]) return null
-
-  if (segments[0] === 'features' && segments.length > 1) return 'features/' + segments[1]
-  return segments[0]
+/**
+ * Extract sublayer parents from layer config.
+ * Any key like `foo/*` means `foo` is a sublayer parent.
+ */
+function getSublayerParents(layers) {
+  return Object.keys(layers)
+    .filter(key => key.endsWith('/*'))
+    .map(key => key.slice(0, -2))
 }
 
-function findAllowList(layers, sourceLayer) {
+function findAllowList(layers, sourceLayer, sublayerParents) {
   if (layers[sourceLayer]) return layers[sourceLayer]
-  if (sourceLayer.startsWith('features/') && layers['features/*']) return layers['features/*']
+
+  for (const parent of sublayerParents) {
+    if (isSublayerOf(sourceLayer, parent) && layers[parent + '/*']) {
+      return layers[parent + '/*']
+    }
+  }
+
   return null
 }
 
-function isAllowed(allowList, targetLayer) {
-  return allowList.some(allowed => {
-    if (allowed === targetLayer) return true
-    if (allowed === 'features' && targetLayer.startsWith('features/')) return true
-    if (allowed === 'features/*' && targetLayer.startsWith('features/')) return true
-    return false
-  })
+/**
+ * Builds the final layer map by merging:
+ * 1. Default layers as the base
+ * 2. Custom layers on top (adding new layers, extending existing ones)
+ * 3. sharedRootModules appended to every layer automatically
+ */
+function buildLayers(customLayers) {
+  if (!customLayers) return defaultLayers
+
+  const merged = { ...defaultLayers }
+
+  for (const [layer, allowList] of Object.entries(customLayers)) {
+    const base = merged[layer] || []
+    const combined = [...new Set([...base, ...allowList, ...sharedRootModules])]
+    merged[layer] = combined
+  }
+
+  return merged
 }

@@ -1,4 +1,4 @@
-const { getJSXElementName, getParentJSXElements } = require('../../machinery/ast')
+const { getJSXElementName, getParentJSXElements, isComponentName } = require('../../machinery/ast')
 const docsUrl = require('../../machinery/docsUrl')
 
 const defaultDeny = [
@@ -51,7 +51,7 @@ module.exports = {
         const jsxElement = node.parent
         const name = getJSXElementName(jsxElement)
 
-        if (name[0] !== name[0].toUpperCase()) return
+        if (!isComponentName(name)) return
 
         const matchingRules = deny.filter(x => matches(name, x.child))
         if (!matchingRules.length) return
@@ -59,7 +59,7 @@ module.exports = {
         const ancestors = getParentJSXElements(jsxElement)
         for (const ancestor of ancestors) {
           const ancestorName = getJSXElementName(ancestor)
-          if (ancestorName[0] !== ancestorName[0].toUpperCase()) continue
+          if (!isComponentName(ancestorName)) continue
 
           for (const rule of matchingRules) {
             if (matches(ancestorName, rule.parent)) {
