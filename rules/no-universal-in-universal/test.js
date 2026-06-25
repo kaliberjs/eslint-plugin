@@ -1,5 +1,9 @@
 const { messages } = require('./')
 const { test } = require('../../machinery/test')
+const { getImportGraph, _resetCache } = require('../../machinery/importGraph')
+const { writeFileSync, mkdirSync, rmSync } = require('node:fs')
+const { join } = require('node:path')
+const { describe, it, afterEach } = require('node:test')
 
 test('no-universal-in-universal', {
   valid: [
@@ -34,3 +38,83 @@ test('no-universal-in-universal', {
     },
   ],
 })
+
+// ─── Transitive detection tests ─────────────────────────────────────────────
+
+describe('no-universal-in-universal (transitive)', () => {
+  const projectRoot = join(__dirname, '..', '..', '.test-fixtures', 'transitive-universal')
+
+  afterEach(() => {
+    _resetCache()
+    try { rmSync(projectRoot, { recursive: true, force: true }) } catch {}
+  })
+
+  it('detects transitive universal nesting through a regular file', () => {
+    writeMetafile(projectRoot, {
+      inputs: {
+        'src/features/Outer.universal.js': {
+          imports: [{ path: 'src/features/Wrapper.js' }],
+        },
+        'src/features/Wrapper.js': {
+          imports: [{ path: 'src/features/Inner.universal.js' }],
+        },
+        'src/features/Inner.universal.js': {
+          imports: [],
+        },
+      },
+    })
+
+    const { getImportGraph } = require('../../machinery/importGraph')
+    const graph = getImportGraph(projectRoot)
+
+    const deps = graph.transitiveDeps('src/features/Outer.universal.js')
+    const universalDeps = [...deps].filter(d => d.endsWith('.universal.js'))
+
+    require('node:assert').strictEqual(universalDeps.length, 1)
+    require('node:assert').strictEqual(universalDeps[0], 'src/features/Inner.universal.js')
+
+    const chain = graph.findChain('src/features/Outer.universal.js', 'src/features/Inner.universal.js')
+    require('node:assert').deepStrictEqual(chain, [
+      'src/features/Outer.universal.js',
+      'src/features/Wrapper.js',
+      'src/features/Inner.universal.js',
+    ])
+  })
+
+  it('does not flag non-universal transitive dependencies', () => {
+    writeMetafile(projectRoot, {
+      inputs: {
+        'src/features/Outer.universal.js': {
+          imports: [{ path: 'src/features/Wrapper.js' }],
+        },
+        'src/features/Wrapper.js': {
+          imports: [{ path: 'src/machinery/hooks.js' }],
+        },
+        'src/machinery/hooks.js': {
+          imports: [],
+        },
+      },
+    })
+
+    const { getImportGraph } = require('../../machinery/importGraph')
+    const graph = getImportGraph(projectRoot)
+
+    const deps = graph.transitiveDeps('src/features/Outer.universal.js')
+    const universalDeps = [...deps].filter(d => d.endsWith('.universal.js'))
+
+    require('node:assert').strictEqual(universalDeps.length, 0)
+  })
+
+  it('returns null when no metafile exists', () => {
+    const { getImportGraph } = require('../../machinery/importGraph')
+    const graph = getImportGraph('/nonexistent/path')
+
+    require('node:assert').strictEqual(graph, null)
+  })
+})
+
+function writeMetafile(projectRoot, metafile) {
+  const dir = join(projectRoot, '.kaliber-build')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'server-metafile.json'), JSON.stringify(metafile))
+}
