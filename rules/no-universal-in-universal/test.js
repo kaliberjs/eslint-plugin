@@ -63,7 +63,3 @@ test('no-universal-in-universal', {
     },
   ],
 })
-
-// Transitive detection is tested via the comprehensive importGraph.test.js
-// which covers: circular deps, diamond deps, deep chains, realistic Kaliber
-// project structures, and sneaky nesting via shared buildingBlocks.
