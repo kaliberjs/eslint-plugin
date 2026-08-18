@@ -14,6 +14,12 @@ const stylistic = require('@stylistic/eslint-plugin')
 const globals = require('globals')
 const kaliberPlugin = require('./index')
 
+// eslint-plugin-react's own `version: 'detect'` calls `context.getFilename()`, removed in
+// ESLint v10 — it throws on the first JSX file linted. Resolve the version ourselves instead.
+function detectReactVersion() {
+  try { return require('react/package.json').version } catch { return '19.0' }
+}
+
 const gitignorePath = path.resolve(process.cwd(), '.gitignore')
 
 module.exports = [
@@ -61,7 +67,7 @@ module.exports = [
         },
       },
       react: {
-        version: 'detect',
+        version: detectReactVersion(),
       },
     },
 

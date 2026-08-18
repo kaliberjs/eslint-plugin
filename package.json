@@ -11,9 +11,9 @@
   },
   "version": "2.1.2",
   "dependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/eslint-parser": "^7.26.0",
-    "@babel/preset-react": "^7.26.3",
+    "@babel/core": "^8.0.1",
+    "@babel/eslint-parser": "^8.0.1",
+    "@babel/preset-react": "^8.0.1",
     "@eslint/compat": "^2.1.0",
     "@eslint/js": "^10.0.0",
     "@stylistic/eslint-plugin": "^5.10.0",
@@ -26,5 +26,12 @@
     "globals": "^16.0.0",
     "jsx-ast-utils": "^3.3.5",
     "prop-types": "^15.8.1"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "eslint": "10"
+      }
+    }
   }
 }

@@ -11,7 +11,13 @@ ruleTester.run('no-compare-neg-zero', rule, {
   invalid: [
     {
       code: 'x === -0',
-      errors: [{ message: "Do not use the '===' operator to compare against -0." }],
+      errors: [{
+        message: "Do not use the '===' operator to compare against -0.",
+        suggestions: [
+          { messageId: 'suggestRemoveMinus', output: 'x === 0' },
+          { messageId: 'suggestObjectIs', output: 'Object.is(x, -0)' },
+        ],
+      }],
     },
   ],
 })
