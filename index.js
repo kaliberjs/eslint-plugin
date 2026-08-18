@@ -13,6 +13,8 @@ const proseRules = {
   'prose-no-opaque-jsx-condition': require('./rules/prose-no-opaque-jsx-condition'),
   'prose-prefer-named-reducer': require('./rules/prose-prefer-named-reducer'),
   'prose-no-explanatory-condition-comments': require('./rules/prose-no-explanatory-condition-comments'),
+  'prose-max-member-depth': require('./rules/prose-max-member-depth'),
+  'prose-prefer-named-handler': require('./rules/prose-prefer-named-handler'),
 }
 
 const plugin = {
