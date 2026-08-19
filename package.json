@@ -9,7 +9,7 @@
     "lint:fix": "eslint --config eslint.self.config.js --fix .",
     "migrate": "node bin/migrate-to-flat-config.js"
   },
-  "version": "2.2.0",
+  "version": "2.1.2",
   "dependencies": {
     "@babel/core": "^8.0.1",
     "@babel/eslint-parser": "^8.0.1",
