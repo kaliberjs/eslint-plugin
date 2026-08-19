@@ -11,7 +11,7 @@ ruleTester.run('no-eval', rule, {
   invalid: [
     {
       code: `eval("10")`,
-      errors: [{ message: 'eval can be harmful.' }],
+      errors: [{ message: '`eval` can be harmful.' }],
     },
   ],
 })

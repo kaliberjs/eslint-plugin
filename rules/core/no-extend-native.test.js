@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-extend-native', rule, {
   valid: [
-    `const a = {}; a.extra = 55;`,
+    'const a = {}; a.extra = 55;',
   ],
   invalid: [
     {
-      code: `Object.prototype.extra = 55;`,
+      code: 'Object.prototype.extra = 55;',
       errors: [{ message: 'Object prototype is read only, properties should not be added.' }],
     },
   ],

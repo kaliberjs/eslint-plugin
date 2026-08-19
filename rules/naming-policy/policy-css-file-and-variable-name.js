@@ -12,27 +12,27 @@ module.exports = {
       filename: 'Test.js',
       code: `import styles from './Something.css'`,
       output: `import styles from './Test.css'`,
-      errors: [{ message: messages['invalid css file name']('./Something.css', './Test.css'), type: 'Literal' }]
+      errors: [{ message: messages['invalid css file name']('./Something.css', './Test.css') }]
     },
     {
       filename: 'Test.js',
       code: `import notStyles from './Test.css'`,
       output: `import styles from './Test.css'`,
-      errors: [{ message: messages['invalid styles variable name']('notStyles', 'styles'), type: 'Identifier' }]
+      errors: [{ message: messages['invalid styles variable name']('notStyles', 'styles') }]
     },
     // References in same scope should also be renamed
     {
       filename: 'Test.js',
       code: `import css from './Test.css'\nexport default function Test() { return <div className={css.component} /> }`,
       output: `import styles from './Test.css'\nexport default function Test() { return <div className={styles.component} /> }`,
-      errors: [{ message: messages['invalid styles variable name']('css', 'styles'), type: 'Identifier' }]
+      errors: [{ message: messages['invalid styles variable name']('css', 'styles') }]
     },
     // Template file (Foo.bar.js → base is 'Foo')
     {
       filename: 'Foo.bar.js',
       code: `import styles from './Bar.css'`,
       output: `import styles from './Foo.css'`,
-      errors: [{ message: messages['invalid css file name']('./Bar.css', './Foo.css'), type: 'Literal' }]
+      errors: [{ message: messages['invalid css file name']('./Bar.css', './Foo.css') }]
     },
   ]
 }

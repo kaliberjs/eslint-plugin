@@ -6,11 +6,11 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-dupe-keys', rule, {
   valid: [
-    `const obj = { a: 1, b: 2 }`,
+    'const obj = { a: 1, b: 2 }',
   ],
   invalid: [
     {
-      code: `const obj = { a: 1, a: 2 }`,
+      code: 'const obj = { a: 1, a: 2 }',
       errors: [{ message: "Duplicate key 'a'." }],
     },
   ],

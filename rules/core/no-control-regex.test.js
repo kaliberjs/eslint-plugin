@@ -6,7 +6,7 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('no-control-regex', rule, {
   valid: [
-    `const regex = /x1f/`,
+    'const regex = /x1f/',
   ],
   invalid: [
     {

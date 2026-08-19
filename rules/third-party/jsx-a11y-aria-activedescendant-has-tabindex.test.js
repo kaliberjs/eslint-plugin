@@ -10,7 +10,7 @@ ruleTester.run('jsx-a11y/aria-activedescendant-has-tabindex', rule, {
   invalid: [
     {
       code: `<div aria-activedescendant="foo" />`,
-      errors: [{ message: 'An element that manages focus with `aria-activedescendant` must have a tabindex', type: 'JSXOpeningElement' }],
+      errors: [{ message: 'An element that manages focus with `aria-activedescendant` must have a tabindex' }],
     },
   ],
 })

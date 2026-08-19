@@ -5,12 +5,12 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('jsx-a11y/heading-has-content', rule, {
   valid: [
-    `<h1>foo</h1>`,
+    '<h1>foo</h1>',
   ],
   invalid: [
     {
-      code: `<h1 />`,
-      errors: [{ message: 'Headings must have content and the content must be accessible by a screen reader.', type: 'JSXOpeningElement' }],
+      code: '<h1 />',
+      errors: [{ message: 'Headings must have content and the content must be accessible by a screen reader.' }],
     },
   ],
 })

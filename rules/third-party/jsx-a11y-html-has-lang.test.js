@@ -9,8 +9,8 @@ ruleTester.run('jsx-a11y/html-has-lang', rule, {
   ],
   invalid: [
     {
-      code: `<html />`,
-      errors: [{ message: '<html> elements must have the lang prop.', type: 'JSXOpeningElement' }],
+      code: '<html />',
+      errors: [{ message: '<html> elements must have the lang prop.' }],
     },
   ],
 })

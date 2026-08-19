@@ -16,16 +16,16 @@ module.exports = {
     {
       code: `<div test1={test1} />`,
       output: `<div {...{ test1 }} />`,
-      errors: [ { message: messages['incorrect variable passing']('test1'), type: 'JSXAttribute' }]
+      errors: [ { message: messages['incorrect variable passing']('test1') }]
     },
     // Multiple same-name props → merged into single spread (1 error per matching attr)
     {
       code: `<div a={a} b={b} c={c} />`,
       output: `<div {...{ a, b, c }} />`,
       errors: [
-        { message: threeProps, type: 'JSXAttribute' },
-        { message: threeProps, type: 'JSXAttribute' },
-        { message: threeProps, type: 'JSXAttribute' },
+        { message: threeProps },
+        { message: threeProps },
+        { message: threeProps },
       ]
     },
     // Mixed: same-name props interleaved with normal props
@@ -33,8 +33,8 @@ module.exports = {
       code: `<div a={a} className="x" b={b} />`,
       output: `<div {...{ a, b }} className="x" />`,
       errors: [
-        { message: twoProps, type: 'JSXAttribute' },
-        { message: twoProps, type: 'JSXAttribute' },
+        { message: twoProps },
+        { message: twoProps },
       ]
     },
     // key={key} is excluded from merging
@@ -42,8 +42,8 @@ module.exports = {
       code: `<div key={key} a={a} b={b} />`,
       output: `<div key={key} {...{ a, b }} />`,
       errors: [
-        { message: twoProps, type: 'JSXAttribute' },
-        { message: twoProps, type: 'JSXAttribute' },
+        { message: twoProps },
+        { message: twoProps },
       ]
     },
     // ref={ref} IS included in merge (not excluded like key)
@@ -51,8 +51,8 @@ module.exports = {
       code: `<div ref={ref} a={a} />`,
       output: `<div {...{ ref, a }} />`,
       errors: [
-        { message: messages['incorrect variable passing']('ref, a'), type: 'JSXAttribute' },
-        { message: messages['incorrect variable passing']('ref, a'), type: 'JSXAttribute' },
+        { message: messages['incorrect variable passing']('ref, a') },
+        { message: messages['incorrect variable passing']('ref, a') },
       ]
     },
   ],

@@ -6,13 +6,13 @@ const ruleTester = new RuleTester({ languageOptions: { ecmaVersion: 2020, source
 
 ruleTester.run('dot-location', rule, {
   valid: [
-    `const obj = { a: { b: 2 } }; const x = obj.a.b`,
-    `const obj = { a: { b: 2 } }; const x = obj.a.\nb`,
+    'const obj = { a: { b: 2 } }; const x = obj.a.b',
+    'const obj = { a: { b: 2 } }; const x = obj.a.\nb',
   ],
   invalid: [
     {
-      code: `const obj = { a: { b: 2 } }; const x = obj.a\n.b`,
-      output: `const obj = { a: { b: 2 } }; const x = obj.a.\nb`,
+      code: 'const obj = { a: { b: 2 } }; const x = obj.a\n.b',
+      output: 'const obj = { a: { b: 2 } }; const x = obj.a.\nb',
       errors: [{ message: 'Expected dot to be on same line as object.' }],
     },
   ],
