@@ -1,5 +1,5 @@
-const docsUrl = require('../../../machinery/docsUrl')
-const { isFunctionNode, isInsideComponent, isArrowConciseBody, isUseStateCall } = require('../../../machinery/ast')
+const docsUrl = require('../../machinery/docsUrl')
+const { isFunctionNode, isInsideComponent, isArrowConciseBody, isUseStateCall } = require('../../machinery/ast')
 
 module.exports = {
   meta: {

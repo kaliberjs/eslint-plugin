@@ -30,7 +30,7 @@ const plugin = {
 
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
 
-    'tanstack-query/stable-client': require('./rules/tanstack-query/stable-client'),
+    'stable-query-client': require('./rules/stable-query-client'),
   },
 
   configs: {},

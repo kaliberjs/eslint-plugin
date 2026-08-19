@@ -1,4 +1,4 @@
-# tanstack-query/stable-client
+# stable-query-client
 
 Prevents creating a `new QueryClient()` inside a React component body, where it would be re-instantiated on every render — destroying the cache and causing subtle bugs.
 

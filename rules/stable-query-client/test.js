@@ -1,6 +1,6 @@
-const { test } = require('../../../machinery/test')
+const { test } = require('../../machinery/test')
 
-test('tanstack-query/stable-client', {
+test('stable-query-client', {
   valid: [
     // Module scope — perfectly fine
     `const queryClient = new QueryClient()`,
