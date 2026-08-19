@@ -27,6 +27,7 @@ module.exports = [
 | [`import-sort`](rules/import-sort/readme.md) | Enforce grouped and ordered import statements with auto-fix support |
 | [`jsx-key`](rules/jsx-key/readme.md) | Require key prop in iterators but allow keyless JSX in array-literal DSL patterns |
 | [`position-center`](rules/position-center/readme.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
+| [`stable-query-client`](rules/stable-query-client/readme.md) | A QueryClient created in a component body loses the whole query cache on every re-render |
 | [`todo-ticket-reference`](rules/todo-ticket-reference/readme.md) | Require TODO comments to reference a Jira ticket |
 
 ### Tracking rules (data-x)
