@@ -5,6 +5,7 @@ test('layout-class-name', {
   valid: [
     `function Test({ layoutClassName }) { return <div className={layoutClassName} /> }`,
     `function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles.test)} /> }`,
+    `function Test({ layoutClassName }) { return <div className={cx(layoutClassName, styles[getClassName()])} /> }`,
     `
     function Test({ layoutClassName }) {
       return (

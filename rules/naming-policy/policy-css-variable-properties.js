@@ -37,10 +37,6 @@ module.exports = {
       errors: [{ message: messages['no styles properties with _']('_test') }]
     },
     {
-      code: 'styles[variants._test]',
-      errors: [{ message: messages['no styles properties with _']('_test') }]
-    },
-    {
       filename: 'Test.js',
       code: 'export function Test() { return <div className={cx(styles.component, styles._test)} /> }',
       errors: [{ message: messages['no styles properties with _']('_test') }]

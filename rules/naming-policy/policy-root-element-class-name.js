@@ -225,6 +225,26 @@ module.exports = {
       }
       `,
     },
+    {
+      filename: 'Test.js',
+      code: `
+        function Test() {
+          return <div className={styles[getClassName()]} />
+        }
+      `,
+    },
+    {
+      filename: 'Test.js',
+      code: `
+        function Test() {
+          return (
+            <div className={styles.component}>
+              <div className={styles[getClassName()]} />
+            </div>
+          )
+        }
+      `,
+    },
   ],
   invalid: [
     {

@@ -146,6 +146,7 @@ module.exports = {
       const expectedClassNames = getValidRootElementClassNames(context, sourceCode, scopeNode)
 
       const className = getPropertyName(property)
+      if (!className) return
       if (expectedClassNames.includes(className)) {
         elementsWithValidRootElementClassName.add(jsxElement)
         return
@@ -165,6 +166,7 @@ module.exports = {
 
     function reportUnexpectedRootName(property) {
       const className = getPropertyName(property)
+      if (!className) return
       const forbidden = ['app', 'page', 'component']
       if (!forbidden.some(x => className.startsWith(x))) return
 
