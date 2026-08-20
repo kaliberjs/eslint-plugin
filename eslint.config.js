@@ -5,7 +5,6 @@ const fs = require('fs')
 const path = require('path')
 const { includeIgnoreFile } = require('@eslint/compat')
 const js = require('@eslint/js')
-const babelParser = require('@babel/eslint-parser')
 const pluginReact = require('eslint-plugin-react')
 const pluginReactHooks = require('eslint-plugin-react-hooks')
 const pluginJsxA11y = require('eslint-plugin-jsx-a11y')
@@ -36,20 +35,11 @@ module.exports = [
     },
 
     languageOptions: {
-      parser: babelParser,
-      ecmaVersion: 2020,
+      ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: {
         ecmaFeatures: {
           jsx: true,
-        },
-        requireConfigFile: false,
-        babelOptions: {
-          // Resolved from this package, not by bare name. Babel resolves a
-          // bare preset name relative to the linted project, which picks up
-          // the consumer's @babel/preset-react — a version mismatch as soon
-          // as that is 7.x while we depend on 8.x.
-          presets: [require.resolve('@babel/preset-react')],
         },
       },
       globals: {
