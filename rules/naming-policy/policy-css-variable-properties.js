@@ -15,6 +15,9 @@ module.exports = {
     },
     `styles['metaGroup' + expertiseColumns]`,
     'styles[`metaGroup${expertiseColumns}`]',
+    'styles[condition ? `test${condition}` : null]',
+    'styles[variants.primary]',
+    'styles[getVariant()]',
   ],
   invalid: [
     {
@@ -27,6 +30,14 @@ module.exports = {
     },
     {
       code: 'styles[`_test${index}`]',
+      errors: [{ message: messages['no styles properties with _']('_test') }]
+    },
+    {
+      code: 'styles[condition ? `_test${condition}` : null]',
+      errors: [{ message: messages['no styles properties with _']('_test') }]
+    },
+    {
+      code: 'styles[variants._test]',
       errors: [{ message: messages['no styles properties with _']('_test') }]
     },
     {

@@ -134,7 +134,7 @@ module.exports = {
       const { property } = node
       const name = getPropertyName(property)
 
-      if (!name.startsWith('_') || name.startsWith('_root')) return
+      if (!name || !name.startsWith('_') || name.startsWith('_root')) return
 
       context.report({
         message: messages['no styles properties with _'](name),

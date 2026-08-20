@@ -13,11 +13,13 @@ function getPropertyName(property) {
     case 'Identifier': return property.name
     case 'Literal': return property.value
     case 'BinaryExpression': return getPropertyName(property.left)
+    case 'ConditionalExpression': return getPropertyName(property.consequent)
+    case 'MemberExpression': return getPropertyName(property.property)
     case 'TemplateLiteral': {
       const [name] = property.quasis
       return name.value.raw
     }
-    default: throw new Error(`Can not determine name for '${property.type}'`)
+    default: return null
   }
 }
 
