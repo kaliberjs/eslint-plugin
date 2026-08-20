@@ -45,7 +45,11 @@ module.exports = [
         },
         requireConfigFile: false,
         babelOptions: {
-          presets: ['@babel/preset-react'],
+          // Resolved from this package, not by bare name. Babel resolves a
+          // bare preset name relative to the linted project, which picks up
+          // the consumer's @babel/preset-react — a version mismatch as soon
+          // as that is 7.x while we depend on 8.x.
+          presets: [require.resolve('@babel/preset-react')],
         },
       },
       globals: {
