@@ -3,15 +3,10 @@ const rule = require('eslint-plugin-react').rules['prop-types']
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    parser: require('@babel/eslint-parser'),
-    ecmaVersion: 2020,
+    ecmaVersion: 'latest',
     sourceType: 'module',
     parserOptions: {
       ecmaFeatures: { jsx: true },
-      requireConfigFile: false,
-      babelOptions: {
-        presets: [require.resolve('@babel/preset-react')]
-      },
     },
   },
 })

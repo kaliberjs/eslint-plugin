@@ -13,11 +13,13 @@ function getPropertyName(property) {
     case 'Identifier': return property.name
     case 'Literal': return property.value
     case 'BinaryExpression': return getPropertyName(property.left)
+    case 'ConditionalExpression': return getPropertyName(property.consequent)
+    case 'MemberExpression': return getPropertyName(property.property)
     case 'TemplateLiteral': {
       const [name] = property.quasis
       return name.value.raw
     }
-    default: throw new Error(`Can not determine name for '${property.type}'`)
+    default: return null
   }
 }
 
@@ -42,7 +44,7 @@ function getRootFunctionScope(node, previous = []) {
     if (lastSeen) return lastSeen
     throw new Error('Could not find root function name')
   }
-    return getRootFunctionScope(upper, [...(node.type === 'function' ? [node] : []), ...previous])
+  return getRootFunctionScope(upper, [...(node.type === 'function' ? [node] : []), ...previous])
 }
 
 function getJSXElementName(jsxElement) {

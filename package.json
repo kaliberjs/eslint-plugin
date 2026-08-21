@@ -11,9 +11,6 @@
   },
   "version": "2.2.0",
   "dependencies": {
-    "@babel/core": "^8.0.1",
-    "@babel/eslint-parser": "^8.0.1",
-    "@babel/preset-react": "^8.0.1",
     "@eslint/compat": "^2.1.0",
     "@eslint/js": "^10.0.0",
     "@stylistic/eslint-plugin": "^5.10.0",

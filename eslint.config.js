@@ -5,7 +5,6 @@ const fs = require('fs')
 const path = require('path')
 const { includeIgnoreFile } = require('@eslint/compat')
 const js = require('@eslint/js')
-const babelParser = require('@babel/eslint-parser')
 const pluginReact = require('eslint-plugin-react')
 const pluginReactHooks = require('eslint-plugin-react-hooks')
 const pluginJsxA11y = require('eslint-plugin-jsx-a11y')
@@ -36,16 +35,11 @@ module.exports = [
     },
 
     languageOptions: {
-      parser: babelParser,
-      ecmaVersion: 2020,
+      ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: {
         ecmaFeatures: {
           jsx: true,
-        },
-        requireConfigFile: false,
-        babelOptions: {
-          presets: ['@babel/preset-react'],
         },
       },
       globals: {

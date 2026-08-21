@@ -163,6 +163,7 @@ function findRootProperty(jsxElement, node) {
 
   const { property } = node
   const className = getPropertyName(property)
+  if (!className) return
   if (!['_root', 'component_root'].some(x => className.startsWith(x))) return
   return property
 }
