@@ -155,7 +155,7 @@ function parseProperties(rawBody) {
     const match = /^\s*([A-Za-z_$][\w$]*)(\?)?\s*:\s*([\s\S]+?)\s*$/.exec(part)
     if (!match) return null                   // index signature, spread, intersection…
     const type = collapse(match[3])
-    if (splitTopLevel(type).length > 1) return null   // a comma we failed to account for
+    if (splitTopLevel(type).length > 1) return null   // a separator we failed to account for
     properties.push({ key: match[1], optional: Boolean(match[2]), type })
   }
 
@@ -166,6 +166,7 @@ function collapse(text) {
   return text.replace(/\n[ \t]*\*[ \t]*/g, ' ').trim()
 }
 
+// TypeScript accepts both `,` and `;` between the members of an object type
 function splitTopLevel(body) {
   const parts = []
   let depth = 0
@@ -178,7 +179,7 @@ function splitTopLevel(body) {
     // `=>` is an arrow, not a closing angle bracket
     else if (character === '>' && previous !== '=') depth = Math.max(0, depth - 1)
 
-    if (character === ',' && depth === 0) {
+    if ((character === ',' || character === ';') && depth === 0) {
       parts.push(current)
       current = ''
     } else current += character
@@ -186,8 +187,9 @@ function splitTopLevel(body) {
     previous = character
   }
 
-  if (current.trim()) parts.push(current)
-  return parts
+  parts.push(current)
+  // a trailing separator is legal, so empty members are not a parse failure
+  return parts.filter(part => part.trim())
 }
 
 function matchingBrace(text, start) {

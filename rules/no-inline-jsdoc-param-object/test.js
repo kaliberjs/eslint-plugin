@@ -164,6 +164,49 @@ test('no-inline-jsdoc-param-object', {
       errors: [{ messageId: 'inlineParamObject' }],
     },
 
+    // TypeScript accepts `;` between members too, and dropping one silently
+    // corrupted both the type and the property list
+    {
+      code: '/** @param {{ href: string; count: number }} params */\nfunction f({ href, count }) { return href || count }',
+      output: [
+        '/**',
+        ' * @param {object} params',
+        ' * @param {string} params.href',
+        ' * @param {number} params.count',
+        ' */',
+        'function f({ href, count }) { return href || count }',
+      ].join('\n'),
+      errors: [{ messageId: 'inlineParamObject' }],
+    },
+
+    // a trailing separator is legal and must not read as an empty member
+    {
+      code: '/** @param {{ href: string; targetSelf?: boolean; }} params */\nfunction f({ href, targetSelf }) { return href || targetSelf }',
+      output: [
+        '/**',
+        ' * @param {object} params',
+        ' * @param {string} params.href',
+        ' * @param {boolean} [params.targetSelf]',
+        ' */',
+        'function f({ href, targetSelf }) { return href || targetSelf }',
+      ].join('\n'),
+      errors: [{ messageId: 'inlineParamObject' }],
+    },
+
+    // a `;` nested inside a member's own object type is not a separator
+    {
+      code: '/** @param {{ nested: { a: string; b: string }, flag: boolean }} params */\nfunction f({ nested, flag }) { return nested || flag }',
+      output: [
+        '/**',
+        ' * @param {object} params',
+        ' * @param {{ a: string; b: string }} params.nested',
+        ' * @param {boolean} params.flag',
+        ' */',
+        'function f({ nested, flag }) { return nested || flag }',
+      ].join('\n'),
+      errors: [{ messageId: 'inlineParamObject' }],
+    },
+
     // a type spread over several lines, with ` * ` continuation prefixes
     {
       code: [
