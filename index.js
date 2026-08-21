@@ -30,6 +30,8 @@ const plugin = {
 
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
 
+    'no-inline-jsdoc-param-object': require('./rules/no-inline-jsdoc-param-object'),
+
     'stable-query-client': require('./rules/stable-query-client'),
   },
 
