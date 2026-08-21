@@ -75,6 +75,18 @@ test('no-inline-jsdoc-param-object', {
       errors: [{ messageId: 'inlineParamObject' }],
     },
 
+    // expanding a block after code repeats only the line's indentation
+    {
+      code: 'const f = /** @param {{ href: string }} params */ function ({ href }) { return href }',
+      output: [
+        'const f = /**',
+        ' * @param {object} params',
+        ' * @param {string} params.href',
+        ' */ function ({ href }) { return href }',
+      ].join('\n'),
+      errors: [{ messageId: 'inlineParamObject' }],
+    },
+
     // optional properties keep their optionality as brackets
     {
       code: [
@@ -225,6 +237,34 @@ test('no-inline-jsdoc-param-object', {
         ' * @param {unknown} [data.value]',
         ' */',
         'function f({ title, value }) { return title || value }',
+      ].join('\n'),
+      errors: [{ messageId: 'inlineParamObject' }],
+    },
+
+    // a bracket or separator inside a literal type is not structure
+    {
+      code: "/** @param {{ mode: '>', sep: ',' }} params */\nfunction f({ mode, sep }) { return mode || sep }",
+      output: [
+        '/**',
+        ' * @param {object} params',
+        " * @param {'>'} params.mode",
+        " * @param {','} params.sep",
+        ' */',
+        'function f({ mode, sep }) { return mode || sep }',
+      ].join('\n'),
+      errors: [{ messageId: 'inlineParamObject' }],
+    },
+
+    // an escaped quote does not end a literal type
+    {
+      code: "/** @param {{ quote: '\\'', sep: ',' }} params */\nfunction f({ quote, sep }) { return quote || sep }",
+      output: [
+        '/**',
+        ' * @param {object} params',
+        " * @param {'\\''} params.quote",
+        " * @param {','} params.sep",
+        ' */',
+        'function f({ quote, sep }) { return quote || sep }',
       ].join('\n'),
       errors: [{ messageId: 'inlineParamObject' }],
     },
