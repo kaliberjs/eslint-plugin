@@ -44,7 +44,7 @@ function getRootFunctionScope(node, previous = []) {
     if (lastSeen) return lastSeen
     throw new Error('Could not find root function name')
   }
-    return getRootFunctionScope(upper, [...(node.type === 'function' ? [node] : []), ...previous])
+  return getRootFunctionScope(upper, [...(node.type === 'function' ? [node] : []), ...previous])
 }
 
 function getJSXElementName(jsxElement) {
