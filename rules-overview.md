@@ -45,6 +45,7 @@
 | @kaliber/security-no-jquery-html-sink | Flags non-literal arguments to jQuery HTML-parsing methods (CWE-79). See [readme](rules/security/no-jquery-html-sink/readme.md). | Custom | [test.js](rules/security/no-jquery-html-sink/test.js) | `"warn"` |
 | @kaliber/security-no-hardcoded-credentials | Flags credential-named options with literal values, and credentialed connection strings (CWE-798). See [readme](rules/security/no-hardcoded-credentials/readme.md). | Custom | [test.js](rules/security/no-hardcoded-credentials/test.js) | `"warn"` |
 | @kaliber/security-no-hardcoded-api-key | Flags provider API key shapes and private-key PEM blocks in string literals (CWE-798). See [readme](rules/security/no-hardcoded-api-key/readme.md). | Custom | [test.js](rules/security/no-hardcoded-api-key/test.js) | `"warn"` |
+| @kaliber/security-no-path-traversal | Detects untrusted input flowing into filesystem path arguments (fs read/write, res.sendFile). Taint-based — see [readme](rules/security/no-path-traversal/readme.md). | Custom | [test.js](rules/security/no-path-traversal/test.js) | `"warn"` |
 | @kaliber/stable-query-client | Disallows `new QueryClient()` inside a React component body — it is recreated on every render, discarding the entire query cache. | Custom | [rules/stable-query-client/test.js](rules/stable-query-client/test.js) | `"warn"` |
 | **Third-Party Rules** | | | | |
 | **eslint-plugin-import** | | | | |

@@ -67,6 +67,7 @@ const plugin = {
     'security-no-jquery-html-sink': require('./rules/security/no-jquery-html-sink'),
     'security-no-hardcoded-credentials': require('./rules/security/no-hardcoded-credentials'),
     'security-no-hardcoded-api-key': require('./rules/security/no-hardcoded-api-key'),
+    'security-no-path-traversal': require('./rules/security/no-path-traversal'),
   },
 
   configs: {
@@ -123,6 +124,7 @@ const plugin = {
         '@kaliber/security-no-jquery-html-sink': 'warn',
         '@kaliber/security-no-hardcoded-credentials': 'warn',
         '@kaliber/security-no-hardcoded-api-key': 'warn',
+        '@kaliber/security-no-path-traversal': 'warn',
       },
     },
   },

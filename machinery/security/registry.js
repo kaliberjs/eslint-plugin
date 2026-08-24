@@ -272,6 +272,43 @@ const sinks = [
     owasp: 'A03:2021',
     note: 'Same sinks reached through an aliased namespace binding.',
   },
+  // --- Filesystem. The read and write families share one weakness class
+  // (CWE-22): a tainted path segment navigates out of the intended directory
+  // or addresses files the caller should never touch. Both binding styles
+  // are registered, plus fs/promises.
+  {
+    id: 'path.fs.module',
+    root: { module: /^(fs|fs\/promises|node:fs|node:fs\/promises)$/, name: /^(readFile|readFileSync|writeFile|writeFileSync|appendFile|appendFileSync|createReadStream|createWriteStream|unlink|unlinkSync|rm|rmSync|rmdir|rmdirSync|readdir|readdirSync|stat|statSync|access|accessSync|open|openSync|mkdir|mkdirSync)$/ },
+    argument: 0,
+    requires: 'path',
+    severity: 'high',
+    cwe: 'CWE-22',
+    owasp: 'A01:2021',
+    note: 'Argument 0 is the path in every listed signature except createWriteStream/createReadStream, where it is also argument 0.',
+  },
+  {
+    id: 'path.fs.member',
+    root: { method: /^(readFile|readFileSync|writeFile|writeFileSync|appendFile|appendFileSync|createReadStream|createWriteStream|unlink|unlinkSync|rm|rmSync|rmdir|rmdirSync|readdir|readdirSync|stat|statSync|access|accessSync|open|openSync|mkdir|mkdirSync)$/, receiver: /^(fs|fsp|fspromises|promises)$/i },
+    argument: 0,
+    requires: 'path',
+    severity: 'high',
+    cwe: 'CWE-22',
+    owasp: 'A01:2021',
+    note: 'Aliased namespace bindings, matched by name like the SQL receivers.',
+  },
+
+  // --- Filesystem. Express response file delivery: a tainted path here
+  // streams any file the process can read to the client.
+  {
+    id: 'path.res.sendfile',
+    root: { method: /^(sendFile|download|sendfile)$/i, receiver: /^(res|response)$/i },
+    argument: 0,
+    requires: 'path',
+    severity: 'high',
+    cwe: 'CWE-22',
+    owasp: 'A01:2021',
+    note: 'res.sendFile(path) is an arbitrary file read when the path is attacker-shaped.',
+  },
 ]
 
 const sanitizers = [
@@ -331,6 +368,14 @@ const sanitizers = [
     clears: ['url'],
     note: 'Percent-encoding. Clears url only. It does NOT make a value safe for SQL, shell, or HTML — a fact this project has seen asserted incorrectly often enough to warrant the note.',
   },
+  {
+    id: 'path.basename',
+    root: { method: /^basename$/, receiver: /^path$/i },
+    argument: 0,
+    clears: ['path'],
+    confidence: 0.9,
+    note: 'Strips directory components, so the result cannot navigate out of a base directory. Known imprecision, recorded rather than modelled: basename still permits arbitrary *names*, so an allowlist is better when the file must be one of a known set.',
+  },
 ]
 
 /**
@@ -355,6 +400,10 @@ const propagators = [
   { method: 'toLocaleUpperCase', receiver: true, args: 'none' },
   { method: 'flat', receiver: true, args: 'none' },
   { method: 'join', receiver: true, args: 'all' },
+  // Namespace-bound path builders: a tainted segment inside path.join /
+  // resolve / normalize flows into the result. The namespace gate is what
+  // separates this from Array.prototype.join above.
+  { namespace: /^path$/, method: /^(join|resolve|normalize|format)$/, args: 'all' },
   { method: 'toString', receiver: true, args: 'none' },
   { method: 'trim', receiver: true, args: 'none' },
   { method: 'trimStart', receiver: true, args: 'none' },

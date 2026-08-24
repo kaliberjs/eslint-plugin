@@ -340,7 +340,7 @@ function createAnalysis(sourceCode, options) {
     if (!definition) return false
 
     if (definition.type === 'ImportBinding') {
-      if (definition.parent.source.value !== root.module) return false
+      if (!matchesModulePattern(definition.parent.source.value, root.module)) return false
 
       const imported = definition.node.imported
       const importedName = imported?.type === 'Identifier' ? imported.name : imported?.value
@@ -350,10 +350,16 @@ function createAnalysis(sourceCode, options) {
     if (definition.type !== 'Variable') return false
 
     const { module, name } = requiredBy(definition)
-    return module === root.module && name !== null && root.name.test(name)
+    return matchesModulePattern(module, root.module) && name !== null && root.name.test(name)
   }
 
   /** Where does this require()-derived binding get its value? */
+  /** Module names match by exact string or by regex — entries may use either. */
+  function matchesModulePattern(module, pattern) {
+    if (typeof pattern === 'string') return pattern === String(module)
+    return Boolean(pattern?.test(String(module)))
+  }
+
   function requiredBy(definition) {
     const declarator = definition.node?.type === 'VariableDeclarator' ? definition.node : null
     if (!declarator || !declarator.init) return {}
@@ -865,7 +871,21 @@ function createAnalysis(sourceCode, options) {
     const name = getPropertyName(node.callee, scopeOf(node.callee))
     if (name === null) return null
 
-    return known.propagators.find(propagator => propagator.method === String(name)) ?? null
+    return known.propagators.find(propagator => {
+      if (propagator.method !== String(name)) return false
+
+      // Namespace-gated propagators (path.join vs Array#join): the receiver
+      // object must be the namespace, not a tainted value.
+      if (propagator.namespace) {
+        const object = node.callee.object
+        const objectName = object?.type === 'Identifier'
+          ? object.name
+          : object?.type === 'MemberExpression' && !object.computed ? object.property?.name : null
+        if (!objectName || !propagator.namespace.test(objectName)) return false
+      }
+
+      return true
+    }) ?? null
   }
 
   /**
