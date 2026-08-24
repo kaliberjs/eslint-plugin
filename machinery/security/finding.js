@@ -78,13 +78,15 @@ function report(context, { node, messageId, data = {}, severity, confidence, pat
  * not even belong to this file's AST. Reports always anchor at `node` (the
  * call site), never at the sink itself, for exactly that reason.
  *
- * `filter` exists for sink kinds shared by two rules (e.g. 'path' for both
- * no-path-traversal and no-firebase-path-injection) so each only reports the
- * sink family it owns.
+ * `filter(sink, taint, sinkNode)` exists for sink kinds shared by two rules
+ * (e.g. 'path' for both no-path-traversal and no-firebase-path-injection) so
+ * each only reports the sink family it owns, and for a rule that needs to
+ * inspect the actual call reached (`sinkNode.arguments[sink.argument]`) to
+ * rule out a same-name, different-thing collision.
  */
 function reportReachableSinks(context, analysis, node, kind, messageId, qualifiedMessageId, filter) {
-  for (const { sink, taint, sinkLabel } of analysis.reachableSinksOf(node, kind)) {
-    if (filter && !filter(sink)) continue
+  for (const { sink, taint, sinkLabel, sinkNode } of analysis.reachableSinksOf(node, kind)) {
+    if (filter && !filter(sink, taint, sinkNode)) continue
 
     const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
 

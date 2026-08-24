@@ -269,6 +269,60 @@ default floor) silently swallowed a genuinely higher-confidence bound
 flow reaching the exact same sink. Fixed by only suppressing when the
 ambient resolution is at least as confident as the bound one.
 
+### Kaliber-stack gap: GROQ/Sanity injection — shipped
+
+From the stack-survey list (SAML, GROQ, express-basic-auth, Elasticsearch,
+xml2js): `no-groq-injection`, covering `client.fetch(query, params)` for
+Sanity's query language. Research found all ~30 Sanity-backed projects use
+`@sanity/client` (never `next-sanity`'s own client, never a Kaliber
+wrapper) with client instances built once and exported under a small,
+closed set of names (`client`, `sanityClient`, `readOnlyClient`,
+`authorizedClient`, `previewClient`, and two migration-script spellings).
+
+Two real, reusable engine findings came out of this, not just registry data:
+
+- **The `groq` template tag needed the taint engine itself to change.**
+  `resolveTaggedTemplate` treated every tagged template as an opaque wall
+  (correct for `sql`/Prisma's `$queryRaw`, which genuinely parameterize
+  their interpolations) — but the `groq` npm package's tag is a verified
+  no-op, `(strings, ...keys) => concatenation`, existing purely for editor
+  syntax highlighting. It is also the dominant way GROQ queries are
+  actually written (~1600 real call sites surveyed, vs. single digits for
+  a bare template literal), so bailing made the common case invisible.
+  Fixed by recognizing the bare tag name `groq` and propagating taint
+  through its interpolations exactly like a plain template literal — the
+  same name-trust shape this registry already accepts for `root.helper`
+  sanitizers, not import-traced.
+- **The sink's own vocabulary is unusually collision-prone.** `client` and
+  `fetch` are, respectively, the most generic receiver name and the most
+  generic method verb this registry uses anywhere — unlike a SQL handle,
+  an ordinary HTTP/API client wrapper is routinely named and shaped
+  exactly like `client.fetch(url)`, and `client` cannot be dropped from
+  the receiver list without losing the canonical Sanity case. A
+  false-positive pass confirmed this fires on a plain, correctly-encoded
+  HTTP fetch with a security-nonsense remediation message attached. Fixed
+  by requiring the query — or any hop the taint took to reach it, or
+  having been wrapped in the `groq` tag at any point — to carry
+  recognizable GROQ syntax before trusting the match; a query with no
+  static text anywhere at all is never excused by this, since that is the
+  most dangerous shape, not a safe one. (The "wrapped in `groq` at any
+  point" clause mattered on its own: a `+=` query-builder's earlier,
+  untainted write carries the real GROQ syntax, and the combined taint's
+  path only keeps the tainted write — without it, an adversarial-pass
+  regression case for exactly that shape went from a confirmed detection
+  to a silent miss.)
+
+Adversarial and false-positive passes run independently found real misses
+worth documenting rather than fixing immediately: chained/wrapped client
+receivers (`client.withConfig({ token }).fetch(...)`, next-sanity's
+preview-mode switch), `defineQuery()` (a verified identity wrapper,
+unrecognised as a call), Next.js App Router sources (`searchParams`/`params`
+props — the primary road for untrusted input into a GROQ query in that
+framework, not a side one), and unregistered Sanity APIs beyond `.fetch()`
+(`.listen()`, `.observable.fetch()`, next-sanity's object-shaped
+`sanityFetch({ query, params })`). All listed honestly in the rule's
+readme rather than silently accepted.
+
 Remaining Tier 3: string/value analysis, non-JS processors.
 
 ## Dogfood measurement — rabobank-jobs

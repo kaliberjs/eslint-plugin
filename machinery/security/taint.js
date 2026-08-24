@@ -760,16 +760,31 @@ function createAnalysis(sourceCode, options, filename) {
   }
 
   function resolveTaggedTemplate(node) {
-    // The tags this rule needs to reason about parameterize their
-    // interpolations: `sql`...``, Drizzle's `sql`...``, `prisma.$queryRaw`...``.
-    // That is exactly why Prisma's safe raw APIs are tagged and its unsafe ones
-    // take a plain string.
+    // Some tags parameterize their interpolations: `sql`...``, Drizzle's
+    // `sql`...``, `prisma.$queryRaw`...``. That is exactly why Prisma's safe
+    // raw APIs are tagged and its unsafe ones take a plain string — for
+    // those, "no taint" is the correct answer, not a miss.
     //
-    // Not every tag does, though — `String.raw` is plain string building, and a
-    // user-defined tag can be anything. Treating an unrecognised tag as an
-    // unknown call is the same wall as resolveCall, so the failure is a missed
-    // finding rather than a false one, but it is a real miss and it is listed
-    // in the rule's documented limitations.
+    // `groq` (the npm package, not a Sanity-specific dialect of the tag
+    // syntax) is the opposite: its default export is a verified no-op —
+    // `(strings, ...keys) => strings.reduce concatenation` — that exists
+    // purely for editor syntax highlighting. A tagged template using it is
+    // exactly as injectable as the same interpolations in a plain template
+    // literal, and it is the dominant way GROQ queries are actually written
+    // in every project surveyed (~1600 call sites, vs. single digits for a
+    // bare template literal). Bailing here would make every one of them a
+    // wall no rule could ever see through. Recognized by bare tag name, the
+    // same trust shape this codebase already accepts for root.helper
+    // sanitizers — worth it once verified, not import-traced.
+    if (node.tag.type === 'Identifier' && node.tag.name === 'groq') {
+      return worstOf(node.quasi.expressions, node, 'template', PENALTY.template)
+    }
+
+    // Not every tag parameterizes, though — `String.raw` is plain string
+    // building, and a user-defined tag can be anything. Treating an
+    // unrecognised tag as an unknown call is the same wall as resolveCall,
+    // so the failure is a missed finding rather than a false one, but it is
+    // a real miss and it is listed in the rule's documented limitations.
     bail('taggedTemplate')
     return null
   }

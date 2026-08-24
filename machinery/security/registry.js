@@ -169,6 +169,22 @@ const sinks = [
     owasp: 'A03:2021',
     note: 'node-sqlite3 db.all/get/run/each(sql, params, cb) — the primary API of that driver and far more used than exec().\n\nThe receiver list deliberately excludes `stmt` and `statement`, and this is the opposite of an oversight. On a *database handle* argument 0 is SQL; on a *prepared statement* it is a bind parameter, so `stmt.get(req.params.id)` is the correct, safe better-sqlite3 usage. Including statement receivers made the safe API a sink and reported the recommended pattern. `db.prepare(sql).get(x)` is unaffected either way, because its receiver is a call expression rather than a name.',
   },
+  // --- GROQ (Sanity's query language). Same shape as the SQL family above —
+  // method+receiver rooted, argument 0 is the query — because a Sanity
+  // client is a runtime value (`createClient(config)`), not an import to
+  // track. The receiver list is the closed set actually used across every
+  // Sanity-backed project surveyed: client instances are built once in a
+  // shared module and exported under one of these names.
+  {
+    id: 'groq.fetch',
+    root: { method: /^fetch$/, receiver: /^(client|sanityClient|sanityReadOnlyClient|sanityWriteClient|readOnlyClient|authorizedClient|previewClient)$/i },
+    argument: 0,
+    requires: 'nosql',
+    severity: 'high',
+    cwe: 'CWE-943',
+    owasp: 'A03:2021',
+    note: 'client.fetch(query, params). The `groq` template tag (the npm package, not a GROQ-specific string dialect) is a verified no-op — it concatenates its interpolations with no escaping, purely for editor syntax highlighting — so a groq-tagged query is exactly as injectable as the same interpolations in a plain template literal or string concatenation.\n\nThe safe channel is the second argument: `client.fetch(\'*[slug.current == $slug]\', { slug })` binds `$slug` server-side rather than interpolating it into the query text, so a parameterized call leaves argument 0 untainted and reports nothing — the same convention as every SQL sink above.',
+  },
   // --- Shell. Module-rooted rather than method-name matched, because these
   // functions only mean one thing: where they came from decides what their
   // first argument is interpreted as. `exec` destructured from child_process
