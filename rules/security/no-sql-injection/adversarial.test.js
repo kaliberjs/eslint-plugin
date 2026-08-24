@@ -645,8 +645,9 @@ test('security-no-sql-injection', merge(
       handler(`const parts = ['SELECT * FROM u WHERE 1=1']; if (req.query.a) parts.push('AND a=' + req.query.a); db.query(parts.join(' '))`),
       // Limitation 2: a getter.
       handler(`const o = { get id() { return req.query.id } }; db.query('SELECT * FROM u WHERE id = ' + o.id)`),
-      // Limitation 3 (unknown calls): wrapper function, IIFE, callback.
-      handler(`function build() { return \`SELECT * FROM u WHERE id = \${req.query.id}\` } db.query(build())`),
+      // Limitation 3 (unknown calls): IIFE and callback remain walls.
+      // The plain wrapper function moved to invalid: helper summaries
+      // resolve it now.
       handler(`db.query((() => 'SELECT * FROM u WHERE id = ' + req.query.id)())`),
       handler(`Promise.resolve(req.query.id).then(id => db.query(\`SELECT * FROM u WHERE id = \${id}\`))`),
       `async function handler(req, res) { const id = await Promise.resolve(req.query.id); db.query(\`SELECT \${id}\`) }`,
@@ -663,6 +664,12 @@ test('security-no-sql-injection', merge(
       handler(`let sql; db.query(sql = 'SELECT * FROM u WHERE id = ' + req.query.id)`),
     ],
     invalid: [
+      {
+        // Helper summaries close this former miss: the wrapper's return
+        // statement is evaluated, so the taint flows to the sink.
+        code: handler(`function build() { return \`SELECT * FROM u WHERE id = \${req.query.id}\` } db.query(build())`),
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
       // maxHops (12): a long alias chain bails out. Not a realistic shape, but
       // it pins where the ceiling is.
       // Was a recorded miss; now detected.

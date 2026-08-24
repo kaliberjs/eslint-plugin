@@ -77,6 +77,8 @@ function createAnalysis(sourceCode, options) {
 
   const taintCache = new Map()
   const inProgress = new Set()
+  // Active helper-summary parameter bindings, or null in normal resolution.
+  let bindingScope = null
   const references = indexReferences(sourceCode)
 
   return { taintOf, sinkAt, sourceAt, referenceFor, sanitizedAt, stats }
@@ -433,6 +435,22 @@ function createAnalysis(sourceCode, options) {
   // --- resolution ----------------------------------------------------------
 
   function resolveIdentifier(node) {
+    // Inside a helper summary, a parameter name means the taint of the
+    // argument the call actually passed. An untainted binding yields an
+    // untainted result — which is correct, not optimistic: whatever else
+    // that name resolves to is irrelevant, because the value flowing here
+    // came from the argument.
+    if (bindingScope?.has(node.name)) {
+      const boundTaint = bindingScope.get(node.name)
+      if (!boundTaint) return null
+      return hop(boundTaint, {
+        node,
+        kind: 'methodName',
+        label: node.name,
+        penalty: 0,
+      })
+    }
+
     const source = sourceForIdentifier(node)
     if (source) return startTaint(source, node)
 
@@ -663,11 +681,117 @@ function createAnalysis(sourceCode, options) {
     const propagator = propagatorFor(node)
     if (propagator) return resolvePropagatorCall(node, propagator)
 
+    // Same-file helper functions get a computed summary instead of a wall:
+    // their return statements are evaluated with parameters bound to the
+    // actual call arguments, so `function pick(x) { return x.trim() }`
+    // propagates taint exactly rather than being an unknown call. Cross-file
+    // helpers remain walls (documented).
+    const localFunction = localFunctionFor(node.callee)
+    if (localFunction) return summarizeCall(localFunction, node)
+
     // An unknown function call breaks the chain. It is a wall, not a penalty:
     // reporting through arbitrary unknown functions is the single largest
     // source of false positives in every tool that does it.
     bail('unknownCall')
     return null
+  }
+
+  /**
+   * Resolve a callee to a function declared in this file: a FunctionDeclaration
+   * name or a variable initialized with a function expression/arrow.
+   * Member callees (`obj.helper()`) are deliberately out of scope — resolving
+   * them needs receiver type information phase 1 does not have.
+   */
+  function localFunctionFor(callee) {
+    if (callee.type !== 'Identifier') return null
+
+    const variable = referenceFor(callee)?.resolved
+    const definition = variable?.defs[0]
+    if (!definition) return null
+
+    if (definition.type === 'FunctionName') return definition.node
+    if (definition.type === 'Variable') {
+      const init = definition.node.init
+      if (init?.type === 'ArrowFunctionExpression' || init?.type === 'FunctionExpression') return init
+    }
+    return null
+  }
+
+  /**
+   * Evaluate the helper's return expressions with its parameters bound to the
+   * call's arguments. Returns the combined taint of everything the helper can
+   * give back — including values it pulls from registered sources itself,
+   * which fall out of ordinary resolution inside the body.
+   */
+  function summarizeCall(fnNode, callNode) {
+    // Bindings hold the *taint values* of the arguments, captured before any
+    // scope switch: evaluating them lazily under a nested summary would
+    // resolve parameter names against the wrong bindings.
+    const bindings = new Map()
+    fnNode.params.forEach((param, index) => {
+      // Destructured and rest parameters stay unsupported; their identifiers
+      // simply never bind, so they read as untainted — a miss, not a guess.
+      if (param.type === 'Identifier') {
+        const argument = callNode.arguments[index] ?? null
+        bindings.set(param.name, argument ? taintOf(argument) : null)
+      }
+    })
+
+    // An expression-bodied arrow has no return statement: its whole body is
+    // the return value.
+    const returns = []
+    if (fnNode.type === 'ArrowFunctionExpression' && fnNode.body.type !== 'BlockStatement') {
+      returns.push(fnNode.body)
+    } else {
+      collectReturns(fnNode.body, fnNode, returns)
+    }
+
+    const previousBindings = bindingScope
+    bindingScope = bindings
+    try {
+      const combined = combine(returns.map(returnArgument => taintOf(returnArgument)))
+      if (!combined) return null
+      return hop(combined, {
+        node: callNode.callee,
+        kind: 'methodName',
+        label: getCalleeLabel(callNode.callee),
+        penalty: PENALTY.methodName,
+      })
+    } finally {
+      bindingScope = previousBindings
+    }
+  }
+
+  /** Return arguments whose nearest enclosing function is this one. */
+  function collectReturns(node, ownerFn, out) {
+    if (!node || typeof node.type !== 'string') return
+
+    if (node.type === 'ReturnStatement' && enclosingFunctionOf(node) === ownerFn) {
+      out.push(node.argument)
+      return
+    }
+    if (isFunctionNode(node)) {
+      // A nested arrow inside the helper is evaluated on its own terms when
+      // its calls appear elsewhere; do not descend into it here.
+      return
+    }
+
+    for (const key of Object.keys(node)) {
+      if (key === 'parent') continue
+      const value = node[key]
+      if (Array.isArray(value)) value.forEach(child => collectReturns(child, ownerFn, out))
+      else if (value && typeof value === 'object' && typeof value.type === 'string') collectReturns(value, ownerFn, out)
+    }
+  }
+
+  function enclosingFunctionOf(node) {
+    let current = node.parent
+    while (current && !isFunctionNode(current)) current = current.parent
+    return current
+  }
+
+  function getCalleeLabel(callee) {
+    return sourceCode.getText(callee).replace(/\s+/g, ' ')
   }
 
   function resolveSanitizerCall(node, sanitizer) {

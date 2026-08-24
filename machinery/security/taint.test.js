@@ -445,3 +445,49 @@ describe('allowlist guards — flow sensitivity', () => {
     assert.strictEqual(found.length, 1)
   })
 })
+
+describe('same-file helper summaries — interprocedural-lite', () => {
+  test('an arrow helper wrapping a parameter propagates taint', () => {
+    const found = taintAtSinks(`
+      const pick = x => x.trim()
+      function handler(req){ db.query(\`SELECT * FROM \${pick(req.query.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 1)
+    assert.ok(found[0].confidence > 0.5)
+  })
+
+  test('a helper pulling from its own closure source is tainted', () => {
+    const found = taintAtSinks(`
+      function handler(req){
+        function getTable(){ return req.query.table }
+        db.query(\`SELECT * FROM \${getTable()}\`)
+      }
+    `)
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('nested helpers compose', () => {
+    const found = taintAtSinks(`
+      const inner = x => x.trim()
+      function outer(x){ return inner(x) }
+      function handler(req){ db.query(\`SELECT \${outer(req.query.t)}\`) }
+    `)
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('untainted passthrough stays quiet', () => {
+    const found = taintAtSinks(`
+      const id = x => x
+      function handler(){ db.query(\`SELECT \${id(config.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
+
+  test('cross-file helpers remain walls — the documented limitation', () => {
+    const found = taintAtSinks(`
+      const { getTable } = require('./tables')
+      function handler(req){ db.query(\`SELECT \${getTable(req)}\`) }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
+})

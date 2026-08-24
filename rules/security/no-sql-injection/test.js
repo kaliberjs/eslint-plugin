@@ -147,13 +147,17 @@ test('security-no-sql-injection', merge(
       handler(`const c = mysql.escapeId(req.query.col); db.query('SELECT ' + c + ' FROM u')`),
       // An unknown function is a wall, not a low-confidence propagator.
       handler(`const id = transform(req.query.id); db.query(\`SELECT \${id}\`)`),
-      // A local `Number` shadows the global, so it is correctly *not* treated
-      // as a sanitizer — but calling it is then an unknown local call, which is
-      // also a wall. Both paths reach "no report" in phase 1. This becomes a
-      // true positive once callDepth > 0 resolves the local body.
-      `function handler(req, res) { const Number = x => x; const id = Number(req.query.id); db.query(\`SELECT \${id}\`) }`,
     ],
     invalid: [
+      // A local `Number` shadows the global, so it is correctly *not* treated
+      // as a sanitizer — but helper summaries now resolve the local body, and
+      // an identity wrapper passes taint through untouched. This was recorded
+      // in phase 1 as "becomes a true positive once call summaries exist";
+      // that is exactly what happened.
+      {
+        code: `function handler(req, res) { const Number = x => x; const id = Number(req.query.id); db.query(\`SELECT \${id}\`) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
       // encodeURIComponent clears `url`, not `sql`. This is the whole point of
       // typing sanitization: no rule had to know this.
       {
