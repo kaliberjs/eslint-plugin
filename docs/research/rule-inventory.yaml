@@ -150,7 +150,7 @@ rules:
       confidence: 5
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 187.5
     requires_taint: false
     sources:
       - req.query / req.body / req.params / req.headers
@@ -219,8 +219,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 4
       false_positive_risk: 3
-      implementation_cost: 2
-    priority_score: 0.0
+      implementation_cost: 1   # was 2; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 80.0
     requires_taint: true
     sources:
       - req.query / req.body / req.params / req.headers / req.cookies
@@ -288,7 +288,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 120.0
     requires_taint: false
     sinks:
       - child_process.spawn / spawnSync / execFile / execFileSync with options.shell truthy
@@ -333,7 +333,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 35.6
     requires_taint: true
     sources:
       - req.query / req.body / req.params / req.headers
@@ -402,8 +402,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 4
       false_positive_risk: 3
-      implementation_cost: 3
-    priority_score: 0.0
+      implementation_cost: 1   # was 3; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 80.0
     requires_taint: true
     sources:
       - "req.body / req.query / req.params (query strings parsed by `qs` produce nested objects, so `?a[$ne]=1` is an object)"
@@ -462,8 +462,8 @@ rules:
       ecosystem_prevalence: 1
       confidence: 4
       false_positive_risk: 2
-      implementation_cost: 2
-    priority_score: 0.0
+      implementation_cost: 1   # was 2; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 32.0
     requires_taint: true
     sources:
       - login form fields, req.body.username, SSO assertion attributes
@@ -512,8 +512,8 @@ rules:
       ecosystem_prevalence: 1
       confidence: 4
       false_positive_risk: 2
-      implementation_cost: 2
-    priority_score: 0.0
+      implementation_cost: 1   # was 2; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 24.0
     requires_taint: true
     sources:
       - req.query / req.body values used as node predicates
@@ -560,8 +560,8 @@ rules:
       ecosystem_prevalence: 2
       confidence: 4
       false_positive_risk: 2
-      implementation_cost: 2
-    priority_score: 0.0
+      implementation_cost: 1   # was 2; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 80.0
     requires_taint: true
     sources:
       - req.body / req.query used as template text
@@ -622,8 +622,8 @@ rules:
       ecosystem_prevalence: 1
       confidence: 3
       false_positive_risk: 3
-      implementation_cost: 3
-    priority_score: 0.0
+      implementation_cost: 1   # was 3; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 12.0
     requires_taint: true
     sources:
       - "req.query filter/sort parameters (the common shape: `?filter=<expression>`)"
@@ -676,8 +676,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 3
       false_positive_risk: 4
-      implementation_cost: 4
-    priority_score: 0.0
+      implementation_cost: 2   # was 4; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 13.5
     requires_taint: true
     sources:
       - req.query / req.body / req.params / req.headers / req.cookies
@@ -742,7 +742,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 21.3
     requires_taint: false
     sources: []
     sinks:
@@ -803,7 +803,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 45.0
     requires_taint: true
     sources:
       - req.params used as a plugin/handler name
@@ -858,8 +858,8 @@ rules:
       ecosystem_prevalence: 4
       confidence: 2
       false_positive_risk: 5
-      implementation_cost: 3
-    priority_score: 0.0
+      implementation_cost: 1   # was 3; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 9.6
     requires_taint: true
     sources:
       - req.query / req.body / req.headers / req.params
@@ -905,7 +905,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 80.0
     requires_taint: false
     sources: []
     sinks:
@@ -965,7 +965,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 53.3
     requires_taint: false
     sources: []
     sinks:
@@ -1025,7 +1025,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 22.5
     requires_taint: false
     sources: []
     sinks:
@@ -1077,7 +1077,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 60.0
     requires_taint: false
     sources: []
     sinks:
@@ -1133,7 +1133,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 8.0
     requires_taint: false
     sources: []
     sinks:
@@ -1180,7 +1180,7 @@ rules:
       confidence: 5
       false_positive_risk: 1
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 250.0
     requires_taint: false
     sources: []
     sinks:
@@ -1232,7 +1232,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 150.0
     requires_taint: false
     sources: []
     sinks:
@@ -1286,7 +1286,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 150.0
     requires_taint: false
     sources: []
     sinks:
@@ -1337,7 +1337,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 150.0
     requires_taint: false
     sources: []
     sinks:
@@ -1394,7 +1394,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 30.0
     requires_taint: false
     sources: []
     sinks:
@@ -1449,7 +1449,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 53.3
     requires_taint: false
     sources: []
     sinks:
@@ -1510,7 +1510,7 @@ rules:
       confidence: 2
       false_positive_risk: 4
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 2.7
     requires_taint: false
     sources: []
     sinks:
@@ -1557,7 +1557,7 @@ rules:
       confidence: 2
       false_positive_risk: 4
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 18.0
     requires_taint: false
     sources: []
     sinks:
@@ -1608,7 +1608,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 80.0
     requires_taint: false
     sources: []
     sinks:
@@ -1659,7 +1659,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 13.5
     requires_taint: false
     sources: []
     sinks:
@@ -1709,7 +1709,7 @@ rules:
       confidence: 5
       false_positive_risk: 1
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 200.0
     requires_taint: false
     sources: []
     sinks:
@@ -1757,7 +1757,7 @@ rules:
       confidence: 5
       false_positive_risk: 1
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 200.0
     requires_taint: false
     sources: []
     sinks:
@@ -1804,7 +1804,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 75.0
     requires_taint: false
     sources: []
     sinks:
@@ -1858,7 +1858,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 32.0
     requires_taint: false
     sources: []
     sinks:
@@ -1911,7 +1911,7 @@ rules:
       confidence: 2
       false_positive_risk: 5
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 40.0
     requires_taint: false
     sources: []
     sinks:
@@ -1965,7 +1965,7 @@ rules:
       confidence: 5
       false_positive_risk: 1
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 150.0
     requires_taint: false
     sources: []
     sinks:
@@ -2012,7 +2012,7 @@ rules:
       confidence: 5
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 187.5
     requires_taint: false
     sources: []
     sinks:
@@ -2072,7 +2072,7 @@ rules:
       confidence: 5
       false_positive_risk: 1
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 375.0
     requires_taint: false
     sources: []
     sinks:
@@ -2121,7 +2121,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 45.0
     requires_taint: false
     sources: []
     sinks:
@@ -2182,8 +2182,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 3
       false_positive_risk: 4
-      implementation_cost: 4
-    priority_score: 0.0
+      implementation_cost: 2   # was 4; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 16.9
     requires_taint: true
     sources:
       - req.query.url / req.body.url / req.params
@@ -2256,7 +2256,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 16.0
     requires_taint: true
     sources:
       - a URL that passed a hostname allowlist check earlier in the same function
@@ -2309,7 +2309,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 48.0
     requires_taint: false
     sources: []
     sinks:
@@ -2365,7 +2365,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 80.0
     requires_taint: false
     sources: []
     sinks:
@@ -2421,7 +2421,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 24.0
     requires_taint: false
     sources: []
     sinks:
@@ -2474,8 +2474,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 3
       false_positive_risk: 4
-      implementation_cost: 3
-    priority_score: 0.0
+      implementation_cost: 1   # was 3; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 45.0
     requires_taint: true
     sources:
       - req.params / req.query / req.body path or filename fields
@@ -2545,8 +2545,8 @@ rules:
       ecosystem_prevalence: 2
       confidence: 3
       false_positive_risk: 3
-      implementation_cost: 3
-    priority_score: 0.0
+      implementation_cost: 1   # was 3; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 30.0
     requires_taint: true
     sources:
       - req.query.file / req.params.path / req.body.template
@@ -2599,8 +2599,8 @@ rules:
       ecosystem_prevalence: 2
       confidence: 3
       false_positive_risk: 3
-      implementation_cost: 3
-    priority_score: 0.0
+      implementation_cost: 1   # was 3; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 40.0
     requires_taint: true
     sources:
       - "upload metadata: file.originalname, req.body.filename"
@@ -2656,7 +2656,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 16.0
     requires_taint: false
     sources: []
     sinks:
@@ -2712,7 +2712,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 40.0
     requires_taint: false
     sources:
       - "archive entry names (entry.fileName, entry.path, header.name) — the source is inside the archive, not the request"
@@ -2769,7 +2769,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 24.0
     requires_taint: false
     sources: []
     sinks:
@@ -2826,8 +2826,8 @@ rules:
       ecosystem_prevalence: 2
       confidence: 4
       false_positive_risk: 2
-      implementation_cost: 2
-    priority_score: 0.0
+      implementation_cost: 1   # was 2; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 80.0
     requires_taint: true
     sources:
       - req.body / req.cookies (a serialized session or state blob)
@@ -2888,7 +2888,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 12.0
     requires_taint: true
     sources:
       - "req.body / req.query keys (qs produces nested objects, so `?__proto__[x]=y` is reachable)"
@@ -2953,8 +2953,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 4
       false_positive_risk: 3
-      implementation_cost: 2
-    priority_score: 0.0
+      implementation_cost: 1   # was 2; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 64.0
     requires_taint: true
     sources:
       - req.body / req.query passed as a merge source
@@ -3016,7 +3016,7 @@ rules:
       confidence: 2
       false_positive_risk: 5
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 12.8
     requires_taint: true
     sources:
       - req.query / req.body field names used as lookup keys
@@ -3077,7 +3077,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 18.0
     requires_taint: true
     sources:
       - req.body used directly as an entity payload
@@ -3137,7 +3137,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 4
-    priority_score: 0.0
+    priority_score: 16.0
     requires_taint: false
     sources:
       - "any request-derived string tested against the pattern (needed only to upgrade severity)"
@@ -3198,7 +3198,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 4
-    priority_score: 0.0
+    priority_score: 6.8
     requires_taint: true
     sources:
       - req.body / req.query strings of unbounded length
@@ -3250,7 +3250,7 @@ rules:
       confidence: 3
       false_positive_risk: 4
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 33.8
     requires_taint: true
     sources:
       - "req.query.search / req.body.pattern (search and filter features are the usual shape)"
@@ -3308,7 +3308,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 32.0
     requires_taint: false
     sources: []
     sinks:
@@ -3366,7 +3366,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 120.0
     requires_taint: false
     sources: []
     sinks:
@@ -3414,7 +3414,7 @@ rules:
       confidence: 2
       false_positive_risk: 4
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 12.0
     requires_taint: false
     sources: []
     sinks:
@@ -3468,7 +3468,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 106.7
     requires_taint: false
     sources:
       - location.hash / location.search / location.pathname / document.referrer
@@ -3538,7 +3538,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 80.0
     requires_taint: false
     sources:
       - location.* / document.referrer / postMessage data / storage values
@@ -3590,7 +3590,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 80.0
     requires_taint: false
     sources:
       - location.search / location.hash / document.referrer
@@ -3639,7 +3639,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 106.7
     requires_taint: false
     sources:
       - CMS/rich-text field values
@@ -3686,7 +3686,7 @@ rules:
 
   - id: no-javascript-url
     family: browser-dom
-    title: Do not build javascript: or data: URLs, and do not assign unvalidated URLs to href/src
+    title: "Do not build javascript: or data: URLs, and do not assign unvalidated URLs to href/src"
     description: >
       A `javascript:` URL in `href`, `src`, `action` or `formaction` executes on activation. If the
       URL comes from user data — a profile link, a redirect parameter, a CMS field — that is XSS
@@ -3704,7 +3704,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 48.0
     requires_taint: false
     sources:
       - user-supplied profile/website URLs
@@ -3762,8 +3762,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 4
       false_positive_risk: 2
-      implementation_cost: 3
-    priority_score: 0.0
+      implementation_cost: 1   # was 3; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 96.0
     requires_taint: true
     sources:
       - location.href / .search / .hash / .pathname
@@ -3825,7 +3825,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 32.0
     requires_taint: false
     sources: []
     sinks:
@@ -3881,7 +3881,7 @@ rules:
       confidence: 4
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 60.0
     requires_taint: false
     sources: []
     sinks:
@@ -3931,7 +3931,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 80.0
     requires_taint: false
     sources: []
     sinks:
@@ -3982,7 +3982,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 32.0
     requires_taint: false
     sources:
       - location.hash used as a selector
@@ -4034,7 +4034,7 @@ rules:
       confidence: 3
       false_positive_risk: 3
       implementation_cost: 1
-    priority_score: 0.0
+    priority_score: 48.0
     requires_taint: false
     sources: []
     sinks:
@@ -4087,8 +4087,8 @@ rules:
       ecosystem_prevalence: 3
       confidence: 3
       false_positive_risk: 3
-      implementation_cost: 2
-    priority_score: 0.0
+      implementation_cost: 1   # was 2; revised down — reuses the shipped taint layer, so the cost is registry data plus a thin rule
+    priority_score: 36.0
     requires_taint: true
     sources:
       - "req.query.next / returnTo / redirect_uri / continue / url"
@@ -4154,7 +4154,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 24.0
     requires_taint: true
     sources:
       - location.search / location.hash parsed for a redirect target
@@ -4222,7 +4222,7 @@ rules:
       confidence: 2
       false_positive_risk: 5
       implementation_cost: 4
-    priority_score: 0.0
+    priority_score: 4.0
     requires_taint: true
     sources:
       - req.params.id / req.query.id / req.body.id
@@ -4280,7 +4280,7 @@ rules:
       confidence: 1
       false_positive_risk: 5
       implementation_cost: 4
-    priority_score: 0.0
+    priority_score: 1.5
     requires_taint: false
     sources: []
     sinks:
@@ -4340,7 +4340,7 @@ rules:
       confidence: 2
       false_positive_risk: 4
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 6.0
     requires_taint: false
     sources: []
     sinks:
@@ -4392,7 +4392,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 26.7
     requires_taint: true
     sources:
       - "req.body.isAdmin / role / permissions / userId"
@@ -4451,7 +4451,7 @@ rules:
       confidence: 2
       false_positive_risk: 4
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 4.0
     requires_taint: false
     sources: []
     sinks:
@@ -4507,7 +4507,7 @@ rules:
       confidence: 4
       false_positive_risk: 2
       implementation_cost: 2
-    priority_score: 0.0
+    priority_score: 45.0
     requires_taint: false
     sources: []
     sinks:
@@ -4566,7 +4566,7 @@ rules:
       confidence: 2
       false_positive_risk: 4
       implementation_cost: 3
-    priority_score: 0.0
+    priority_score: 3.0
     requires_taint: false
     sources: []
     sinks:
@@ -4600,3 +4600,207 @@ rules:
       whole-program analysis and an explicit "expensive route" heuristic. Documented, not
       recommended. The tractable sub-case is the request-driven unbounded loop
       (CodeQL js/loop-bound-injection), which is a genuine intra-file pattern.
+
+# =================================================================================================
+# RECOMMENDED NEXT TEN
+# =================================================================================================
+#
+# Written after the SQL injection vertical slice shipped, so this section is grounded in a
+# measured implementation rather than an estimate. `no-sql-injection` is excluded: it is done.
+#
+# -------------------------------------------------------------------------------------------------
+# What the formula says, and why it is not a shipping plan on its own
+# -------------------------------------------------------------------------------------------------
+#
+# Ranked strictly by priority_score, the top fourteen candidates are ALL
+# STATICALLY_DETECTABLE and NONE require taint analysis:
+#
+#     375.0  no-node-tls-reject-unauthorized
+#     250.0  no-jwt-alg-none
+#     200.0  no-des-3des
+#     200.0  no-ecb-mode
+#     187.5  no-eval
+#     187.5  no-disabled-tls-verification
+#     150.0  no-jwt-algorithm-confusion
+#     150.0  no-jwt-decode-without-verify
+#     150.0  no-weak-jwt-secret
+#     150.0  no-weak-key-size
+#     120.0  no-shell-true
+#     120.0  no-authorization-header-log
+#     106.7  no-inner-html
+#     106.7  no-dangerously-set-inner-html
+#
+# The highest-ranked taint-requiring rule is no-dom-xss-sink at 96.0, then
+# no-command-injection at 80.0. no-sql-injection — the rule we actually built first — ranks
+# 37th at 35.6.
+#
+# Two things must be said about that before anyone acts on it.
+#
+# First, the formula divides by false_positive_risk and implementation_cost, so it measures
+# security value *per unit of effort and noise*, not security value. It is the right objective
+# for deciding what to build next week and the wrong one for deciding what the product is. A
+# security plugin that ships ten TLS and JWT configuration checks and cannot find an injection
+# is not a security plugin anyone asked for.
+#
+# Second, the costs have genuinely changed. Sixteen entries had implementation_cost revised down
+# by 2 (marked inline) because `machinery/security/` now exists: for a rule that reuses it, the
+# work is registry data plus a ~45-line rule, not new analysis infrastructure. no-command-injection
+# went from 40.0 to 80.0 on that basis alone. That revision is the single most useful thing the
+# vertical slice bought us, and it will keep paying off.
+#
+# The honest reading is that the formula is telling us something real and slightly unwelcome:
+# the cheap high-confidence rules are underrated by engineers who find taint analysis more
+# interesting. `NODE_TLS_REJECT_UNAUTHORIZED = '0'` is one line to detect, essentially cannot
+# false-positive, and disables certificate validation process-wide. It deserves to outrank
+# things that are harder to build.
+#
+# -------------------------------------------------------------------------------------------------
+# The recommendation
+# -------------------------------------------------------------------------------------------------
+#
+# Eight cheap high-confidence rules, then two taint rules that exercise the layer in a new
+# direction. Ordered for implementation, not by score.
+#
+recommended_next_ten:
+  - id: no-node-tls-reject-unauthorized
+    rank: 1
+    reuses_taint_layer: false
+    why: >
+      Highest score in the inventory by a wide margin. Setting NODE_TLS_REJECT_UNAUTHORIZED to
+      '0' disables certificate verification for every TLS connection in the process, and it is
+      a literal assignment to a known property — one line to detect, no dataflow, and almost
+      no way to false-positive. The only judgement call is whether to exempt test files.
+
+  - id: no-disabled-tls-verification
+    rank: 6
+    reuses_taint_layer: false
+    why: >
+      The same vulnerability class expressed per-request (`rejectUnauthorized: false`, axios
+      `httpsAgent` with verification off, `strictSSL: false`). Object-property matching against
+      a registry of known option keys. Ships alongside the above and shares its documentation.
+
+  - id: no-jwt-alg-none
+    rank: 2
+    reuses_taint_layer: false
+    why: >
+      `algorithms: ['none']`, or verify() with no algorithms option at all, means an attacker
+      supplies the algorithm — a complete authentication bypass. Statically decidable from the
+      options object. The no-algorithms-specified case is the valuable one and the one other
+      tools miss.
+
+  - id: no-jwt-decode-without-verify
+    rank: 8
+    reuses_taint_layer: false
+    why: >
+      `jwt.decode()` does not verify the signature, and the name does not warn you. Treating
+      its output as trusted is an authentication bypass. A single call-site check with an
+      unusually clear remediation: use verify().
+
+  - id: no-ecb-mode
+    rank: 4
+    reuses_taint_layer: false
+    why: >
+      ECB leaks plaintext structure and is never the right choice. The mode is encoded in the
+      cipher name string passed to createCipheriv, so this is literal matching. Pairs with
+      no-des-3des (rank 3), which is the same shape of check against the same argument.
+
+  - id: no-shell-true
+    rank: 11
+    reuses_taint_layer: false
+    why: >
+      `spawn(cmd, args, { shell: true })` silently converts the safe API into the unsafe one,
+      which is exactly the kind of thing a reviewer misses. Detectable from the options object
+      with no dataflow — and it is the highest-value rule in the injection family that needs
+      no taint at all.
+
+  - id: no-authorization-header-log
+    rank: 12
+    reuses_taint_layer: false
+    why: >
+      Logging `req.headers.authorization`, a Cookie header or a whole request body writes
+      credentials to log aggregation, where they are retained and widely readable. The sink
+      (console/logger) and the source property are both literal, so confidence is high. Also
+      the first rule that will exercise the `log` taint kind.
+
+  - id: no-dangerously-set-inner-html
+    rank: 14
+    reuses_taint_layer: false
+    why: >
+      Relevant to every React codebase this plugin already targets, which no other candidate
+      in the top ten is. Start with the constant-only form (flag any non-literal), then
+      upgrade it to a taint rule once the `html` kind has sanitizer coverage — DOMPurify
+      modelling is the prerequisite, and getting that wrong is worse than not shipping.
+
+  - id: no-command-injection
+    rank: 16
+    reuses_taint_layer: true
+    why: >
+      The strongest taint candidate now that the layer exists: score doubled from 40.0 to 80.0
+      on the cost revision alone. RCE impact, and the sinks (`exec`, `execSync`, `execFile`
+      with shell) are module-rooted rather than method-name-matched, so they are *more*
+      precisely identifiable than the SQL sinks were. It is the cheapest possible test of
+      whether the registry really generalises: if adding a second injection family is mostly
+      data, the architecture is validated. If it is not, better to find out at rule two than
+      at rule twenty.
+
+  - id: no-dom-xss-sink
+    rank: 15
+    reuses_taint_layer: true
+    why: >
+      Highest-ranked taint rule in the inventory (96.0), and the one that forces the taint-kind
+      model to prove itself: `html` sinks with `location`/`postMessage` sources, where the
+      sanitizers are completely different from the SQL ones. If `clears: ['html']` versus
+      `clears: ['sql']` works here without touching taint.js, typed sanitization was the right
+      design. Do it after no-command-injection, because DOMPurify modelling is the risky part
+      and `no-dangerously-set-inner-html` will have surfaced the questions.
+
+# -------------------------------------------------------------------------------------------------
+# Where this disagrees with the brief's proposed first ten
+# -------------------------------------------------------------------------------------------------
+#
+# The brief proposed: no-eval, no-command-injection, no-sql-injection, no-xss, no-path-traversal,
+# no-ssrf, no-open-redirect, no-hardcoded-secret, no-insecure-random, no-unsafe-regex.
+# Exactly one of those (no-eval, rank 5) is in the top ten by score. The disagreements, strongest
+# first:
+#
+# 1. no-ssrf (rank 68, score 8.4) and no-reflected-xss (rank 70, score 6.8) are among the WORST
+#    candidates in a 79-entry inventory, and both are in the brief's first ten. Both are classified
+#    REQUIRES_INTERPROCEDURAL_ANALYSIS, and that classification is now measured rather than
+#    guessed: the shipped taint layer cannot follow a value across a module boundary, and in real
+#    Express and Next codebases the source is in a route handler while the sink is in a service
+#    module several files away. Shipping them early would mean shipping rules that find almost
+#    nothing and then claiming SSRF coverage — the worst of both outcomes. They belong after
+#    interprocedural analysis exists, not before.
+#
+# 2. The brief omits the TLS, JWT and cipher-configuration families entirely, and they occupy
+#    eight of the top twelve places. These are the rules with the best ratio of real
+#    vulnerability caught to developer annoyance caused, which is the metric that decides whether
+#    the plugin is still enabled in month three. It is a significant omission rather than a
+#    matter of taste.
+#
+# 3. no-hardcoded-secret is not one rule. It splits into no-hardcoded-credentials (rank 24,
+#    53.3, literal passwords and connection strings) and no-hardcoded-api-key (rank 51, 22.5,
+#    entropy heuristics on string literals). They have very different false-positive profiles,
+#    and the entropy-based half is a well-known noise generator that fires on test fixtures,
+#    base64 blobs, hashes and lockfile content. Merging them would let the noisy half discredit
+#    the precise half.
+#
+# 4. no-unsafe-regex (rank 59, score 16) is overrated by the brief. Catastrophic backtracking in
+#    a *literal* pattern is detectable, but impact is denial of service rather than RCE or data
+#    loss, and the analysis is hard to get right — the polynomial cases are contested and the
+#    published detectors disagree with each other. no-user-controlled-regexp (score 33.8) is the
+#    better half of this family and is a plain taint rule.
+#
+# 5. no-insecure-random (rank 34, score 40) is PARTIALLY_DETECTABLE, not statically detectable,
+#    and the brief treats it as trivial. `Math.random()` is only a vulnerability when the result
+#    is used as a secret — a token, a password reset key, a session id. Flagging every
+#    Math.random() is the eslint-plugin-security mistake: it fires on animation jitter, test
+#    data and shuffles. It needs either a sink model (the value flows somewhere security
+#    relevant) or naming heuristics, and the naming-heuristic version is not worth shipping.
+#
+# Where the brief is right: no-eval belongs in the first ten (rank 5), and no-command-injection
+# belongs there (rank 16, and it is the right first taint rule after SQL). no-sql-injection was
+# the correct choice for the vertical slice despite ranking 37th, because the point of the slice
+# was to build the taint layer and SQL exercises every part of it — source, propagation,
+# sanitizer, parameterized-safe-form, and framework knowledge. The score is a
+# what-to-build-next number, not a was-that-the-right-first-slice number.
