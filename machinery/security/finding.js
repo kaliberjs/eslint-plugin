@@ -92,6 +92,17 @@ function describePath(sourceCode, path, maxHops = DEFAULTS.maxPathInMessage) {
  * Why a finding is not high confidence, derived from the hops that actually
  * cost something. Generated, never written per rule — a rule author cannot know
  * which hops the analysis was unsure about.
+ *
+ * This also decides whether a rule emits its "qualified" message variant.
+ * The contract, which every taint-based rule follows:
+ *
+ *   confidence < 0.8 AND at least one hop has penalty > 0  -> qualified message
+ *
+ * Both conditions matter. A flow that is exact all the way down (every hop
+ * penalty 0) can land below 0.8 purely through the source's own confidence —
+ * there is nothing to explain, so the plain message fires. And an inexact
+ * hop at 0.9 confidence needs no apology either. Rules that get this wrong
+ * produce messages with a hole where the reason should be ("passes through .").
  */
 function explainConfidence(path) {
   const inexact = path

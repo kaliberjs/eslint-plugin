@@ -41,8 +41,7 @@ module.exports = {
 
           const shell = arg.properties.find(
             property => property.type === 'Property'
-              && !property.computed
-              && property.key?.name === 'shell'
+              && (property.key?.name === 'shell' || property.key?.value === 'shell')
           )
 
           if (!shell) continue

@@ -18,6 +18,11 @@ test('security-no-shell-true', merge(
         errors: [{ messageId: 'shellTrue' }],
       },
       {
+        // Computed key spelling — found by the adversarial pass.
+        code: "spawn(cmd, args, { ['shell']: true })",
+        errors: [{ messageId: 'shellTrue' }],
+      },
+      {
         code: 'child_process.spawnSync(cmd, args, { shell: "/bin/bash" })',
         errors: [{ messageId: 'shellTrue' }],
       },

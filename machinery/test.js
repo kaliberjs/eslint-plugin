@@ -25,7 +25,7 @@ function test(ruleName, tests) {
 
 function merge(...tests) {
   return tests.reduce(
-    (result, { valid, invalid }) => ({
+    (result, { valid = [], invalid = [] }) => ({
       valid: result.valid.concat(valid),
       invalid: result.invalid.concat(invalid),
     }),

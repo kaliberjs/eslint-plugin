@@ -61,9 +61,17 @@ function propertyName(property) {
 function findNone(value) {
   if (value.type === 'Literal') return value.value === 'none' ? value : null
 
+  // A no-substitution template folds to its cooked string, so `algorithms:
+  // [`none`]` is the same finding with different syntax.
+  if (value.type === 'TemplateLiteral' && !value.expressions.length) {
+    return value.quasis[0].value.cooked === 'none' ? value : null
+  }
+
   if (value.type === 'ArrayExpression') {
     return value.elements.find(
-      element => element?.type === 'Literal' && element.value === 'none'
+      element => element?.type === 'Literal'
+        ? element.value === 'none'
+        : element?.type === 'TemplateLiteral' && !element.expressions.length && element.quasis[0].value.cooked === 'none'
     ) || null
   }
 

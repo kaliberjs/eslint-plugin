@@ -21,6 +21,11 @@ test('security-no-permissive-cors', merge(
         errors: [{ messageId: 'reflectedOrigin' }],
       },
       {
+        // NestJS spelling — adversarial pass find.
+        code: handler(`app.enableCors({ origin: true })`),
+        errors: [{ messageId: 'reflectedOrigin' }],
+      },
+      {
         code: handler('cors({ origin: (origin, cb) => cb(null, true) })'),
         errors: [{ messageId: 'reflectedOrigin' }],
       },

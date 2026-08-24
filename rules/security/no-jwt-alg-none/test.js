@@ -26,6 +26,11 @@ test('security-no-jwt-alg-none', merge(
         code: "jwt.verify(token, key, { ['algorithms']: ['none'] })",
         errors: [{ messageId: 'algNone' }],
       },
+      {
+        // No-substitution template folds to the same string — adversarial find.
+        code: 'jwt.verify(token, key, { algorithms: [`none`] })',
+        errors: [{ messageId: 'algNone' }],
+      },
     ],
   },
 

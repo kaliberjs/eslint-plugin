@@ -42,7 +42,7 @@ module.exports = {
         const callee = node.callee
         const name = getCalleeName(callee)
 
-        if (name === 'cors') {
+        if (name === 'cors' || name === 'enableCors') {
           const options = node.arguments[0]
           if (options?.type !== 'ObjectExpression') return
           checkCorsOptions(options)
