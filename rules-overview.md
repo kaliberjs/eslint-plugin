@@ -9,6 +9,7 @@
 | @kaliber/naming-policy | Enforces a consistent naming policy for components, CSS files, variables, and refs to improve readability and enable tooling. | Custom | [rules/naming-policy/test.js](rules/naming-policy/test.js) | `"warn"` |
 | @kaliber/no-default-export | Prefers named exports over default exports to avoid ambiguity and refactoring issues. | Custom | [rules/no-default-export/test.js](rules/no-default-export/test.js) | `"warn"` |
 | @kaliber/no-relative-parent-import | Disallows relative parent imports (`../`) in favor of root-slash imports to prevent broken paths when moving files. | Custom | [rules/no-relative-parent-import/test.js](rules/no-relative-parent-import/test.js) | `"warn"` |
+| @kaliber/no-sql-injection | Detects untrusted input flowing into a raw SQL string (CWE-89, OWASP A03:2021). Taint-based — see [readme](rules/no-sql-injection/readme.md). | Custom | [test.js](rules/no-sql-injection/test.js), [adversarial](rules/no-sql-injection/adversarial.test.js), [false-positive](rules/no-sql-injection/false-positive.test.js) | opt-in via `configs.security` — **not** in the shared config |
 | @kaliber/stable-query-client | Disallows `new QueryClient()` inside a React component body — it is recreated on every render, discarding the entire query cache. | Custom | [rules/stable-query-client/test.js](rules/stable-query-client/test.js) | `"warn"` |
 | **Third-Party Rules** | | | | |
 | **eslint-plugin-import** | | | | |
