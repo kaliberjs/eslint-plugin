@@ -169,6 +169,109 @@ const sinks = [
     owasp: 'A03:2021',
     note: 'node-sqlite3 db.all/get/run/each(sql, params, cb) — the primary API of that driver and far more used than exec().\n\nThe receiver list deliberately excludes `stmt` and `statement`, and this is the opposite of an oversight. On a *database handle* argument 0 is SQL; on a *prepared statement* it is a bind parameter, so `stmt.get(req.params.id)` is the correct, safe better-sqlite3 usage. Including statement receivers made the safe API a sink and reported the recommended pattern. `db.prepare(sql).get(x)` is unaffected either way, because its receiver is a call expression rather than a name.',
   },
+  // --- Shell. Module-rooted rather than method-name matched, because these
+  // functions only mean one thing: where they came from decides what their
+  // first argument is interpreted as. `exec` destructured from child_process
+  // cannot be confused with `db.exec(sql)` or `conn.exec(...)`, which is why
+  // the SQL sqlite.exec entry needs a receiver constraint and this one does
+  // not need any name guessing at all.
+  {
+    id: 'shell.child_process.exec',
+    root: { module: 'child_process', name: /^(exec|execSync)$/ },
+    argument: 0,
+    requires: 'shell',
+    severity: 'high',
+    cwe: 'CWE-78',
+    owasp: 'A03:2021',
+    note: 'child_process.exec/execSync pass the command string to /bin/sh, so every shell metacharacter in a tainted segment executes. The fix is execFile/spawn with an argv array — restructuring, not escaping.',
+  },
+
+  // --- shelljs. Method-rooted with a receiver constraint, because `exec` is
+  // hopelessly overloaded across the ecosystem; the receiver is how you name
+  // the shelljs import in practice (`sh`, `shell`, `shelljs`).
+  {
+    id: 'shell.shelljs.exec',
+    root: { method: /^exec$/, receiver: /^(sh|shell|shelljs)$/i },
+    argument: 0,
+    requires: 'shell',
+    severity: 'high',
+    cwe: 'CWE-78',
+    owasp: 'A03:2021',
+    note: 'shelljs exec() runs through a shell exactly like child_process.exec.',
+  },
+
+  // --- Aliased module namespaces: `const cp = require('child_process')`,
+  // `import * as cp from 'child_process'`. The namespace variable is a runtime
+  // value, so this can only be matched by name — but the name set is narrow
+  // and the conjunction with an actual tainted argument is what makes it safe
+  // to ship, exactly as for the SQL receivers above.
+  {
+    id: 'shell.child_process.member',
+    root: { method: /^(exec|execSync)$/, receiver: /^(child_?process|cp|childprocess)$/i },
+    argument: 0,
+    requires: 'shell',
+    severity: 'high',
+    cwe: 'CWE-78',
+    owasp: 'A03:2021',
+    note: 'Same sinks as shell.child_process.exec, reached through an aliased namespace binding.',
+  },
+  // --- DOM HTML-parser entry points. The property form is matched on the
+  // assignment *target* (sinkAt only reports MemberExpressions on the left of
+  // an `=`), so a sink argument does not apply; consumers taint-check the
+  // assignment's right-hand side instead.
+  {
+    id: 'html.element.innerhtml',
+    root: { property: /^(innerHTML|outerHTML)$/ },
+    requires: 'html',
+    severity: 'high',
+    cwe: 'CWE-79',
+    owasp: 'A03:2021',
+    note: 'Assigning to innerHTML/outerHTML invokes the HTML parser. textContent is the safe alternative and deliberately not a sink.',
+  },
+  {
+    id: 'html.insertAdjacentHTML',
+    root: { method: /^insertAdjacentHTML$/ },
+    argument: 1,
+    requires: 'html',
+    severity: 'high',
+    cwe: 'CWE-79',
+    owasp: 'A03:2021',
+    note: 'Argument 0 is a position enum (beforeend etc.); argument 1 is parsed as HTML.',
+  },
+  {
+    id: 'html.document.write',
+    root: { method: /^(write|writeln)$/, receiver: /^(document|doc)$/i },
+    argument: 0,
+    requires: 'html',
+    severity: 'high',
+    cwe: 'CWE-79',
+    owasp: 'A03:2021',
+    note: 'Receiver constraint keeps unrelated write() methods (streams, files) out of the XSS family.',
+  },
+  // --- Code injection. ESLint core already covers eval, new Function and
+  // implied-eval timers (all enabled at warn in the shared config); what it
+  // does not see is the vm module. Both binding forms are registered for the
+  // same reason as child_process.exec.
+  {
+    id: 'code.vm.run',
+    root: { module: 'vm', name: /^(runInThisContext|runInNewContext|runInContext|compileFunction)$/ },
+    argument: 0,
+    requires: 'code',
+    severity: 'high',
+    cwe: 'CWE-95',
+    owasp: 'A03:2021',
+    note: 'vm.compileFunction compiles rather than executes immediately; tainted input there is still arbitrary code construction, which is why it shares this entry.',
+  },
+  {
+    id: 'code.vm.member',
+    root: { method: /^(runInThisContext|runInNewContext|runInContext|compileFunction)$/, receiver: /^(vm|nodeVm|node)$/i },
+    argument: 0,
+    requires: 'code',
+    severity: 'high',
+    cwe: 'CWE-95',
+    owasp: 'A03:2021',
+    note: 'Same sinks reached through an aliased namespace binding.',
+  },
 ]
 
 const sanitizers = [
