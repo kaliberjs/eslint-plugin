@@ -1,3 +1,4 @@
+const { findVariable, getPropertyName } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
 const { report, settings } = require('../../../machinery/security/finding')
@@ -42,15 +43,11 @@ module.exports = {
         if (node.name?.name !== 'dangerouslySetInnerHTML') return
 
         const value = node.value?.type === 'JSXExpressionContainer' ? node.value.expression : node.value
-        if (!value || !isObjectExpression(value)) return
+        const htmlValue = findProperty(value, '__html', context.sourceCode)
+        if (!htmlValue) return
 
-        const htmlProperty = value.properties.find(
-          property => property.type === 'Property' && !property.computed && property.key?.name === '__html'
-        )
-        if (!htmlProperty) return
-
-        if (isConstant(htmlProperty.value)) return
-        if (analysis.sanitizedAt(htmlProperty.value, 'html')) return
+        if (isConstant(htmlValue)) return
+        if (analysis.sanitizedAt(htmlValue, 'html')) return
 
         report(context, {
           node,
@@ -63,27 +60,17 @@ module.exports = {
       CallExpression(node) {
         // React.createElement(tag, { dangerouslySetInnerHTML: { __html: x } })
         const props = node.arguments[1]
-        if (!isObjectExpression(props)) return
+        const inner = findProperty(props, 'dangerouslySetInnerHTML', context.sourceCode)
+        if (!inner) return
 
-        const dangerous = props.properties.find(
-          property => property.type === 'Property' && !property.computed && property.key?.name === 'dangerouslySetInnerHTML'
-        )
+        const htmlValue = findProperty(inner, '__html', context.sourceCode)
+        if (!htmlValue) return
 
-        if (!dangerous) return
-
-        const inner = dangerous.value
-        const htmlProperty = isObjectExpression(inner)
-          ? inner.properties.find(
-            property => property.type === 'Property' && !property.computed && property.key?.name === '__html'
-          )
-          : null
-
-        if (!htmlProperty) return
-        if (isConstant(htmlProperty.value)) return
-        if (analysis.sanitizedAt(htmlProperty.value, 'html')) return
+        if (isConstant(htmlValue)) return
+        if (analysis.sanitizedAt(htmlValue, 'html')) return
 
         report(context, {
-          node: dangerous,
+          node: inner,
           messageId: 'nonConstantHtml',
           severity: 'high',
           confidence: 0.6,
@@ -95,6 +82,48 @@ module.exports = {
 
 function isObjectExpression(node) {
   return node?.type === 'ObjectExpression'
+}
+
+/**
+ * Resolve an identifier to the object literal it was declared with — the
+ * props object is routinely extracted to a variable before being spread
+ * onto the attribute, and that is not an evasion, just ordinary style.
+ * One hop only: a chain of intermediate aliases is not chased.
+ */
+function resolveObjectExpression(node, sourceCode) {
+  if (isObjectExpression(node)) return node
+  if (node?.type !== 'Identifier') return null
+
+  const variable = findVariable(sourceCode.getScope(node), node)
+  const definition = variable?.defs[0]
+  if (definition?.type !== 'Variable') return null
+
+  return isObjectExpression(definition.node.init) ? definition.node.init : null
+}
+
+/**
+ * Find a named property's value inside an object expression (or an
+ * identifier bound to one), descending through `...spread` so that
+ * `{ ...markup }` does not hide `__html` from the check the same way an
+ * inline property would not.
+ */
+function findProperty(node, name, sourceCode) {
+  const objectExpression = resolveObjectExpression(node, sourceCode)
+  if (!objectExpression) return null
+
+  for (const property of objectExpression.properties) {
+    if (property.type === 'SpreadElement') {
+      const found = findProperty(property.argument, name, sourceCode)
+      if (found) return found
+      continue
+    }
+
+    if (property.type === 'Property' && getPropertyName(property, sourceCode.getScope(property)) === name) {
+      return property.value
+    }
+  }
+
+  return null
 }
 
 /**
