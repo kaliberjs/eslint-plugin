@@ -33,6 +33,21 @@ const plugin = {
     'stable-query-client': require('./rules/stable-query-client'),
 
     'security-no-sql-injection': require('./rules/security/no-sql-injection'),
+    'security-no-node-tls-reject-unauthorized': require('./rules/security/no-node-tls-reject-unauthorized'),
+    'security-no-disabled-tls-verification': require('./rules/security/no-disabled-tls-verification'),
+    'security-no-jwt-alg-none': require('./rules/security/no-jwt-alg-none'),
+    'security-no-jwt-decode-without-verify': require('./rules/security/no-jwt-decode-without-verify'),
+    'security-no-ecb-mode': require('./rules/security/no-ecb-mode'),
+    'security-no-des-3des': require('./rules/security/no-des-3des'),
+    'security-no-shell-true': require('./rules/security/no-shell-true'),
+    'security-no-authorization-header-log': require('./rules/security/no-authorization-header-log'),
+    'security-no-dangerously-set-inner-html': require('./rules/security/no-dangerously-set-inner-html'),
+    'security-no-command-injection': require('./rules/security/no-command-injection'),
+    'security-no-inner-html': require('./rules/security/no-inner-html'),
+    'security-no-dom-xss-sink': require('./rules/security/no-dom-xss-sink'),
+    'security-no-eval': require('./rules/security/no-eval'),
+    'security-no-jwt-algorithm-confusion': require('./rules/security/no-jwt-algorithm-confusion'),
+    'security-no-md5': require('./rules/security/no-md5'),
   },
 
   configs: {
@@ -47,6 +62,29 @@ const plugin = {
     security: {
       rules: {
         '@kaliber/security-no-sql-injection': 'warn',
+
+        // High severity and high confidence — a literal assignment or a
+        // literal string with no dataflow and no legitimate production use —
+        // so the severity matrix puts them at error even in the opt-in config.
+        '@kaliber/security-no-node-tls-reject-unauthorized': 'error',
+        '@kaliber/security-no-disabled-tls-verification': 'error',
+        '@kaliber/security-no-jwt-alg-none': 'error',
+        '@kaliber/security-no-ecb-mode': 'error',
+        '@kaliber/security-no-des-3des': 'error',
+
+        // High confidence about *what the code does*, but exploitability
+        // depends on things the syntax cannot show (is the input tainted,
+        // is the value sanitized upstream) — so they report at warn.
+        '@kaliber/security-no-jwt-decode-without-verify': 'warn',
+        '@kaliber/security-no-shell-true': 'warn',
+        '@kaliber/security-no-authorization-header-log': 'warn',
+        '@kaliber/security-no-dangerously-set-inner-html': 'warn',
+        '@kaliber/security-no-command-injection': 'warn',
+        '@kaliber/security-no-inner-html': 'warn',
+        '@kaliber/security-no-dom-xss-sink': 'warn',
+        '@kaliber/security-no-eval': 'warn',
+        '@kaliber/security-no-jwt-algorithm-confusion': 'warn',
+        '@kaliber/security-no-md5': 'warn',
       },
     },
   },
