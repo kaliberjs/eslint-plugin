@@ -244,3 +244,25 @@ test('no-sql-injection', merge(
     ],
   },
 ))
+
+test('no-sql-injection', {
+  // --- name collisions. `exec` is shared with child_process, and reporting
+  // "SQL injection" on a command injection is worse than reporting nothing.
+  valid: [
+    `const { exec } = require('child_process'); function handler(req, res) { exec(\`ls \${req.query.dir}\`) }`,
+    `const cp = require('child_process'); function handler(req, res) { cp.exec(\`ls \${req.query.dir}\`) }`,
+    `const childProcess = require('child_process'); function handler(req, res) { childProcess.exec(\`ls \${req.query.d}\`) }`,
+    // A bare call is not a database handle method.
+    `function handler(req, res) { query(\`SELECT \${req.query.id}\`) }`,
+  ],
+  invalid: [
+    {
+      code: `function handler(req, res) { db.exec(\`DELETE FROM u WHERE id = \${req.query.id}\`) }`,
+      errors: [{ messageId: 'sqlInjectionQualified' }],
+    },
+    {
+      code: `function handler(req, res) { sqlite.exec(\`DELETE FROM u WHERE id = \${req.query.id}\`) }`,
+      errors: [{ messageId: 'sqlInjectionQualified' }],
+    },
+  ],
+})

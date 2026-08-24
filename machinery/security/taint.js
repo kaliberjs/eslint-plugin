@@ -200,9 +200,34 @@ function createAnalysis(sourceCode, options) {
 
   function sinkAt(node) {
     if (node.type !== 'CallExpression') return null
-    const name = calleeName(node)
-    if (!name) return null
-    return known.sinks.find(sink => sink.root.method?.test(name)) ?? null
+
+    // Method-rooted sinks require a receiver. A bare `query(sql)` or
+    // `exec(cmd)` is far more likely to be something else entirely, and a
+    // database handle is essentially always a receiver in real code.
+    if (node.callee.type !== 'MemberExpression') return null
+
+    const name = getPropertyName(node.callee, scopeOf(node.callee))
+    if (name === null) return null
+
+    return known.sinks.find(sink =>
+      sink.root.method?.test(String(name)) &&
+      (!sink.root.receiver || matchesReceiver(node.callee.object, sink.root.receiver))
+    ) ?? null
+  }
+
+  /**
+   * Constrain a name-collision-prone sink to plausible receivers. `exec` is the
+   * motivating case: `db.exec(sql)` is a SQL sink and `child_process.exec(cmd)`
+   * is a shell sink, and reporting the wrong vulnerability class is worse than
+   * reporting nothing.
+   */
+  function matchesReceiver(object, pattern) {
+    if (object.type === 'Identifier') return pattern.test(object.name)
+    if (object.type === 'MemberExpression') {
+      const name = getPropertyName(object, scopeOf(object))
+      return name !== null && pattern.test(String(name))
+    }
+    return false
   }
 
   // --- resolution ----------------------------------------------------------
@@ -480,15 +505,6 @@ function createAnalysis(sourceCode, options) {
     stats.bailouts[reason] = (stats.bailouts[reason] ?? 0) + 1
   }
 
-  function calleeName(node) {
-    const { callee } = node
-    if (callee.type === 'Identifier') return callee.name
-    if (callee.type === 'MemberExpression') {
-      const name = getPropertyName(callee, scopeOf(callee))
-      return name === null ? null : String(name)
-    }
-    return null
-  }
 }
 
 /**

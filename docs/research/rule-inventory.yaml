@@ -1,0 +1,942 @@
+# Canonical candidate rule inventory — @kaliber/eslint-plugin security rules
+#
+# Status: research artifact. Nothing here is a commitment to ship. Scores are judgements,
+# citations are not: every `prior_art` entry and every URL in `references` was fetched and
+# returned HTTP 200 during research, or is marked UNVERIFIED. Every CWE number, CWE parent
+# chain and CAPEC id was cross-checked against the MITRE CWE v4 CSV export
+# (https://cwe.mitre.org/data/csv/1000.csv.zip, "Research Concepts" view) and the MITRE CAPEC
+# CSV export (https://capec.mitre.org/data/csv/1000.csv.zip). CAPEC ids come from the
+# "Related Attack Patterns" column of the cited CWE — they are MITRE's mapping, not ours.
+# Where MITRE lists no attack pattern for a CWE, `capec:` is an empty list. We do not guess.
+#
+# ---------------------------------------------------------------------------------------------
+# PRIORITY FORMULA
+# ---------------------------------------------------------------------------------------------
+#
+#   priority_score = (security_impact x static_detectability x ecosystem_prevalence x confidence)
+#                    / (false_positive_risk x implementation_cost)
+#
+# All six inputs are 1-5 integers. Numerator terms: higher is better. Denominator terms: higher
+# is worse (false_positive_risk 5 = maximally noisy, implementation_cost 5 = most expensive).
+# Range is 0.04 (1x1x1x1 / 5x5) to 625.0 (5x5x5x5 / 1x1). Rounded to one decimal.
+#
+# The formula is deliberately punishing about false positives and cost, because for a plugin
+# consumed by real projects the binding constraint is not "can we detect it" but "will the team
+# leave the rule enabled in week three". A rule that is technically right and practically noisy
+# is not shippable (AGENTS.md).
+#
+#   security_impact        1 = cosmetic/hygiene, 5 = RCE / full auth bypass / mass data loss
+#   static_detectability   1 = needs runtime state, 5 = single-file syntactic pattern
+#   ecosystem_prevalence   1 = rare in JS/TS app code, 5 = seen in most codebases
+#   confidence             1 = the analysis usually cannot tell, 5 = a match is a real finding
+#   false_positive_risk    1 = essentially none, 5 = fires constantly on correct code
+#   implementation_cost    1 = an hour of AST matching, 5 = new analysis infrastructure
+#
+# ---------------------------------------------------------------------------------------------
+# DETECTABILITY CLASSIFICATIONS (exactly one per entry)
+# ---------------------------------------------------------------------------------------------
+#
+#   STATICALLY_DETECTABLE
+#     Decidable from the AST of a single file with no dataflow. The vulnerable construct *is*
+#     the syntax: `process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'`, `rejectUnauthorized: false`,
+#     `algorithms: ['none']`, `createHash('md5')`. High confidence, low cost. These are the
+#     rules an ESLint plugin is actually good at.
+#
+#   PARTIALLY_DETECTABLE
+#     A useful subset is decidable syntactically, but the general case is not. Typically: the
+#     sink is unambiguous and the question is only whether the argument is attacker-controlled.
+#     We can flag "sink reached by a non-literal" (noisy) or "sink reached by an intra-file
+#     tainted value" (precise, incomplete). Ships as a real rule with documented false negatives.
+#
+#   REQUIRES_INTERPROCEDURAL_ANALYSIS
+#     Needs taint to cross function, module or file boundaries — the source is in a route
+#     handler, the sink is three modules away. ESLint's unit of work is one file, so this is a
+#     structural mismatch. Shippable only in a deliberately narrowed intra-file form, with the
+#     cross-file cases documented as false negatives. Never advertise these as complete.
+#
+#   REQUIRES_RUNTIME_INFORMATION
+#     Needs values, configuration or environment that do not exist at lint time: whether a
+#     string is really a live credential, whether a route is behind an auth proxy, whether a
+#     path is inside the allowed root, what the deployed CSP is. Static analysis can at best
+#     produce a heuristic smell. Ship as info/warn or not at all.
+#
+#   NOT_REALISTIC_FOR_ESLINT
+#     The property is semantic, cross-service, or requires a threat model the linter does not
+#     have. Access control is the honest example: "is this authorization check correct" is not a
+#     question about syntax. Listed here so we can say no on the record instead of shipping a
+#     rule that pretends.
+#
+# ---------------------------------------------------------------------------------------------
+# TAXONOMY NOTES
+# ---------------------------------------------------------------------------------------------
+#
+# - `owasp_top10_2021` uses the verbatim 2021 category strings from https://owasp.org/Top10/2021/.
+#   OWASP has since published Top 10:2025 (https://owasp.org/Top10/2025/), which renumbers and
+#   restructures — notably SSRF is no longer its own category and "Software Supply Chain
+#   Failures" is new at A03:2025. The field name in this inventory is per the agreed schema; if
+#   we ship 2025 mappings they belong in an additional field, not a silent edit of this one.
+# - `owasp_api_top10_2023` uses the verbatim strings from
+#   https://owasp.org/API-Security/editions/2023/en/0x11-t10/.
+# - `cwe` is the most specific applicable weakness. `cwe_parents` is the ChildOf chain upward
+#   from that weakness, MITRE's own, deduplicated, nearest-first. Getting this right matters:
+#   CWE-89 (SQL injection) and CWE-943 (data query logic) are parent/child, not synonyms, and
+#   CWE-564 (SQL injection via Hibernate) is a different weakness that does not apply to JS at
+#   all. CWE-1321 (prototype pollution) is a Variant under CWE-915, not a peer of it.
+#
+# ---------------------------------------------------------------------------------------------
+# PRIOR ART VERIFICATION METHOD — read this before trusting a `prior_art` line
+# ---------------------------------------------------------------------------------------------
+#
+# - CodeQL: the full JavaScript query list was fetched from
+#   https://codeql.github.com/codeql-query-help/javascript/ and every `js/...` id cited below
+#   appears on it. Query help pages were spot-checked for HTTP 200.
+# - SonarJS: rule keys and titles were read from the open-source SonarJS repository
+#   (sonar-plugin/javascript-checks/.../l10n/javascript/rules/javascript/S<n>.json), so titles
+#   and Sonar's own CWE mappings are verbatim. Sonar's taint-analysis security rules
+#   (S3649 SQL injection, S5131 XSS, S5146 open redirect, S2083 path traversal, S5144 SSRF,
+#   S2076 command injection, S2078 LDAP, S2091 XPath, S5334 deserialization, S6096 zip slip)
+#   are NOT in the open-source repo — they live in Sonar's closed-source security engine, and
+#   rules.sonarsource.com was not resolvable from this environment. Every reference to those
+#   keys below is marked UNVERIFIED and must be confirmed before it appears in shipped docs.
+# - Semgrep: rule ids were read from the `id:` field of the corresponding YAML in
+#   https://github.com/semgrep/semgrep-rules (develop). Cited as path + id so they are
+#   checkable. Registry ids are path-derived.
+# - eslint-plugin-security: the 14 rule names were read from its README.
+# - ESLint core and eslint-plugin-react rule names were verified against the locally installed
+#   packages (eslint 9.39.4, eslint-plugin-react) via `builtinRules` / `plugin.rules`.
+# - Snyk Code does not publish stable public rule identifiers, so no Snyk rule ids are cited.
+#   Snyk is cited only for its published research (zip-slip).
+#
+# ---------------------------------------------------------------------------------------------
+# HONESTY NOTE ON THE ACCESS-CONTROL FAMILY
+# ---------------------------------------------------------------------------------------------
+#
+# A01:2021-Broken Access Control is the highest-impact category in the Top 10 and the one an
+# ESLint plugin is worst at. Authorization correctness is a property of a system's policy, not
+# of a file's syntax: the linter does not know which routes are public, which identifiers are
+# capability-bearing, whether an upstream gateway already authenticated the request, or what
+# "may this user read this record" is supposed to mean. Every access-control entry below is
+# therefore scored low on confidence and high on false-positive risk, and most are classified
+# REQUIRES_RUNTIME_INFORMATION or NOT_REALISTIC_FOR_ESLINT. The two that are worth building
+# (`no-client-side-only-authorization`, `no-user-controlled-authorization-bypass`) work because
+# they detect a *shape* that is wrong regardless of policy, not because they understand policy.
+# We should ship those two, document the rest as explicitly out of scope, and never imply that
+# a clean lint run says anything about a project's access control.
+
+rules:
+
+  # =============================================================================================
+  # FAMILY: injection
+  # =============================================================================================
+
+  - id: no-eval
+    family: injection
+    title: Do not pass non-literal values to eval, new Function, or eval-like APIs
+    description: >
+      `eval`, `new Function`, `setTimeout`/`setInterval` with a string body, `vm.runInNewContext`
+      and friends compile their argument as code. If any part of that argument derives from
+      request data, the result is remote code execution in the server process, or script
+      execution in the page.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-95]
+    cwe_parents: [CWE-94, CWE-74, CWE-707]
+    capec: [CAPEC-35]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 5
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - req.query / req.body / req.params / req.headers
+      - location.hash / location.search / document.referrer
+      - postMessage event.data
+      - process.argv / process.env
+      - "any non-literal expression (the shippable heuristic)"
+    sinks:
+      - eval(x)
+      - new Function(x) / Function(x)
+      - setTimeout(x, n) / setInterval(x, n) with a string first argument
+      - vm.runInNewContext / vm.runInThisContext / vm.Script / new vm.SourceTextModule
+      - "indirect eval: (0, eval)(x), globalThis.eval(x)"
+      - node:repl, `notevil`, `safe-eval`, `vm2` entry points
+    sanitizers: []
+    known_false_positives:
+      - Build tooling, REPLs, code playgrounds, benchmark harnesses and test fixtures that eval by design
+      - "`eval` on a template literal with only compile-time-constant substitutions"
+      - Feature-detection idioms (`try { eval('async () => {}') } catch {}`)
+      - Source-map / instrumentation code that constructs functions from trusted internal strings
+    known_false_negatives:
+      - Code compiled by a third-party template or expression library that wraps eval internally
+      - "`import(userControlledSpecifier)` — dynamic import is a different sink, see no-dynamic-require"
+      - Worker/`Blob` URL construction that ends up executing a built string
+      - "`require('vm2')` style sandboxes, which are a bypass target rather than a mitigation"
+    prior_art:
+      - "ESLint core no-eval (verified in local eslint 9.39.4)"
+      - "ESLint core no-implied-eval (verified in local eslint 9.39.4)"
+      - "ESLint core no-new-func (verified in local eslint 9.39.4)"
+      - "CodeQL js/code-injection"
+      - "CodeQL js/eval-like-call"
+      - "CodeQL js/unsafe-code-construction"
+      - "SonarJS S1523 — 'Dynamic code execution should not use user-controlled data' (CWE-95, CWE-470)"
+      - "eslint-plugin-security detect-eval-with-expression"
+      - "Semgrep javascript/lang/security/detect-eval-with-expression.yaml (id: detect-eval-with-expression)"
+      - "Semgrep javascript/browser/security/eval-detected.yaml (id: eval-detected)"
+      - "Semgrep javascript/express/security/express-vm-injection.yaml (id: express-vm-injection)"
+    references:
+      - https://cwe.mitre.org/data/definitions/95.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-code-injection/
+      - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html
+    notes: >
+      The cheapest high-impact rule in the inventory and the natural first rule to ship. ESLint
+      core already covers the three main sinks, so our value is (a) the sinks core misses — vm,
+      indirect eval, string-bodied timers beyond core's heuristic, third-party sandbox libraries
+      — and (b) severity/confidence metadata that lets a literal argument be downgraded rather
+      than reported at the same level as a tainted one. Do not autofix.
+
+  - id: no-command-injection
+    family: injection
+    title: Do not build shell commands from non-literal values
+    description: >
+      `child_process.exec` and `execSync` pass their argument to `/bin/sh`. Any attacker
+      influence over that string yields command execution: `;`, `&&`, backticks, `$()` all work.
+      `execFile`/`spawn` without `shell: true` do not use a shell and are the fix.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-78]
+    cwe_parents: [CWE-77, CWE-74, CWE-707]
+    capec: [CAPEC-88, CAPEC-6, CAPEC-15]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query / req.body / req.params / req.headers / req.cookies
+      - process.argv / process.env
+      - "file contents, database rows, message-queue payloads (second-order)"
+    sinks:
+      - child_process.exec / execSync
+      - child_process.spawn / spawnSync / execFile / execFileSync when opts.shell is truthy
+      - "shelljs: shell.exec"
+      - "execa with `shell: true`"
+      - "zx `$` template tag, Deno.Command with a shell binary"
+    sanitizers:
+      - "restructuring to execFile/spawn with an argv array and shell:false (not a sanitizer, a fix)"
+      - "shell-quote's quote() applied to every interpolated segment (weak; documented bypasses)"
+    known_false_positives:
+      - Build scripts, CLIs and dev tooling where the interpolated value is a developer-supplied path
+      - Interpolation of values that are provably from a closed literal set (enum-like config)
+      - Monorepo task runners assembling commands from workspace metadata
+    known_false_negatives:
+      - The tainted value arrives via a helper in another module (needs interprocedural taint)
+      - Second-order injection through a database or config file
+      - "Argument injection: the command is fixed but a flag like `--output=` is attacker-controlled (CWE-88 shape)"
+      - Shell invocation through a dependency that wraps exec
+    prior_art:
+      - "CodeQL js/command-line-injection"
+      - "CodeQL js/second-order-command-injection"
+      - "CodeQL js/shell-command-injection-from-environment"
+      - "CodeQL js/indirect-command-line-injection"
+      - "CodeQL js/shell-command-constructed-from-input"
+      - "eslint-plugin-security detect-child-process"
+      - "Semgrep javascript/lang/security/detect-child-process.yaml (id: detect-child-process)"
+      - "Semgrep javascript/lang/security/audit/dangerous-spawn-shell.yaml (id: dangerous-spawn-shell)"
+      - "Semgrep javascript/shelljs/security/shelljs-exec-injection.yaml (id: shelljs-exec-injection)"
+      - "SonarJS S2076 — UNVERIFIED (closed-source Sonar security engine; not in the OSS SonarJS repo)"
+    references:
+      - https://cwe.mitre.org/data/definitions/78.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+      - https://owasp.org/www-community/attacks/Command_Injection
+      - https://nodejs.org/api/child_process.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-command-line-injection/
+      - https://github.com/advisories/GHSA-35jh-r3h4-6jhm
+    notes: >
+      Ship in two tiers. Tier 1 is `exec`/`execSync` with any non-literal argument — cheap,
+      warn-level, high recall, and the classic `detect-child-process` behaviour that people do
+      tolerate. Tier 2 upgrades to error when intra-file taint reaches the sink. GHSA-35jh-r3h4-6jhm
+      (lodash template command injection, CVE-2021-23337) is a real-world instance of the
+      second-order shape.
+
+  - id: no-shell-true
+    family: injection
+    title: Do not pass shell:true to spawn/execFile
+    description: >
+      `spawn(cmd, args, { shell: true })` re-introduces the shell that `spawn` exists to avoid,
+      and silently makes the argv array subject to shell metacharacter interpretation.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-78]
+    cwe_parents: [CWE-77, CWE-74, CWE-707]
+    capec: [CAPEC-88, CAPEC-6]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sinks:
+      - child_process.spawn / spawnSync / execFile / execFileSync with options.shell truthy
+      - "execa({ shell: true })"
+    sources: []
+    sanitizers: []
+    known_false_positives:
+      - "Deliberate use to get shell features (globbing, pipes) with fully literal commands"
+      - Windows-compatibility code where `shell: true` is required to run `.cmd` shims
+    known_false_negatives:
+      - "`shell` set from a variable or spread options object"
+      - Wrapper libraries that default to shell execution
+    prior_art:
+      - "Semgrep javascript/lang/security/audit/spawn-shell-true.yaml (id: spawn-shell-true)"
+      - "Semgrep javascript/lang/security/audit/dangerous-spawn-shell.yaml (id: dangerous-spawn-shell)"
+    references:
+      - https://nodejs.org/api/child_process.html
+      - https://cwe.mitre.org/data/definitions/78.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+    notes: >
+      Deliberately separate from no-command-injection: this one needs no taint, has a stable
+      syntactic signature, and is a good candidate for a suggestion (drop `shell: true`, move
+      shell features into an explicit `sh -c` argv) rather than an autofix.
+
+  - id: no-sql-injection
+    family: injection
+    title: Do not build SQL from string concatenation or template literals
+    description: >
+      A query assembled by concatenating or interpolating values into SQL text is injectable.
+      Parameterised queries and the driver's placeholder syntax are the fix; the ORM escape
+      hatches (`sequelize.query`, `knex.raw`, `prisma.$queryRawUnsafe`) are the sinks.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-89]
+    cwe_parents: [CWE-943, CWE-74, CWE-707]
+    capec: [CAPEC-66, CAPEC-7, CAPEC-108, CAPEC-109]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query / req.body / req.params / req.headers
+      - GraphQL resolver args, tRPC/Next.js server-action inputs
+      - "message payloads and DB rows (second-order)"
+    sinks:
+      - "node-postgres: client.query / pool.query"
+      - "mysql / mysql2: connection.query / execute"
+      - "mssql: request.query / request.batch"
+      - "knex: knex.raw / whereRaw / joinRaw / havingRaw / orderByRaw"
+      - "sequelize: sequelize.query, literal(), where(literal(...))"
+      - "prisma: $queryRawUnsafe / $executeRawUnsafe"
+      - "drizzle: sql.raw"
+      - "typeorm: query(), createQueryBuilder().where(rawString)"
+    sanitizers:
+      - "driver placeholders: `$1`/`?` with a values array"
+      - "knex bindings: knex.raw('... ?', [v])"
+      - "prisma tagged-template $queryRaw (safe) as opposed to $queryRawUnsafe"
+      - "sequelize replacements / bind options"
+      - "mysql.escape / mysql.escapeId (weak; identifier vs value confusion is a live bug class)"
+    known_false_positives:
+      - Interpolating a table or column name from an internal allowlist (common and usually safe)
+      - Migration scripts and seed data where the interpolated value is a build-time constant
+      - Query builders that look like concatenation but bind under the hood
+      - Tests that assert on generated SQL strings
+    known_false_negatives:
+      - Query text assembled in a helper module and passed in (interprocedural)
+      - Dynamic `ORDER BY` / `LIMIT` fragments built from an object lookup
+      - NoSQL-style injection into an ORM's `where` object (see no-nosql-injection)
+      - Stored procedures that concatenate internally
+    prior_art:
+      - "CodeQL js/sql-injection"
+      - "SonarJS S2077 — 'SQL queries should not be dynamically formatted' (CWE-89, CWE-943)"
+      - "SonarJS S3649 — UNVERIFIED (closed-source Sonar security engine)"
+      - "Semgrep javascript/express/security/injection/tainted-sql-string.yaml (id: tainted-sql-string)"
+      - "Semgrep javascript/lang/security/audit/sqli/node-mysql-sqli.yaml (id: node-mysql-sqli)"
+      - "Semgrep javascript/sequelize/security/audit/sequelize-injection-express.yaml (id: express-sequelize-injection)"
+    references:
+      - https://cwe.mitre.org/data/definitions/89.html
+      - https://cwe.mitre.org/data/definitions/943.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+      - https://owasp.org/www-community/attacks/SQL_Injection
+      - https://codeql.github.com/codeql-query-help/javascript/js-sql-injection/
+    notes: >
+      Highest-profile rule in the family and the one most likely to be judged on precision. The
+      registry must carry per-driver safe/unsafe API pairs, because "is this a raw query" is
+      library knowledge, not syntax. Recommendation: flag only when a tainted or non-literal
+      value is interpolated into the query *text* argument, never on the values array.
+
+  - id: no-nosql-injection
+    family: injection
+    title: Do not pass request-derived objects into NoSQL query documents
+    description: >
+      Passing `req.body` or `req.query` straight into a Mongo filter lets an attacker supply
+      operator objects — `{"password": {"$ne": null}}` authenticates without a password, `$where`
+      and `$function` execute server-side JavaScript, `$regex` enables DoS and blind extraction.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-943]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-676]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - "req.body / req.query / req.params (query strings parsed by `qs` produce nested objects, so `?a[$ne]=1` is an object)"
+      - GraphQL/tRPC input objects passed through untyped
+    sinks:
+      - "mongodb driver: find / findOne / updateOne / deleteMany / aggregate filter arguments"
+      - "mongoose: Model.find / findOne / where / countDocuments / findOneAndUpdate"
+      - "operator sinks: $where, $function, $expr, $accumulator, $regex"
+      - "couchdb/nano and other document stores taking a selector object"
+    sanitizers:
+      - "explicit schema validation with a strict object shape (zod/joi/ajv with additionalProperties:false) applied before the query"
+      - "coercion of each field to a primitive: String(req.body.x), Number(...)"
+      - "express-mongo-sanitize / mongoose `sanitizeFilter` (registry entries, not name-based)"
+    known_false_positives:
+      - A validated DTO that happens to be reachable from the request object in the same file
+      - Admin tooling that intentionally accepts a raw filter document
+      - Field-projection objects that carry no operators
+    known_false_negatives:
+      - Request object destructured, reshaped and forwarded through helpers (interprocedural)
+      - Operator injection via a nested array element
+      - Aggregation pipelines assembled from arrays of stages
+      - Mongoose casting that appears to sanitize for typed fields but not for `Mixed`/`Object` fields
+    prior_art:
+      - "CodeQL js/sql-injection (the CodeQL JS query covers NoSQL query sinks under the same query id)"
+      - "Semgrep javascript/express/security/injection/tainted-sql-string.yaml (id: tainted-sql-string)"
+      - "SonarJS: no verified open-source NoSQL-injection rule for JavaScript — UNVERIFIED"
+    references:
+      - https://cwe.mitre.org/data/definitions/943.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/NoSQL_Security_Cheat_Sheet.html
+      - https://capec.mitre.org/data/definitions/676.html
+      - https://github.com/advisories/GHSA-hrpp-h998-j3pp
+    notes: >
+      CWE-89 is wrong here and CWE-943 is right — that distinction is exactly why the CWE parent
+      chains are recorded. The strongest cheap signal is not taint at all: it is a request-derived
+      value used *as an object* rather than as a primitive in a filter position. Worth prototyping
+      the "did anything coerce this to a primitive" check before investing in full taint.
+      GHSA-hrpp-h998-j3pp (qs, CVE-2022-24999) shows how easily query parsing yields attacker
+      objects.
+
+  - id: no-ldap-injection
+    family: injection
+    title: Do not build LDAP filters or DNs from non-literal values
+    description: >
+      LDAP search filters have their own metacharacters (`*`, `(`, `)`, `\`, NUL). Interpolating
+      user input into a filter allows authentication bypass (`*)(uid=*))(|(uid=*`) and directory
+      enumeration.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-90]
+    cwe_parents: [CWE-943, CWE-74, CWE-707]
+    capec: [CAPEC-136]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 1
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - login form fields, req.body.username, SSO assertion attributes
+    sinks:
+      - "ldapjs: client.search filter/base options, client.bind DN argument"
+      - "ldapts: client.search / searchOne filters"
+      - "activedirectory / activedirectory2 query helpers"
+      - "passport-ldapauth searchFilter templates"
+    sanitizers:
+      - "ldapjs/ldap-escape filter and DN escaping helpers (registry entries)"
+      - parameterised filter construction via the library's filter AST objects
+    known_false_positives:
+      - Filters interpolating a constant from configuration
+      - Test fixtures asserting on generated filter strings
+    known_false_negatives:
+      - Filter template built in a config module and consumed elsewhere
+      - Injection into the DN rather than the filter
+    prior_art:
+      - "SonarJS S2078 — UNVERIFIED (closed-source Sonar security engine)"
+      - "CodeQL: no JavaScript LDAP-injection query on the published query list — the family exists for other languages only"
+    references:
+      - https://cwe.mitre.org/data/definitions/90.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html
+      - https://owasp.org/www-community/attacks/LDAP_Injection
+      - https://capec.mitre.org/data/definitions/136.html
+    notes: >
+      Low prevalence in the JS ecosystem — this is enterprise-integration code, not typical app
+      code. Cheap to add once the injection machinery exists, not worth building the machinery
+      for. Note that CodeQL ships no JS LDAP query; the absence is itself a prevalence signal.
+
+  - id: no-xpath-injection
+    family: injection
+    title: Do not build XPath expressions from non-literal values
+    description: >
+      XPath expressions concatenated from user input allow the query to be rewritten, yielding
+      authentication bypass and extraction of the whole document.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-643]
+    cwe_parents: [CWE-943, CWE-91, CWE-74, CWE-707]
+    capec: [CAPEC-83]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 1
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query / req.body values used as node predicates
+    sinks:
+      - "xpath: xpath.select / selectl / evaluate expression argument"
+      - "xmldom + xpath combinations"
+      - "libxmljs: doc.find / get"
+      - "browser: document.evaluate expression argument"
+    sanitizers:
+      - "variable binding via the library's variable resolver rather than string interpolation"
+    known_false_positives:
+      - Expressions interpolating a constant element name from an allowlist
+    known_false_negatives:
+      - Expression string composed across modules
+      - XQuery sinks (CAPEC-84) which are a related but distinct surface
+    prior_art:
+      - "CodeQL js/xpath-injection"
+      - "SonarJS S2091 — UNVERIFIED (closed-source Sonar security engine)"
+    references:
+      - https://cwe.mitre.org/data/definitions/643.html
+      - https://owasp.org/www-community/attacks/XPATH_Injection
+      - https://codeql.github.com/codeql-query-help/javascript/js-xpath-injection/
+      - https://capec.mitre.org/data/definitions/83.html
+    notes: >
+      No OWASP cheat sheet exists for XPath injection (checked; the Injection Prevention cheat
+      sheet is the closest primary source). Include for taxonomic completeness, ship late.
+
+  - id: no-server-side-template-injection
+    family: injection
+    title: Do not compile templates from non-literal template source
+    description: >
+      Passing user input as the *template* rather than as template *data* hands the attacker the
+      template language, which in most JS engines means arbitrary JavaScript — `lodash.template`,
+      `handlebars.compile`, `pug.render`, `ejs.render` with a tainted first argument are RCE.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-1336]
+    cwe_parents: [CWE-94, CWE-74, CWE-707]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.body / req.query used as template text
+      - CMS-authored template fragments stored in a database
+    sinks:
+      - "lodash.template / _.template"
+      - "handlebars.compile / precompile / Handlebars.SafeString"
+      - "ejs.render / ejs.compile with the template string argument tainted"
+      - "pug.render / pug.compile"
+      - "nunjucks.renderString"
+      - "mustache.render template argument"
+      - "res.render with a tainted view name (template path injection)"
+    sanitizers:
+      - "moving the value into the data object instead of the template string (a fix, not a sanitizer)"
+      - "engines configured with a strict sandbox and no property access (weak; historically bypassed)"
+    known_false_positives:
+      - Template text loaded from a trusted content directory at startup
+      - Editor/preview tooling whose whole purpose is to compile author-supplied templates
+    known_false_negatives:
+      - Template text read from the database (second-order, needs cross-boundary reasoning)
+      - Engine reached through a framework abstraction
+    prior_art:
+      - "CodeQL js/code-injection"
+      - "CodeQL js/template-syntax-in-string-literal (adjacent: detects template syntax that never gets compiled)"
+      - "Semgrep javascript/express/security/express-insecure-template-usage.yaml"
+      - "Semgrep javascript/express/security/audit/res-render-injection.yaml"
+      - "eslint-plugin-security detect-disable-mustache-escape (adjacent, escaping rather than SSTI)"
+    references:
+      - https://cwe.mitre.org/data/definitions/1336.html
+      - https://portswigger.net/web-security/server-side-template-injection
+      - https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+      - https://github.com/advisories/GHSA-35jh-r3h4-6jhm
+      - https://github.com/advisories/GHSA-w457-6q6x-cgp9
+    notes: >
+      MITRE lists no CAPEC for CWE-1336, so `capec` is empty rather than invented. The
+      distinguishing check is positional: which *argument* is tainted. That is a small amount of
+      registry data (per API, which parameter index is the template) and makes the rule precise.
+      GHSA-w457-6q6x-cgp9 (handlebars, CVE-2019-19919) and GHSA-35jh-r3h4-6jhm (lodash.template,
+      CVE-2021-23337) are real instances.
+
+  - id: no-expression-language-injection
+    family: injection
+    title: Do not evaluate expression-language strings built from user input
+    description: >
+      JS-side expression evaluators — AngularJS `$parse`/`$eval`, JSONPath, JMESPath, `expr-eval`,
+      `filtrex`, MongoDB `$expr` — accept a small language. Where that language can reach the
+      prototype chain or host objects, evaluating attacker-supplied expressions is sandbox escape
+      or full code execution.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-917]
+    cwe_parents: [CWE-77, CWE-74, CWE-707]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 3
+      ecosystem_prevalence: 1
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - "req.query filter/sort parameters (the common shape: `?filter=<expression>`)"
+      - saved-search or rule-builder records
+    sinks:
+      - "AngularJS: $parse, $eval, scope.$eval, $interpolate"
+      - "JSONPath: jsonpath.query with a tainted path"
+      - "expr-eval / filtrex / jexl / mathjs `evaluate`"
+      - "MongoDB $expr / $where (overlaps no-nosql-injection)"
+    sanitizers:
+      - evaluators configured with an explicit, closed function/operator allowlist
+      - parsing the expression into a validated AST before evaluation
+    known_false_positives:
+      - Expressions from a trusted admin-authored rules engine
+      - AngularJS legacy code where the expression is a literal
+      - mathjs used as a calculator feature, which is the intended use even with user input
+    known_false_negatives:
+      - Custom in-house evaluators the registry does not know about
+      - Expression forwarded from a stored rule (second-order)
+    prior_art:
+      - "CodeQL js/angular-expression-in-url-attribute"
+      - "CodeQL js/angular-disabling-sce"
+      - "Semgrep javascript/angular/security/detect-angular-sce-disabled.yaml"
+      - "Semgrep javascript/angular/security/detect-angular-element-taint.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/917.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html
+    notes: >
+      Be honest: CWE-917 is a Java/Spring-shaped weakness and its JS analogue is thin. Included
+      because the brief asks for the family, and because the mathjs/filtrex "safe evaluator"
+      pattern is genuinely growing in filter-builder UIs. Low priority; likely never ships as its
+      own rule and instead becomes registry entries under no-eval.
+
+  - id: no-reflected-xss
+    family: injection
+    title: Do not write non-escaped request data into an HTTP response body
+    description: >
+      Server-side reflected XSS: request data reaches `res.send`/`res.write`/`res.end` inside an
+      HTML response without contextual escaping, so the browser parses attacker markup in the
+      application's origin.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-591, CAPEC-63]
+    detectability: REQUIRES_INTERPROCEDURAL_ANALYSIS
+    scores:
+      security_impact: 4
+      static_detectability: 3
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 4
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query / req.body / req.params / req.headers / req.cookies
+      - "error messages echoing input (`Unknown user ${name}`)"
+    sinks:
+      - "express: res.send / res.write / res.end / res.sendFile with built HTML"
+      - "node:http: response.write / response.end"
+      - "framework HTML responses: new Response(html), NextResponse with text/html"
+      - "template engines invoked with autoescaping off (see no-template-autoescape-disabled)"
+    sanitizers:
+      - "context-correct escaping: he.encode, escape-html (HTML text context only)"
+      - "DOMPurify.sanitize for fragments (registry entry)"
+      - "setting Content-Type to text/plain or application/json"
+      - "framework auto-escaping (React/JSX text children, Vue mustache interpolation)"
+    known_false_positives:
+      - JSON APIs where the response is never parsed as HTML but the sink looks the same
+      - Values already escaped by a helper the registry does not recognise
+      - Server-rendered frameworks whose escaping is implicit
+      - Development-only error pages
+    known_false_negatives:
+      - Handler and renderer in different modules (the normal case)
+      - Stored XSS through the database
+      - Escaping that is context-wrong (HTML-escaped value placed in a JS or attribute context)
+      - Content-Type sniffing turning a "safe" response into HTML
+    prior_art:
+      - "CodeQL js/reflected-xss"
+      - "CodeQL js/stored-xss"
+      - "CodeQL js/xss"
+      - "CodeQL js/html-constructed-from-input"
+      - "Semgrep javascript/express/security/audit/xss/direct-response-write.yaml"
+      - "Semgrep javascript/express/security/injection/raw-html-format.yaml (id: raw-html-format)"
+      - "SonarJS S5131 — UNVERIFIED (closed-source Sonar security engine)"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+      - https://owasp.org/www-community/attacks/xss/
+      - https://capec.mitre.org/data/definitions/591.html
+    notes: >
+      This is the rule the brief called "no-xss", and it is the weakest member of the XSS family
+      for an ESLint plugin: source and sink are almost never in the same file, and escaping is
+      contextual. The DOM-sink rules (no-inner-html, no-dangerously-set-inner-html,
+      no-document-write) detect the same weakness class an order of magnitude more cheaply and
+      precisely. Recommendation: do not ship a general server-side XSS rule in the first wave.
+
+  - id: no-template-autoescape-disabled
+    family: injection
+    title: Do not disable a template engine's auto-escaping
+    description: >
+      `{{{ }}}` in Handlebars/Mustache, `<%- %>` in EJS, `!=` in Pug, `| safe` in Nunjucks, and
+      `escapeFunction`/`noEscape` overrides all turn off the engine's XSS protection at exactly
+      the point where it matters.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-63, CAPEC-592]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "Handlebars: triple-stache in a template, `new Handlebars.SafeString(x)`, `noEscape: true`"
+      - "Mustache: `mustache.escape = fn` override"
+      - "EJS: `<%- %>`, `escape` option override"
+      - "Pug: `!=` and `!{}` interpolation"
+      - "Nunjucks: `autoescape: false`, `| safe`"
+      - "Vue: `v-html`"
+      - "Angular: DomSanitizer.bypassSecurityTrustHtml / TrustAs*"
+    sanitizers:
+      - "DOMPurify.sanitize immediately around the unescaped value (registry entry)"
+      - "Angular: sanitize() rather than bypassSecurityTrust*"
+    known_false_positives:
+      - Rendering a value that is itself generated HTML from a trusted pipeline (markdown → sanitized HTML)
+      - Email templates rendered server-side and never shown in a browser origin
+      - Design-system components that legitimately inject pre-sanitized markup
+    known_false_negatives:
+      - Templates in `.hbs`/`.ejs`/`.pug` files, which ESLint does not parse without a processor
+      - Escape function replaced dynamically
+    prior_art:
+      - "SonarJS S5247 — 'Auto-escaping in HTML template engines should not be disabled' (CWE-79)"
+      - "SonarJS S6268 — 'Angular built-in sanitization should not be disabled' (CWE-79)"
+      - "eslint-plugin-security detect-disable-mustache-escape"
+      - "Semgrep javascript/lang/security/detect-disable-mustache-escape.yaml"
+      - "Semgrep javascript/vue/security/audit/xss/templates/avoid-v-html.yaml (id: avoid-v-html)"
+      - "Semgrep typescript/angular/security/audit/angular-domsanitizer.yaml (id: angular-bypasssecuritytrust)"
+      - "Semgrep javascript/express/security/audit/xss/ejs/explicit-unescape.yaml"
+      - "Semgrep javascript/express/security/audit/xss/mustache/explicit-unescape.yaml"
+      - "CodeQL js/angular-disabling-sce"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    notes: >
+      The big caveat is coverage: the JS-side escape hatches (`SafeString`, `bypassSecurityTrust*`,
+      `v-html`, option objects) are lintable, the template-file syntax is not without a custom
+      processor. Scope the rule to the JS/TS surface and say so in the docs rather than implying
+      template coverage.
+
+  - id: no-dynamic-require
+    family: injection
+    title: Do not require or dynamically import a non-literal module specifier
+    description: >
+      `require(x)` and `import(x)` with an attacker-influenced specifier select which code runs.
+      On Node this reaches the filesystem and `node_modules`, and combined with path traversal it
+      is arbitrary local code execution.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-470]
+    cwe_parents: [CWE-913, CWE-610, CWE-20, CWE-664, CWE-707]
+    capec: [CAPEC-138]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.params used as a plugin/handler name
+      - process.env / process.argv driving module selection
+      - configuration files naming an adapter
+    sinks:
+      - require(x) / require.resolve(x)
+      - "import(x) with a non-literal or partially-literal specifier"
+      - "module.createRequire(...)(x)"
+      - "vm module loaders, `import-fresh`, `resolve-from`"
+    sanitizers:
+      - "explicit static map from key to statically-imported module (a fix, not a sanitizer)"
+      - membership test against a literal allowlist array in the same scope
+    known_false_positives:
+      - Plugin architectures and dynamic adapter loading, which is a legitimate and common pattern
+      - Lazy loading with a template literal whose prefix is a fixed directory
+      - Conditional `require` in polyfill/feature-detection code
+      - Monorepo tooling resolving workspace packages
+    known_false_negatives:
+      - Specifier assembled in a helper
+      - Loader hooks and custom resolvers
+    prior_art:
+      - "eslint-plugin-security detect-non-literal-require"
+      - "Semgrep javascript/lang/security/audit/detect-non-literal-require.yaml (id: detect-non-literal-require)"
+      - "CodeQL js/unsafe-dynamic-method-access (adjacent)"
+      - "CodeQL js/functionality-from-untrusted-source"
+    references:
+      - https://cwe.mitre.org/data/definitions/470.html
+      - https://capec.mitre.org/data/definitions/138.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html
+    notes: >
+      High false-positive risk is the whole story here: dynamic `require` is a normal design
+      pattern, and `detect-non-literal-require` is one of the most commonly disabled rules in
+      eslint-plugin-security. Only worth shipping in the taint-gated form (specifier reachable
+      from a request source), where prevalence collapses but precision is real.
+
+  - id: no-log-injection
+    family: injection
+    title: Do not write unescaped user input into log records
+    description: >
+      Newlines and control characters in logged user input let an attacker forge log entries,
+      break log parsers, and inject terminal escape sequences into an operator's console.
+    owasp_top10_2021: A09:2021-Security Logging and Monitoring Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-117]
+    cwe_parents: [CWE-116, CWE-20, CWE-707]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 2
+      static_detectability: 3
+      ecosystem_prevalence: 4
+      confidence: 2
+      false_positive_risk: 5
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query / req.body / req.headers / req.params
+    sinks:
+      - console.log / warn / error with an interpolated tainted value
+      - "pino / winston / bunyan message strings (not the structured fields)"
+    sanitizers:
+      - "structured logging: passing the value as a field rather than interpolating into the message"
+      - explicit newline/control-character stripping
+    known_false_positives:
+      - Structured loggers that JSON-encode values, which already neutralises newlines
+      - Development-only debug logging
+      - Any request logging middleware — logging the request is the point
+    known_false_negatives:
+      - Value logged after passing through a formatter
+      - Log forging through a header the rule does not model
+    prior_art:
+      - "CodeQL js/log-injection"
+    references:
+      - https://cwe.mitre.org/data/definitions/117.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    notes: >
+      Scores badly for a reason: impact is low, prevalence is enormous, and almost every match on
+      a structured logger is a false positive. Documented here so the decision not to ship it is
+      recorded. Distinct from no-secret-in-log, which is worth building.
+
+  - id: no-xxe
+    family: injection
+    title: Do not enable external entity or DTD processing in XML parsers
+    description: >
+      An XML parser with entity resolution enabled will fetch and inline attacker-named
+      resources: local file disclosure, SSRF, and entity-expansion denial of service.
+    owasp_top10_2021: A05:2021-Security Misconfiguration
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-611]
+    cwe_parents: [CWE-610, CWE-664]
+    capec: [CAPEC-221]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "libxmljs: parseXml with noent/noblanks/dtdload options enabled"
+      - "node-expat / xml2json parsers with entity handling on"
+      - "sax with entity expansion enabled"
+      - "@xmldom/xmldom in permissive configurations"
+      - "fast-xml-parser with processEntities: true on untrusted input"
+    sanitizers:
+      - parser options that disable DTD loading and external entity resolution
+      - using a JSON API instead of XML
+    known_false_positives:
+      - Parsing trusted build-time XML (SVG assets, config)
+      - Tests that intentionally exercise entity handling
+    known_false_negatives:
+      - Options object built dynamically
+      - Parser reached through a SOAP or feed-parsing dependency
+    prior_art:
+      - "CodeQL js/xxe"
+      - "CodeQL js/xml-bomb"
+      - "SonarJS S2755 — 'XML parsers should not be vulnerable to XXE attacks' (CWE-611, CWE-827)"
+      - "Semgrep javascript/express/security/audit/express-libxml-noent.yaml"
+      - "Semgrep javascript/node-expat/security/audit/expat-xxe.yaml"
+      - "Semgrep javascript/sax/security/audit/sax-xxe.yaml"
+      - "Semgrep javascript/xml2json/security/audit/xml2json-xxe.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/611.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-xxe/
+      - https://github.com/advisories/GHSA-crh6-fp67-6883
+    notes: >
+      Pure configuration detection, so cheap and precise. Prevalence is the limiter: XML is
+      declining in JS app code. Bundle with the other "insecure library option" rules rather than
+      building bespoke machinery.
