@@ -40,6 +40,10 @@ module.exports = {
       CallExpression(node) {
         const sink = analysis.sinkAt(node)
         if (sink?.requires !== 'path') return
+        // Shared 'path' kind with no-firebase-path-injection — this rule
+        // owns the filesystem sinks, that one owns its own, so the same
+        // call is never reported twice under two different messages.
+        if (sink.id.startsWith('firebase.')) return
 
         const target = node.arguments[sink.argument]
 

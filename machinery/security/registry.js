@@ -310,6 +310,42 @@ const sinks = [
     note: 'res.sendFile(path) is an arbitrary file read when the path is attacker-shaped.',
   },
 
+  // --- Firebase RTDB/Firestore path traversal. Same weakness as filesystem
+  // path traversal (CWE-22): a `/`-separated hierarchy, addressable beyond
+  // the intended subtree by an attacker-controlled segment. Reuses the
+  // 'path' kind rather than inventing a new one — path.basename() strips
+  // the same `/` characters and is exactly as valid a fix here.
+  {
+    id: 'firebase.ref',
+    root: { method: /^ref$/, receiver: /^(db|database|realtimeDb|rtdb)$/i },
+    argument: 0,
+    requires: 'path',
+    severity: 'high',
+    cwe: 'CWE-22',
+    owasp: 'A01:2021',
+    note: "db.ref(path) on the Realtime Database: an attacker-shaped path can address any node the service account can reach, not just the caller's own subtree. The receiver names here are the same ones the SQL sinks use, but the method name (ref) does not collide with any registered SQL method, so there is no ambiguity between the two families.",
+  },
+  {
+    id: 'firebase.doc',
+    root: { method: /^doc$/, receiver: /^(db|database|firestore)$/i },
+    argument: 0,
+    requires: 'path',
+    severity: 'high',
+    cwe: 'CWE-22',
+    owasp: 'A01:2021',
+    note: 'firestore.doc(path) addresses a document by its full slash-separated path; the same traversal concern as ref() on the Realtime Database.',
+  },
+  {
+    id: 'firebase.collection',
+    root: { method: /^collection$/, receiver: /^(db|database|firestore)$/i },
+    argument: 0,
+    requires: 'path',
+    severity: 'medium',
+    cwe: 'CWE-22',
+    owasp: 'A01:2021',
+    note: 'Medium rather than high: a collection reference alone does not address a specific document, but an attacker-chosen collection name is still an addressing concern one hop removed.',
+  },
+
   // --- Open redirect, server side. res.redirect covers Express and Fastify
   // reply shapes; ctx.redirect is koa. The Location header form is handled
   // inside the rule (a literal header name paired with a tainted value).
