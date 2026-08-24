@@ -1,9 +1,9 @@
-const { test, merge } = require('../../machinery/test')
+const { test, merge } = require('../../../machinery/test')
 const { browser } = require('globals')
 
 const handler = code => `function handler(req, res) { ${code} }`
 
-test('no-sql-injection', merge(
+test('security-no-sql-injection', merge(
   {
     // --- the vertical slice, both directions -----------------------------
     valid: [
@@ -245,7 +245,7 @@ test('no-sql-injection', merge(
   },
 ))
 
-test('no-sql-injection', {
+test('security-no-sql-injection', {
   // --- name collisions. `exec` is shared with child_process, and reporting
   // "SQL injection" on a command injection is worse than reporting nothing.
   valid: [

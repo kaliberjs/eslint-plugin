@@ -32,7 +32,7 @@ const plugin = {
 
     'stable-query-client': require('./rules/stable-query-client'),
 
-    'no-sql-injection': require('./rules/no-sql-injection'),
+    'security-no-sql-injection': require('./rules/security/no-sql-injection'),
   },
 
   configs: {
@@ -46,7 +46,7 @@ const plugin = {
     // day one is how a plugin gets removed.
     security: {
       rules: {
-        '@kaliber/no-sql-injection': 'warn',
+        '@kaliber/security-no-sql-injection': 'warn',
       },
     },
   },

@@ -1,4 +1,4 @@
-# no-sql-injection
+# security-no-sql-injection
 
 Detects untrusted input flowing into a raw SQL string.
 

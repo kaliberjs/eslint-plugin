@@ -112,4 +112,4 @@ function median(code, rules, runs = 60) {
 }
 ```
 
-Delta is `median(code, { '@kaliber/no-sql-injection': 'error' }) - median(code, {})`.
+Delta is `median(code, { '@kaliber/security-no-sql-injection': 'error' }) - median(code, {})`.

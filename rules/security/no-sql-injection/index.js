@@ -1,6 +1,6 @@
-const docsUrl = require('../../machinery/docsUrl')
-const { analyze } = require('../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../machinery/security/finding')
+const docsUrl = require('../../../machinery/docsUrl')
+const { analyze } = require('../../../machinery/security/taint')
+const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 module.exports = {
   meta: {

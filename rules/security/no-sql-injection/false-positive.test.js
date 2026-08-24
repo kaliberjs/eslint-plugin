@@ -1,5 +1,5 @@
 const { describe, it } = require('node:test')
-const { test, merge } = require('../../machinery/test')
+const { test, merge } = require('../../../machinery/test')
 
 /**
  * False-positive corpus for `no-sql-injection`.
@@ -44,7 +44,7 @@ const { test, merge } = require('../../machinery/test')
 
 const handler = code => `function handler(req, res) { ${code} }`
 
-describe('CLEAN — safe code the rule correctly ignores (regression tests)', () => test('no-sql-injection', merge(
+describe('CLEAN — safe code the rule correctly ignores (regression tests)', () => test('security-no-sql-injection', merge(
 
   {
     // --- validation libraries ---------------------------------------------
@@ -528,5 +528,5 @@ describe('WAS FAILING — confirmed false positives, 32 of 33 fixed (see the com
     // always fails stops being a gate, and then nobody notices the day a real
     // regression joins it. `todo` keeps the finding in the output — and keeps
     // it in the way — without making CI meaningless.
-    it(name, options ?? {}, () => test('no-sql-injection', { valid: [code], invalid: [] }))
+    it(name, options ?? {}, () => test('security-no-sql-injection', { valid: [code], invalid: [] }))
 })

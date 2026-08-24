@@ -17,6 +17,7 @@ eslint.config.js       the shipped shared config
 machinery/             shared helpers used by rules (ast, test, docsUrl, filename, word)
 machinery/security/    shared security analysis layer (see below)
 rules/<rule-name>/     index.js + test.js + readme.md
+rules/security/<name>/ security rules — see below
 rules/core/            tests pinning ESLint core rule behaviour
 rules/third-party/     tests pinning third-party plugin rule behaviour
 docs/research/         security research artifacts (canonical: rule-inventory.yaml)
@@ -33,6 +34,11 @@ docs/rules/            long-form rule documentation
 - Tests use `machinery/test`'s `test(ruleName, { valid, invalid })`; run with `node --test`.
 - Every new rule must be added to `index.js` (`rules/rule-names.test.js` enforces reachability;
   a rule name may never contain `/`).
+- **Security rules live in `rules/security/<name>/` and are registered as `security-<name>`.**
+  The directory gives the files a home; the prefix gives the rule id a namespace. A rule *name*
+  cannot be namespaced with a slash — ESLint's flat config reads everything before the last
+  slash as the plugin name, so `@kaliber/security/no-x` would look for a plugin called
+  `@kaliber/security`. Hence the prefix.
 - Adding a dependency needs a real justification. Prefer the stdlib and what is already installed.
 - Read a neighbouring rule before writing a new one. Match it.
 
@@ -55,6 +61,10 @@ machinery/security/
 ```
 
 Rules stay thin. **Never reimplement taint logic inside a rule** — extend the shared layer instead.
+
+Security rules are **not** in `eslint.config.js`. They ship behind an opt-in
+`configs.security` at `warn`, because a noisy security rule does not just get itself
+disabled — it gets the whole shared config distrusted.
 
 Hard rules for security work:
 

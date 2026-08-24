@@ -1,4 +1,4 @@
-const { test, merge } = require('../../machinery/test')
+const { test, merge } = require('../../../machinery/test')
 const { browser } = require('globals')
 
 /**
@@ -48,7 +48,7 @@ const { browser } = require('globals')
 
 const handler = code => `function handler(req, res) { ${code} }`
 
-test('no-sql-injection', merge(
+test('security-no-sql-injection', merge(
   {
     valid: [
     ],
