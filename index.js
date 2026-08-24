@@ -31,6 +31,8 @@ const plugin = {
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
 
     'stable-query-client': require('./rules/stable-query-client'),
+
+    'no-sql-injection': require('./rules/no-sql-injection'),
   },
 
   configs: {},
