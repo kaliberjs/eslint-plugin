@@ -733,6 +733,13 @@ function createAnalysis(sourceCode, options) {
     const localFunction = localFunctionFor(node.callee)
     if (localFunction) return summarizeCall(localFunction, node)
 
+    // The member-callee sibling: `const utils = { clean: x => x.trim() };
+    // utils.clean(tainted)`. Resolvable without receiver type information
+    // in the one case that matters — the receiver is a same-file object
+    // literal, not a class instance or a parameter of unknown shape.
+    const localMethod = localMethodFor(node.callee)
+    if (localMethod) return summarizeCall(localMethod, node)
+
     // An unknown function call breaks the chain. It is a wall, not a penalty:
     // reporting through arbitrary unknown functions is the single largest
     // source of false positives in every tool that does it.
@@ -771,8 +778,11 @@ function createAnalysis(sourceCode, options) {
   /**
    * Resolve a callee to a function declared in this file: a FunctionDeclaration
    * name or a variable initialized with a function expression/arrow.
-   * Member callees (`obj.helper()`) are deliberately out of scope — resolving
-   * them needs receiver type information phase 1 does not have.
+   * A callee whose receiver has any shape other than a same-file object
+   * literal (`obj.helper()` on a class instance, a function parameter, an
+   * imported module) is out of scope — resolving those needs receiver type
+   * information phase 1 does not have. See localMethodFor for the one
+   * member-callee shape that doesn't need it.
    */
   function localFunctionFor(callee) {
     if (callee.type !== 'Identifier') return null
@@ -790,6 +800,33 @@ function createAnalysis(sourceCode, options) {
   }
 
   /**
+   * `obj.helper(x)` where `obj` is a same-file object literal and `helper`
+   * is one of its function-valued properties (arrow, function expression,
+   * or shorthand method — all the same node shape as a Property's value).
+   * One hop only: `obj` must resolve directly to the object literal, not
+   * through a chain of aliases, matching the resolution depth used
+   * everywhere else in this file.
+   */
+  function localMethodFor(callee) {
+    if (callee.type !== 'MemberExpression' || callee.object.type !== 'Identifier') return null
+
+    const name = getPropertyName(callee, scopeOf(callee))
+    if (name === null) return null
+
+    const variable = referenceFor(callee.object)?.resolved
+    const definition = variable?.defs[0]
+    const init = definition?.type === 'Variable' ? definition.node.init : null
+    if (init?.type !== 'ObjectExpression') return null
+
+    const property = init.properties.find(candidate =>
+      candidate.type === 'Property' && getPropertyName(candidate, scopeOf(candidate)) === String(name)
+    )
+    const value = property?.value
+    if (value?.type === 'ArrowFunctionExpression' || value?.type === 'FunctionExpression') return value
+    return null
+  }
+
+  /**
    * Evaluate the helper's return expressions with its parameters bound to the
    * call's arguments. Returns the combined taint of everything the helper can
    * give back — including values it pulls from registered sources itself,
@@ -801,12 +838,7 @@ function createAnalysis(sourceCode, options) {
     // resolve parameter names against the wrong bindings.
     const bindings = new Map()
     fnNode.params.forEach((param, index) => {
-      // Destructured and rest parameters stay unsupported; their identifiers
-      // simply never bind, so they read as untainted — a miss, not a guess.
-      if (param.type === 'Identifier') {
-        const argument = callNode.arguments[index] ?? null
-        bindings.set(param.name, argument ? taintOf(argument) : null)
-      }
+      bindParam(param, callNode.arguments[index] ?? null, bindings)
     })
 
     // An expression-bodied arrow has no return statement: its whole body is
@@ -831,6 +863,46 @@ function createAnalysis(sourceCode, options) {
       })
     } finally {
       bindingScope = previousBindings
+    }
+  }
+
+  /**
+   * Bind one parameter to the taint the call actually passed. Two shapes
+   * beyond a plain identifier are provable without guessing:
+   *
+   *   function f(x = 'default') { ... }   — the default only ever applies
+   *     when the argument is omitted, so a real argument binds exactly like
+   *     a plain identifier would.
+   *   function f({ x }) { ... }           — destructuring, but only when
+   *     the call site passes an object *literal*: `x` binds to that
+   *     specific property's taint, not the whole argument's. Anything else
+   *     (a variable, a spread, nested patterns, defaults inside the
+   *     pattern, rest elements) stays unbound — a miss, not a guess, the
+   *     same bar as everywhere else in this file.
+   */
+  function bindParam(param, argument, bindings) {
+    if (param.type === 'Identifier') {
+      bindings.set(param.name, argument ? taintOf(argument) : null)
+      return
+    }
+
+    if (param.type === 'AssignmentPattern' && param.left.type === 'Identifier') {
+      bindings.set(param.left.name, argument ? taintOf(argument) : null)
+      return
+    }
+
+    if (param.type === 'ObjectPattern' && argument?.type === 'ObjectExpression') {
+      for (const property of param.properties) {
+        if (property.type !== 'Property' || property.value.type !== 'Identifier') continue
+
+        const name = getPropertyName(property, scopeOf(property))
+        if (name === null) continue
+
+        const matched = argument.properties.find(candidate =>
+          candidate.type === 'Property' && getPropertyName(candidate, scopeOf(candidate)) === String(name)
+        )
+        bindings.set(property.value.name, matched ? taintOf(matched.value) : null)
+      }
     }
   }
 

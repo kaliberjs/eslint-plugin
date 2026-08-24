@@ -490,4 +490,86 @@ describe('same-file helper summaries — interprocedural-lite', () => {
     `)
     assert.strictEqual(found.length, 0)
   })
+
+  test('an object-literal method (arrow value) propagates taint', () => {
+    const found = taintAtSinks(`
+      const utils = { clean: x => x.trim() }
+      function handler(req){ db.query(\`SELECT * FROM \${utils.clean(req.query.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('an object-literal method (shorthand method syntax) propagates taint', () => {
+    const found = taintAtSinks(`
+      const utils = { clean(x) { return x.trim() } }
+      function handler(req){ db.query(\`SELECT * FROM \${utils.clean(req.query.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('a method call on a function parameter stays a wall', () => {
+    const found = taintAtSinks(`
+      function process(obj, req){ db.query(\`SELECT * FROM \${obj.clean(req.query.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
+
+  test('a method call on a class instance stays a wall', () => {
+    const found = taintAtSinks(`
+      class Utils { clean(x) { return x.trim() } }
+      function handler(req){ const u = new Utils(); db.query(\`SELECT * FROM \${u.clean(req.query.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
+
+  test('a destructured parameter binds to the matching property of a literal argument', () => {
+    const found = taintAtSinks(`
+      function pick({ id }) { return id }
+      function handler(req){ db.query(\`SELECT * FROM t WHERE id = \${pick({ id: req.query.id })}\`) }
+    `)
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('a destructured parameter does not inherit taint from an unrelated sibling property', () => {
+    const found = taintAtSinks(`
+      function pick({ id }) { return id }
+      function handler(req){ db.query(\`SELECT * FROM t WHERE id = \${pick({ id: 'literal', other: req.query.x })}\`) }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
+
+  test('destructuring against a non-literal argument stays a wall', () => {
+    const found = taintAtSinks(`
+      function pick({ id }) { return id }
+      function handler(req){
+        const payload = { id: req.query.id }
+        db.query(\`SELECT * FROM t WHERE id = \${pick(payload)}\`)
+      }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
+
+  test('a defaulted parameter binds like a plain identifier when a real argument is passed', () => {
+    const found = taintAtSinks(`
+      function pick(x = 'default') { return x }
+      function handler(req){ db.query(\`SELECT * FROM \${pick(req.query.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('a defaulted parameter stays quiet when the argument is omitted', () => {
+    const found = taintAtSinks(`
+      function pick(x = 'default') { return x }
+      function handler(){ db.query(\`SELECT * FROM \${pick()}\`) }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
+
+  test('rest parameters remain unsupported — the documented limitation', () => {
+    const found = taintAtSinks(`
+      function pick(...args) { return args[0] }
+      function handler(req){ db.query(\`SELECT * FROM \${pick(req.query.table)}\`) }
+    `)
+    assert.strictEqual(found.length, 0)
+  })
 })
