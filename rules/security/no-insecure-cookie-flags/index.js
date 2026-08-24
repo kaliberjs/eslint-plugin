@@ -1,4 +1,4 @@
-const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticValue, findVariable } = require('@eslint-community/eslint-utils')
 const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
@@ -7,6 +7,13 @@ const { report } = require('../../../machinery/security/finding')
 // research entry: CSRF tokens and preference cookies are legitimately
 // script-readable and non-secure, and flagging them is the noise that kills
 // the rule. The pattern list is deliberately narrow.
+//
+// Two call shapes, same option object and same flags: res.cookie() is the
+// Express convention, but a real auth flow just as often builds the
+// Set-Cookie header value directly with the standalone `cookie` package
+// (cookie.serialize(name, value, options) — identical argument order) and
+// sets it on a plain response object this rule cannot see the shape of.
+// Matching only res.cookie() left that flow structurally invisible.
 
 const SESSION_COOKIE = /^(sess|session|auth|token|jwt|sid|sessionid|refresh[-_]?token|access[-_]?token|connect\.sid)/i
 
@@ -33,17 +40,16 @@ module.exports = {
       CallExpression(node) {
         const callee = node.callee
         if (callee.type !== 'MemberExpression' || callee.computed) return
-        // Receiver-constrained: res.cookie / response.cookie. A generic
-        // `.cookie()` on any object would fire on test fixtures and cookie
-        // libraries that have nothing to do with HTTP responses.
-        if (!/^(res|response)$/i.test(String(callee.object?.name ?? ''))) return
-        if (callee.property?.name !== 'cookie') return
+
+        const isResCookie = /^(res|response)$/i.test(String(callee.object?.name ?? '')) && callee.property?.name === 'cookie'
+        const isCookieSerialize = callee.property?.name === 'serialize' && isCookiePackage(context, callee.object)
+        if (!isResCookie && !isCookieSerialize) return
 
         const cookieName = node.arguments[0]
-        if (!isSessionCookie(cookieName)) return
+        if (!isSessionCookie(context, cookieName)) return
 
         const options = findOptionsObject(node.arguments.slice(2))
-        const problems = collectProblems(options, context)
+        const problems = collectProblems(options, context, isResCookie)
         if (!problems.length) return
 
         report(context, {
@@ -58,19 +64,53 @@ module.exports = {
   },
 }
 
-function isSessionCookie(argument) {
-  return argument?.type === 'Literal'
-    && typeof argument.value === 'string'
-    && SESSION_COOKIE.test(argument.value)
+/**
+ * `cookie.serialize(...)` only counts when `cookie` is provably the
+ * standalone `cookie` package — a receiver-name match alone would collide
+ * with any unrelated local variable happening to be called `cookie`, which
+ * a package this generically named makes more likely than most.
+ */
+function isCookiePackage(context, object) {
+  if (object?.type !== 'Identifier') return false
+
+  const variable = findVariable(context.sourceCode.getScope(object), object)
+  const definition = variable?.defs[0]
+  if (!definition) return false
+
+  if (definition.type === 'ImportBinding') return definition.parent.source.value === 'cookie'
+
+  if (definition.type === 'Variable') {
+    const init = definition.node.init
+    return init?.type === 'CallExpression'
+      && init.callee?.type === 'Identifier' && init.callee.name === 'require'
+      && init.arguments[0]?.type === 'Literal' && init.arguments[0].value === 'cookie'
+  }
+
+  return false
+}
+
+function isSessionCookie(context, argument) {
+  if (!argument) return false
+  // Folded through getStaticValue rather than requiring an inline Literal:
+  // a top-level const cookie name (DEBUG_PANEL_COOKIE_OPEN-style — the
+  // ordinary way to name a cookie once, not repeat the string at every
+  // call site) is exactly as identifiable as the string itself.
+  const value = getStaticValue(argument, context.sourceCode.getScope(argument))
+  return typeof value?.value === 'string' && SESSION_COOKIE.test(value.value)
 }
 
 function findOptionsObject(args) {
   return args.find(arg => arg.type === 'ObjectExpression') ?? null
 }
 
-function collectProblems(options, context) {
-  // No options object at all: express defaults secure to false.
-  if (!options) return ['without an options object — it will default to secure: false']
+function collectProblems(options, context, isResCookie) {
+  // No options object at all: neither Express's res.cookie() nor the
+  // standalone cookie package sets secure/httpOnly/sameSite unless told to.
+  if (!options) {
+    return isResCookie
+      ? ['without an options object — it will default to secure: false']
+      : ['without an options object — secure, httpOnly and sameSite all default to unset']
+  }
 
   const get = key => options.properties.find(
     property => property.type === 'Property' && getStaticPropertyName(property) === key

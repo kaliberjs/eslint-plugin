@@ -12,15 +12,27 @@ A session cookie over plaintext or readable by scripts means network observers s
 res.cookie('sessionId', id)
 ```
 
+```js
+import * as cookie from 'cookie'
+res.setHeader('Set-Cookie', cookie.serialize('sessionId', id))
+```
+
 ## Correct
 
 ```js
 res.cookie('sessionId', id, { secure: true, httpOnly: true, sameSite: 'lax' })
 ```
 
+```js
+import * as cookie from 'cookie'
+res.setHeader('Set-Cookie', cookie.serialize('sessionId', id, { secure: true, httpOnly: true, sameSite: 'lax' }))
+```
+
+Two call shapes are covered, both with the same option object: `res.cookie(...)` (Express) and `cookie.serialize(...)` — proven to come from the standalone `cookie` package rather than trusted by receiver name alone, since `cookie` is generic enough to collide with an unrelated local variable. A real auth flow building the `Set-Cookie` header value directly is at least as common as going through `res.cookie()`.
+
 ## Limitations
 
-Stated honestly: Receiver-constrained to res/response.cookie; express-session and koa/fastify cookie options are known misses for now. secure:false behind NODE_ENV dev guards still flags — disable on the line with a comment.
+Stated honestly: express-session and koa/fastify cookie options are known misses for now. secure:false behind NODE_ENV dev guards still flags — disable on the line with a comment. The cookie name must be statically determinable (a literal or a const alias) to match the session/auth name pattern at all; a name threaded through a config object passed in from outside the file is a documented miss, not a guess.
 
 ## Prior art
 
