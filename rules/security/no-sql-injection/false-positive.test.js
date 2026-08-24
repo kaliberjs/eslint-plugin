@@ -491,18 +491,17 @@ const falsePositives = [
       db.query(\`SELECT * FROM u ORDER BY \${sort}\`)
     }`],
 
-  // STILL FAILING — the only one. The early-return allowlist guard needs flow
-  // sensitivity, so it is not fixable by registry data or by a local proof the
-  // way the ternary form was (readme limitation 12). Kept failing because it is
-  // how the check is usually written, and because "documented" and "quiet" are
-  // not the same thing to someone reading CI output.
+  // FIXED — the early-return allowlist guard now has flow sensitivity in the
+  // taint layer: an allowlist membership guard over the exact expression, with
+  // an abrupt negative consequent, clears the taint. Same proof bar as the
+  // ternary form (foldable primitive collection).
   ['early-return allowlist guard', `
     const TABLES = ['users', 'orders']
     function handler(req, res) {
       const table = req.query.table
       if (!TABLES.includes(table)) return res.status(400).end()
       db.query(\`SELECT count(*) FROM \${table}\`)
-    }`, { todo: 'needs flow sensitivity; the ternary form of this check is proven safe, this one is not' }],
+    }`],
 
   // `this.query(...)` in a repository whose own `query` method parameterizes.
   // FIXED as a side effect of the receiver allowlist rather than by design:
@@ -522,11 +521,7 @@ const falsePositives = [
 
 ]
 
-describe('WAS FAILING — confirmed false positives, 32 of 33 fixed (see the comment above)', () => {
-  for (const [name, code, options] of falsePositives)
-    // The one unfixed case is marked `todo` rather than left red. A suite that
-    // always fails stops being a gate, and then nobody notices the day a real
-    // regression joins it. `todo` keeps the finding in the output — and keeps
-    // it in the way — without making CI meaningless.
-    it(name, options ?? {}, () => test('security-no-sql-injection', { valid: [code], invalid: [] }))
+describe('WAS FAILING — confirmed false positives, all fixed (see the comment above)', () => {
+  for (const [name, code] of falsePositives)
+    it(name, {}, () => test('security-no-sql-injection', { valid: [code], invalid: [] }))
 })

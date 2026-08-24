@@ -108,6 +108,18 @@ function createAnalysis(sourceCode, options) {
     // call, including `'a' + 'b'` and template literals with no expressions.
     if (getStaticValue(unwrapped, scopeOf(unwrapped))) return null
 
+    const result = resolveByType(unwrapped)
+
+    // Flow sensitivity, in the one shape this file can prove without a CFG:
+    // an allowlist membership guard over this exact expression. Same proof
+    // bar as the ternary form — a statically-foldable primitive collection —
+    // so `if (!TABLES.includes(t)) return` makes every later use of t safe.
+    if (result && isAllowlistGuarded(unwrapped)) return null
+
+    return result
+  }
+
+  function resolveByType(unwrapped) {
     switch (unwrapped.type) {
       case 'Identifier': return resolveIdentifier(unwrapped)
       case 'MemberExpression': return resolveMember(unwrapped)
@@ -119,6 +131,61 @@ function createAnalysis(sourceCode, options) {
       case 'TaggedTemplateExpression': return resolveTaggedTemplate(unwrapped)
       default: return null
     }
+  }
+
+  /**
+   * Two guard shapes are proven, both requiring textual identity with the
+   * guarded expression and a foldable primitive collection:
+   *
+   *   if (TABLES.includes(t)) { ...t... }        // positive, inside consequent
+   *   if (!TABLES.includes(t)) return; ...t...   // negative, abrupt consequent
+   *
+   * The else branch of neither shape is proven, guards do not cross function
+   * boundaries, and anything but an abrupt negative-consequent keeps nothing:
+   * falling through an `if` whose body merely logs would prove nothing.
+   */
+  function isAllowlistGuarded(node) {
+    const text = sourceCode.getText(node)
+    let current = node
+
+    while (current.parent) {
+      const parent = current.parent
+
+      if (parent.type === 'IfStatement' && parent.consequent === current) {
+        if (isMembershipCheckOf(parent.test, node)) return true
+      }
+
+      if (parent.type === 'BlockStatement') {
+        const index = parent.body.indexOf(current)
+        for (let i = index - 1; i >= 0; i--) {
+          const statement = parent.body[i]
+          if (statement.type !== 'IfStatement' || statement.alternate) continue
+          const argument = negateTest(statement.test)
+          if (!argument || !isMembershipCheckOf(argument, node)) continue
+          if (isAbruptConsequent(statement.consequent)) return true
+        }
+      }
+
+      // Guards live inside one function; do not climb past its boundary.
+      // The boundary check comes after the BlockStatement handling above so
+      // that a function's own body block still gets scanned.
+      if (isFunctionNode(parent)) break
+
+      current = parent
+    }
+
+    return false
+  }
+
+  function negateTest(test) {
+    if (test?.type !== 'UnaryExpression' || test.operator !== '!') return null
+    return test.argument
+  }
+
+  function isAbruptConsequent(statement) {
+    if (statement.type === 'BlockStatement')
+      return statement.body.every(s => s.type === 'ReturnStatement' || s.type === 'ThrowStatement')
+    return statement.type === 'ReturnStatement' || statement.type === 'ThrowStatement'
   }
 
   // --- sources -------------------------------------------------------------

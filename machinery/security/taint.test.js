@@ -395,3 +395,53 @@ describe('consumer sanitizer registration', () => {
     assert.throws(() => registry.merge({ sanitizers: [{ id: 'trap', root: { method: 'escape' }, argument: 0, clears: ['sql'] }] }), /receiver.*constraint/)
   })
 })
+
+describe('allowlist guards — flow sensitivity', () => {
+  const handler = body => `const TABLES = ['users', 'orders']\nfunction handler(req){ ${body} }`
+
+  test('early-return negative guard clears later uses', () => {
+    const found = taintAtSinks(handler(`
+      const t = req.query.table
+      if (!TABLES.includes(t)) return
+      db.query(\`SELECT * FROM \${t}\`)
+    `))
+    assert.strictEqual(found.length, 0)
+  })
+
+  test('positive guard covers the consequent branch', () => {
+    const found = taintAtSinks(handler(`
+      const t = req.query.table
+      if (TABLES.includes(t)) { db.query(\`SELECT * FROM \${t}\`) }
+      db.query(\`SELECT * FROM \${t}\`)
+    `))
+    // The guarded use is proven; the unguarded one after the if still reports.
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('the else branch is not proven', () => {
+    const found = taintAtSinks(handler(`
+      const t = req.query.table
+      if (TABLES.includes(t)) { log(t) } else { db.query(\`SELECT \${t}\`) }
+    `))
+    assert.strictEqual(found.length, 1)
+  })
+
+  test('a non-foldable collection proves nothing', () => {
+    const t = onlyTaint(handler(`
+      const t = req.query.table
+      if (!TABLES_BY_USER.includes(t)) return
+      db.query(\`SELECT * FROM \${t}\`)
+    `))
+    assert.ok(t.confidence > 0)
+  })
+
+  test('guards do not prove a different variable', () => {
+    const found = taintAtSinks(handler(`
+      const t = req.query.table
+      const u = req.query.other
+      if (!TABLES.includes(t)) return
+      db.query(\`SELECT * FROM \${u}\`)
+    `))
+    assert.strictEqual(found.length, 1)
+  })
+})
