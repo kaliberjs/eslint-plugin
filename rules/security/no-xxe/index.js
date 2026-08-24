@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -26,13 +28,16 @@ module.exports = {
   create(context) {
     return {
       Property(node) {
-        if (node.computed || !/^(noent|dtdload|dtdvalid)$/i.test(String(node.key?.name ?? ''))) return
-        if (node.value?.type !== 'Literal' || node.value.value !== true) return
+        const key = getStaticPropertyName(node)
+        if (!/^(noent|dtdload|dtdvalid)$/i.test(String(key ?? ''))) return
+
+        const value = getStaticValue(node.value, context.sourceCode.getScope(node.value))
+        if (value?.value !== true) return
 
         report(context, {
           node,
           messageId: 'entityExpansion',
-          data: { key: String(node.key.name) },
+          data: { key: String(key) },
           severity: 'high',
           confidence: 1,
         })

@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -40,14 +42,13 @@ module.exports = {
           if (arg.type !== 'ObjectExpression') continue
 
           const shell = arg.properties.find(
-            property => property.type === 'Property'
-              && (property.key?.name === 'shell' || property.key?.value === 'shell')
+            property => property.type === 'Property' && getStaticPropertyName(property) === 'shell'
           )
 
           if (!shell) continue
 
-          const value = shell.value
-          if (value?.type === 'Literal' && value.value !== false && value.value !== '' ) {
+          const value = getStaticValue(shell.value, context.sourceCode.getScope(shell.value))
+          if (value && value.value !== false && value.value !== '') {
             report(context, {
               node: shell,
               messageId: 'shellTrue',
