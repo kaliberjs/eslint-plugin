@@ -48,6 +48,11 @@ const plugin = {
     'security-no-eval': require('./rules/security/no-eval'),
     'security-no-jwt-algorithm-confusion': require('./rules/security/no-jwt-algorithm-confusion'),
     'security-no-md5': require('./rules/security/no-md5'),
+    'security-no-permissive-cors': require('./rules/security/no-permissive-cors'),
+    'security-no-insecure-cookie-flags': require('./rules/security/no-insecure-cookie-flags'),
+    'security-no-plain-http-url': require('./rules/security/no-plain-http-url'),
+    'security-no-javascript-url': require('./rules/security/no-javascript-url'),
+    'security-no-sensitive-data-in-web-storage': require('./rules/security/no-sensitive-data-in-web-storage'),
   },
 
   configs: {
@@ -85,6 +90,11 @@ const plugin = {
         '@kaliber/security-no-eval': 'warn',
         '@kaliber/security-no-jwt-algorithm-confusion': 'warn',
         '@kaliber/security-no-md5': 'warn',
+        '@kaliber/security-no-permissive-cors': 'warn',
+        '@kaliber/security-no-insecure-cookie-flags': 'warn',
+        '@kaliber/security-no-plain-http-url': 'warn',
+        '@kaliber/security-no-javascript-url': 'warn',
+        '@kaliber/security-no-sensitive-data-in-web-storage': 'warn',
       },
     },
   },
