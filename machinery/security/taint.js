@@ -112,11 +112,12 @@ function createAnalysis(sourceCode, options) {
 
     const result = resolveByType(unwrapped)
 
-    // Flow sensitivity, in the one shape this file can prove without a CFG:
-    // an allowlist membership guard over this exact expression. Same proof
-    // bar as the ternary form — a statically-foldable primitive collection —
-    // so `if (!TABLES.includes(t)) return` makes every later use of t safe.
-    if (result && isAllowlistGuarded(unwrapped)) return null
+    // Flow sensitivity, in the shapes this file can prove without a CFG: an
+    // allowlist membership guard, or a path-containment guard, over this
+    // exact expression. `if (!TABLES.includes(t)) return` and
+    // `if (!resolved.startsWith(base)) return` both make every later use
+    // of the guarded expression safe.
+    if (result && isFlowGuarded(unwrapped)) return null
 
     return result
   }
@@ -138,24 +139,26 @@ function createAnalysis(sourceCode, options) {
 
   /**
    * Two guard shapes are proven, both requiring textual identity with the
-   * guarded expression and a foldable primitive collection:
+   * guarded expression:
    *
    *   if (TABLES.includes(t)) { ...t... }        // positive, inside consequent
    *   if (!TABLES.includes(t)) return; ...t...   // negative, abrupt consequent
    *
-   * The else branch of neither shape is proven, guards do not cross function
-   * boundaries, and anything but an abrupt negative-consequent keeps nothing:
-   * falling through an `if` whose body merely logs would prove nothing.
+   * checkOf decides what "proven" means for the guard's test expression —
+   * allowlist membership against a foldable primitive collection, or
+   * path-containment against an unqualified prefix. The else branch of
+   * neither shape is proven, guards do not cross function boundaries, and
+   * anything but an abrupt negative-consequent keeps nothing: falling
+   * through an `if` whose body merely logs would prove nothing.
    */
-  function isAllowlistGuarded(node) {
-    const text = sourceCode.getText(node)
+  function isGuardProven(node, checkOf) {
     let current = node
 
     while (current.parent) {
       const parent = current.parent
 
       if (parent.type === 'IfStatement' && parent.consequent === current) {
-        if (isMembershipCheckOf(parent.test, node)) return true
+        if (checkOf(parent.test, node)) return true
       }
 
       if (parent.type === 'BlockStatement') {
@@ -164,7 +167,7 @@ function createAnalysis(sourceCode, options) {
           const statement = parent.body[i]
           if (statement.type !== 'IfStatement' || statement.alternate) continue
           const argument = negateTest(statement.test)
-          if (!argument || !isMembershipCheckOf(argument, node)) continue
+          if (!argument || !checkOf(argument, node)) continue
           if (isAbruptConsequent(statement.consequent)) return true
         }
       }
@@ -178,6 +181,10 @@ function createAnalysis(sourceCode, options) {
     }
 
     return false
+  }
+
+  function isFlowGuarded(node) {
+    return isGuardProven(node, isMembershipCheckOf) || isGuardProven(node, isContainmentCheckOf)
   }
 
   function negateTest(test) {
@@ -318,7 +325,7 @@ function createAnalysis(sourceCode, options) {
       // An optional receiver constraint keeps property sinks from matching
       // every object with that property name (location.href vs link.href).
       return known.sinks.find(sink =>
-        sink.root.property?.test(String(name)) &&
+        matchesPattern(sink.root.property, String(name)) &&
         (!sink.root.receiver || matchesReceiver(node.object, sink.root.receiver))
       ) ?? null
     }
@@ -335,7 +342,7 @@ function createAnalysis(sourceCode, options) {
     if (name === null) return null
 
     return known.sinks.find(sink =>
-      sink.root.method?.test(String(name)) &&
+      matchesPattern(sink.root.method, String(name)) &&
       (!sink.root.receiver || matchesReceiver(node.callee.object, sink.root.receiver))
     ) ?? null
   }
@@ -356,7 +363,7 @@ function createAnalysis(sourceCode, options) {
     if (!definition) return false
 
     if (definition.type === 'ImportBinding') {
-      if (!matchesModulePattern(definition.parent.source.value, root.module)) return false
+      if (!matchesPattern(root.module, definition.parent.source.value)) return false
 
       const imported = definition.node.imported
       const importedName = imported?.type === 'Identifier' ? imported.name : imported?.value
@@ -366,15 +373,10 @@ function createAnalysis(sourceCode, options) {
     if (definition.type !== 'Variable') return false
 
     const { module, name } = requiredBy(definition)
-    return matchesModulePattern(module, root.module) && name !== null && root.name.test(name)
+    return matchesPattern(root.module, module) && name !== null && root.name.test(name)
   }
 
   /** Where does this require()-derived binding get its value? */
-  /** Module names match by exact string or by regex — entries may use either. */
-  function matchesModulePattern(module, pattern) {
-    if (typeof pattern === 'string') return pattern === String(module)
-    return Boolean(pattern?.test(String(module)))
-  }
 
   function requiredBy(definition) {
     const declarator = definition.node?.type === 'VariableDeclarator' ? definition.node : null
@@ -660,6 +662,26 @@ function createAnalysis(sourceCode, options) {
     return isPrimitiveCollection(test.callee.object)
   }
 
+  /**
+   * The path-traversal remediation this file's own rule recommends:
+   * `resolved.startsWith(base + path.sep)`. The guarded expression must be
+   * the *receiver* here, not an argument — `resolved.startsWith(x)`, not
+   * `x.startsWith(resolved)` — and the prefix must itself be untainted, or
+   * an attacker picks a path that starts with their own chosen prefix and
+   * the check proves nothing.
+   */
+  function isContainmentCheckOf(test, guarded) {
+    if (test.type !== 'CallExpression' || test.callee.type !== 'MemberExpression') return false
+
+    const method = getPropertyName(test.callee, scopeOf(test.callee))
+    if (method !== 'startsWith') return false
+
+    if (!guarded || sourceCode.getText(test.callee.object) !== sourceCode.getText(unwrap(guarded))) return false
+
+    const [prefix] = test.arguments
+    return Boolean(prefix) && !taintOf(prefix)
+  }
+
   function isPrimitiveCollection(node) {
     const folded = getStaticValue(node, scopeOf(node))
     if (!folded) return false
@@ -876,7 +898,7 @@ function createAnalysis(sourceCode, options) {
       // shape itself records that name-trust was a decision, which is what
       // separates this from the forbidden bare-method matching.
       return known.sanitizers.find(sanitizer =>
-        sanitizer.root.helper && helperMatches(sanitizer.root.helper, callee.name)
+        matchesPattern(sanitizer.root.helper, callee.name)
       ) ?? null
     }
 
@@ -897,10 +919,20 @@ function createAnalysis(sourceCode, options) {
     return null
   }
 
-  /** Consumer entries may use plain strings where built-ins use regexes. */
+  /**
+   * The one place a registry field is compared against an AST value. Consumer
+   * entries may use plain strings where built-ins use regexes, and this is the
+   * only function that is allowed to know that — every match against a
+   * `module`/`name`/`method`/`property`/`helper` field goes through here.
+   * Three separate call sites each grew their own copy of this ternary before
+   * one of them (propagatorFor) got it wrong and silently stopped matching
+   * regex-typed `method` fields; this is that fix, generalized so it can't
+   * happen a fourth time.
+   */
   function matchesPattern(pattern, value) {
+    if (pattern == null || value == null) return false
     if (typeof pattern === 'string') return pattern === value
-    return Boolean(pattern?.test(value))
+    return Boolean(pattern.test(value))
   }
 
   function propagatorFor(node) {
@@ -916,7 +948,7 @@ function createAnalysis(sourceCode, options) {
     if (name === null) return null
 
     return known.propagators.find(propagator => {
-      if (propagator.method !== String(name)) return false
+      if (!matchesPattern(propagator.method, String(name))) return false
 
       // Namespace-gated propagators (path.join vs Array#join): the receiver
       // object must be the namespace, not a tainted value.
@@ -944,12 +976,6 @@ function createAnalysis(sourceCode, options) {
     if (node?.type !== 'CallExpression') return false
     const sanitizer = sanitizerFor(node.callee)
     return Boolean(sanitizer && (sanitizer.clears.includes('*') || sanitizer.clears.includes(kind)))
-  }
-
-  /** Helper names match by exact string or by regex. */
-  function helperMatches(pattern, name) {
-    if (!name) return false
-    return typeof pattern === 'string' ? pattern === name : pattern.test(name)
   }
 
   // --- helpers -------------------------------------------------------------
