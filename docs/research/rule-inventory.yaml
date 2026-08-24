@@ -2158,3 +2158,2445 @@ rules:
       optional — without them this rule is unusable. The `http://www.w3.org/2000/svg` false
       positive alone will fire in every SVG-containing component. Ship with a built-in exemption
       list plus a configurable one.
+
+  # =============================================================================================
+  # FAMILY: ssrf-networking
+  # =============================================================================================
+
+  - id: no-ssrf
+    family: ssrf-networking
+    title: Do not make outbound requests to user-controlled URLs
+    description: >
+      If a request URL, host or path is attacker-influenced, the server becomes a proxy into its
+      own network: cloud metadata endpoints, internal admin services, localhost-bound admin
+      ports, and `file://`/`gopher://` scheme abuse.
+    owasp_top10_2021: A10:2021-Server Side Request Forgery (SSRF)
+    owasp_api_top10_2023: API7:2023 - Server Side Request Forgery
+    cwe: [CWE-918]
+    cwe_parents: [CWE-441, CWE-610, CWE-664]
+    capec: [CAPEC-664]
+    detectability: REQUIRES_INTERPROCEDURAL_ANALYSIS
+    scores:
+      security_impact: 5
+      static_detectability: 3
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 4
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query.url / req.body.url / req.params
+      - "webhook and callback URLs supplied at registration time"
+      - "Host / X-Forwarded-Host headers"
+      - "SVG/image/PDF conversion inputs referencing remote resources"
+    sinks:
+      - "fetch(url) / axios(url) / axios.get / got / undici.request / node-fetch"
+      - "http.get / http.request / https.request with a tainted host or path"
+      - "puppeteer page.goto, playwright page.goto"
+      - "image and document processors that accept a URL"
+      - "proxy middleware targets (http-proxy-middleware `target`)"
+    sanitizers:
+      - "an allowlist membership test on the parsed hostname (not on the raw string)"
+      - "resolving the hostname and rejecting private/link-local ranges"
+      - "constructing the URL with a fixed base and only a path segment from input, path-escaped"
+    known_false_positives:
+      - Deliberate URL-fetching features — link preview, webhook delivery, feed readers, image proxies — where SSRF defence exists but is not recognisable to the analysis
+      - URLs from an internal service registry that merely look dynamic
+      - Server-side rendering fetching its own API by an env-configured base URL
+      - Test code hitting a dynamic local port
+    known_false_negatives:
+      - "Source and sink in different modules, which is the normal architecture (this is the rule's defining limitation)"
+      - "Partial control: fixed host, tainted path, enabling internal-endpoint access"
+      - "Allowlist checks that are string-prefix based and bypassable (`startsWith('https://api.example.com')` matched by `https://api.example.com.evil.tld`)"
+      - Redirect-based SSRF (see no-redirect-following-ssrf)
+      - DNS rebinding, which no static analysis can see
+    prior_art:
+      - "CodeQL js/request-forgery"
+      - "CodeQL js/client-side-request-forgery"
+      - "CodeQL js/incomplete-url-substring-sanitization"
+      - "CodeQL js/incomplete-hostname-regexp"
+      - "Semgrep javascript/express/security/audit/express-ssrf.yaml (id: express-ssrf)"
+      - "Semgrep javascript/apollo/security/apollo-axios-ssrf.yaml"
+      - "Semgrep javascript/express/security/require-request.yaml"
+      - "SonarJS S5144 — UNVERIFIED (closed-source Sonar security engine)"
+    references:
+      - https://cwe.mitre.org/data/definitions/918.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+      - https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+      - https://owasp.org/API-Security/editions/2023/en/0xa7-server-side-request-forgery/
+      - https://codeql.github.com/codeql-query-help/javascript/js-request-forgery/
+      - https://github.com/advisories/GHSA-p8p7-x288-28g6
+    notes: >
+      A disagreement with the brief: SSRF is a top-tier vulnerability and a poor first ESLint
+      rule. Source and sink are almost never co-located, and the applications that legitimately
+      fetch user-supplied URLs are exactly the ones that will see the most alerts. The
+      *sub-patterns* are worth shipping instead — no-dangerous-url-construction (prefix-based
+      allowlist bypass, which CodeQL treats as its own queries) and
+      no-redirect-following-ssrf — because those are wrong regardless of whether taint reaches
+      them. GHSA-p8p7-x288-28g6 (request, CVE-2023-28155) is a real ecosystem instance.
+
+  - id: no-redirect-following-ssrf
+    family: ssrf-networking
+    title: Do not follow redirects when fetching a semi-trusted URL
+    description: >
+      An allowlisted host can redirect to an internal one. If the client follows redirects, the
+      allowlist check protected only the first hop — this is the standard bypass for SSRF
+      defences.
+    owasp_top10_2021: A10:2021-Server Side Request Forgery (SSRF)
+    owasp_api_top10_2023: API7:2023 - Server Side Request Forgery
+    cwe: [CWE-918]
+    cwe_parents: [CWE-441, CWE-610, CWE-664]
+    capec: [CAPEC-664]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - a URL that passed a hostname allowlist check earlier in the same function
+    sinks:
+      - "fetch(url) with default redirect: 'follow'"
+      - "axios with maxRedirects unset (defaults to 5)"
+      - "got with followRedirect unset"
+      - "the `follow-redirects` package wrapping http/https"
+    sanitizers:
+      - "fetch(url, { redirect: 'manual' }) or 'error', with re-validation of the Location header"
+      - "axios { maxRedirects: 0 }"
+      - "a request library configured with a per-hop hostname check"
+    known_false_positives:
+      - Fetching fully trusted internal URLs where redirects are expected
+      - Public-web crawling features where following redirects is the requirement
+    known_false_negatives:
+      - Redirect following inside a dependency
+      - The allowlist check itself being in another module
+    prior_art:
+      - "CodeQL js/request-forgery"
+      - "CodeQL js/incomplete-url-scheme-check (adjacent)"
+    references:
+      - https://cwe.mitre.org/data/definitions/918.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+      - https://github.com/advisories/GHSA-jchw-25xp-jwwc
+    notes: >
+      Only meaningful when paired with a recognisable allowlist check — "validated then followed"
+      is the signal. Without that pairing it degenerates into "you used fetch", which is useless.
+      GHSA-jchw-25xp-jwwc (follow-redirects, CVE-2023-26159) shows the library-level version of the
+      same problem.
+
+  - id: no-dangerous-url-construction
+    family: ssrf-networking
+    title: Do not validate URLs with string operations, and do not concatenate into the authority
+    description: >
+      `url.startsWith('https://api.example.com')` is matched by
+      `https://api.example.com.evil.tld`; `includes('example.com')` is matched by
+      `https://evil.tld/?x=example.com`; an unanchored hostname regex matches anywhere.
+      Concatenating input right after `https://` puts the attacker in the authority component.
+    owasp_top10_2021: A10:2021-Server Side Request Forgery (SSRF)
+    owasp_api_top10_2023: API7:2023 - Server Side Request Forgery
+    cwe: [CWE-20]
+    cwe_parents: [CWE-707]
+    capec: []
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "url.startsWith('http...') / .includes('<domain>') / .indexOf('<domain>') used as a security check"
+      - "an unanchored regular expression containing a dotted hostname"
+      - "template literals of the form `https://${x}/...` or `${base}${x}` where x lands in the authority"
+      - "new URL(userInput) without inspecting .protocol and .hostname afterwards"
+    sanitizers:
+      - "new URL(input) followed by an exact equality or suffix-with-dot check on .hostname, plus a .protocol allowlist"
+      - "an anchored regex with escaped dots"
+    known_false_positives:
+      - Non-security URL string checks — routing, analytics classification, log grouping
+      - Prefix checks on a path rather than a full URL
+      - Feature detection on a known-constant URL
+    known_false_negatives:
+      - Check performed in a helper the rule cannot follow
+      - Hostname comparison that is exact but case-sensitive, or that misses IDN/punycode equivalence
+    prior_art:
+      - "CodeQL js/incomplete-url-substring-sanitization"
+      - "CodeQL js/incomplete-hostname-regexp"
+      - "CodeQL js/incomplete-url-scheme-check"
+      - "CodeQL js/incorrect-suffix-check"
+      - "Semgrep typescript/lang/security/audit/cors-regex-wildcard.yaml (adjacent)"
+    references:
+      - https://cwe.mitre.org/data/definitions/20.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-incomplete-url-substring-sanitization/
+    notes: >
+      The best of the SSRF-adjacent rules for an ESLint plugin, because the defect is *in the
+      check itself* — purely syntactic, no taint required, and wrong regardless of where the input
+      came from. CodeQL splits this into four separate queries, which is a good sign that the
+      pattern family is real and tractable. MITRE lists no CAPEC for CWE-20. Strong candidate to
+      ship in place of a general no-ssrf rule.
+
+  - id: no-permissive-cors
+    family: ssrf-networking
+    title: Do not reflect the request Origin or use a wildcard CORS origin with credentials
+    description: >
+      `Access-Control-Allow-Origin: *` with `Allow-Credentials: true` is rejected by browsers, but
+      *reflecting* the request's `Origin` header achieves the same thing and is not: any site can
+      then read authenticated responses.
+    owasp_top10_2021: A05:2021-Security Misconfiguration
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-942]
+    cwe_parents: [CWE-863, CWE-923, CWE-285, CWE-284]
+    capec: []
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "cors({ origin: true, credentials: true })"
+      - "cors({ origin: (o, cb) => cb(null, true) })"
+      - "res.setHeader('Access-Control-Allow-Origin', req.headers.origin)"
+      - "res.setHeader('Access-Control-Allow-Origin', '*') together with Allow-Credentials"
+      - "an origin allowlist regex that is unanchored or contains an unescaped dot"
+      - "@nestjs/common enableCors with a permissive origin"
+    sanitizers:
+      - "an explicit literal array of allowed origins, compared by equality"
+    known_false_positives:
+      - Genuinely public, unauthenticated APIs where `*` is correct
+      - Development servers
+      - Preflight handling for a public CDN endpoint
+    known_false_negatives:
+      - Origin allowlist loaded from configuration
+      - CORS applied by a reverse proxy or CDN
+      - Callback allowlist implemented in another module
+    prior_art:
+      - "CodeQL js/cors-misconfiguration-for-credentials"
+      - "CodeQL js/cors-permissive-configuration"
+      - "SonarJS S5122 — 'Cross-Origin Resource Sharing (CORS) policy should be restricted to trusted origins' (CWE-346, CWE-942)"
+      - "Semgrep javascript/express/security/cors-misconfiguration.yaml (id: cors-misconfiguration)"
+      - "Semgrep typescript/lang/security/audit/cors-regex-wildcard.yaml"
+      - "Semgrep typescript/nestjs/security/audit/nestjs-header-cors-any.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/942.html
+      - https://cwe.mitre.org/data/definitions/346.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+    notes: >
+      MITRE lists no CAPEC for CWE-942 (CWE-346, its sibling reference, has many but they are
+      channel-level attacks, not this). The high-value case is specifically origin-reflection with
+      credentials; a bare `origin: '*'` on a public API should be at most info-level or the rule
+      will fire on every public endpoint.
+
+  - id: no-insecure-websocket
+    family: ssrf-networking
+    title: Do not open ws:// connections and do not skip WebSocket origin checks
+    description: >
+      `ws://` is unencrypted, and a WebSocket server that does not verify the `Origin` header
+      accepts cross-site connections with the user's cookies (cross-site WebSocket hijacking).
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-319, CWE-346]
+    cwe_parents: [CWE-311, CWE-345, CWE-284, CWE-693]
+    capec: [CAPEC-102, CAPEC-117]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "new WebSocket('ws://...')"
+      - "socket.io client with a ws:// URL"
+      - "ws.Server created without a verifyClient / origin check"
+    sanitizers:
+      - "wss:// and an explicit origin allowlist in verifyClient"
+    known_false_positives:
+      - localhost development servers and HMR sockets
+      - Internal service-to-service sockets on a trusted network
+    known_false_negatives:
+      - URL from configuration
+      - Origin verified in middleware ahead of the upgrade
+    prior_art:
+      - "Semgrep javascript/lang/security/detect-insecure-websocket.yaml (id: detect-insecure-websocket)"
+      - "SonarJS S5332 — 'Clear-text protocols should not be used' (CWE-200, CWE-319)"
+      - "CodeQL js/missing-origin-check (for the origin half, via postMessage semantics)"
+    references:
+      - https://cwe.mitre.org/data/definitions/319.html
+      - https://cwe.mitre.org/data/definitions/346.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+      - https://github.com/advisories/GHSA-3h5v-q93c-6h6q
+    notes: >
+      Two weaknesses share one rule because they share one API surface. The localhost exemption is
+      mandatory — every Vite/webpack dev setup opens a `ws://localhost` socket. Overlaps
+      no-plain-http-url; consider merging the transport half there and keeping only the
+      origin-check half here.
+
+  # =============================================================================================
+  # FAMILY: filesystem
+  # =============================================================================================
+
+  - id: no-path-traversal
+    family: filesystem
+    title: Do not build filesystem paths from user input without containment
+    description: >
+      `path.join(root, req.params.name)` escapes `root` as soon as the input contains `..`.
+      `path.resolve` with an absolute-path input discards the root entirely. The containment check
+      must be on the *resolved* path.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-22]
+    cwe_parents: [CWE-706, CWE-664]
+    capec: [CAPEC-126, CAPEC-76, CAPEC-64, CAPEC-78, CAPEC-79]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.params / req.query / req.body path or filename fields
+      - "multipart upload `originalname`"
+      - "archive entry names (see no-zip-slip)"
+      - "`process.argv` in CLI tools"
+    sinks:
+      - "path.join / path.resolve / path.normalize with a tainted segment feeding an fs call"
+      - "fs.readFile / writeFile / createReadStream / unlink / rm / readdir / stat"
+      - "res.sendFile / res.download with a tainted path"
+      - "express.static root computed from input"
+      - "template/view name resolution"
+    sanitizers:
+      - "path.basename() applied to the untrusted segment"
+      - "resolve-then-check: `resolved.startsWith(root + path.sep)` after path.resolve"
+      - "membership test against a literal filename allowlist"
+      - "res.sendFile with a `root` option, which Express containment-checks"
+    known_false_positives:
+      - Build tools, bundlers, codemods and CLIs where paths are developer-supplied by design
+      - Paths derived from a database-stored, already-validated key
+      - Values that were basename-ed in a helper the analysis cannot see
+      - Tests constructing fixture paths
+    known_false_negatives:
+      - Path assembled across modules (the common architecture)
+      - "Absolute-path injection: `path.join` is safe against `..` after a `basename`, but `path.resolve` still honours a leading `/`"
+      - Traversal via encoded or unicode-normalised separators
+      - Symlinks pointing outside the root, which is not visible statically
+      - "Prefix-check containment bugs: `startsWith(root)` matches `/srv/app-evil` when root is `/srv/app`"
+    prior_art:
+      - "CodeQL js/path-injection"
+      - "CodeQL js/exposure-of-private-files"
+      - "eslint-plugin-security detect-non-literal-fs-filename"
+      - "Semgrep javascript/lang/security/audit/path-traversal/path-join-resolve-traversal.yaml (id: path-join-resolve-traversal)"
+      - "Semgrep javascript/express/security/audit/express-path-join-resolve-traversal.yaml (id: express-path-join-resolve-traversal)"
+      - "Semgrep javascript/express/security/audit/express-res-sendfile.yaml (id: express-res-sendfile)"
+      - "SonarJS S2083 — UNVERIFIED (closed-source Sonar security engine)"
+    references:
+      - https://cwe.mitre.org/data/definitions/22.html
+      - https://owasp.org/www-community/attacks/Path_Traversal
+      - https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-path-injection/
+      - https://github.com/advisories/GHSA-3jfq-g458-7qm9
+    notes: >
+      There is no OWASP cheat sheet for path traversal specifically (checked; Input Validation is
+      the closest primary source, and the www-community attack page is the canonical description).
+      `detect-non-literal-fs-filename` is notorious for noise in tooling repositories, so the
+      shippable form is taint-gated, with a config option to exempt build/CLI directories. The
+      most valuable sub-check is the containment-check-correctness one: flag
+      `resolved.startsWith(root)` without a trailing separator.
+
+  - id: no-arbitrary-file-read
+    family: filesystem
+    title: Do not read and return files named by the client
+    description: >
+      A read whose path is client-controlled discloses application source, `.env` files, SSH keys
+      and `/etc/passwd`. This is path traversal specialised to the read-and-respond shape, which
+      is where the impact is concentrated.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-552]
+    cwe_parents: [CWE-668, CWE-285, CWE-664, CWE-284]
+    capec: [CAPEC-126]
+    detectability: REQUIRES_INTERPROCEDURAL_ANALYSIS
+    scores:
+      security_impact: 5
+      static_detectability: 3
+      ecosystem_prevalence: 2
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query.file / req.params.path / req.body.template
+    sinks:
+      - "fs.readFile / readFileSync / createReadStream whose result reaches a response"
+      - "res.sendFile / res.download"
+      - "express.static serving a computed root"
+      - "fs.promises.readdir exposing a listing"
+    sanitizers:
+      - basename plus an allowlist
+      - a mapping from an opaque id to a server-side path
+    known_false_positives:
+      - Static-asset middleware with a constant root that only looks dynamic
+      - Serving generated files from a temp directory keyed by a random id
+      - Documentation/preview features intentionally reading from a content directory
+    known_false_negatives:
+      - Read and response in different modules
+      - Read via a template engine's file resolution
+      - Directory listing disclosure without a traversal (CWE-548 shape)
+    prior_art:
+      - "CodeQL js/exposure-of-private-files"
+      - "CodeQL js/path-injection"
+      - "Semgrep javascript/express/security/audit/express-res-sendfile.yaml (id: express-res-sendfile)"
+      - "Semgrep javascript/express/security/audit/express-check-directory-listing.yaml (id: express-check-directory-listing)"
+    references:
+      - https://cwe.mitre.org/data/definitions/552.html
+      - https://cwe.mitre.org/data/definitions/22.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+    notes: >
+      Kept separate from no-path-traversal because the CWE is different (CWE-552, files accessible
+      to external parties) and because "does the file content reach the response" is the part that
+      makes it high-impact rather than merely suspicious. Requires read-to-response dataflow, so
+      realistically this is a documented sub-case of the traversal rule rather than its own rule.
+
+  - id: no-arbitrary-file-write
+    family: filesystem
+    title: Do not write to filesystem paths derived from user input
+    description: >
+      A write with an attacker-influenced path can overwrite application code, `.npmrc`,
+      `authorized_keys`, or a systemd unit — which converts file write into code execution.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-73]
+    cwe_parents: [CWE-642, CWE-610, CWE-20, CWE-668, CWE-664, CWE-707]
+    capec: [CAPEC-13, CAPEC-73, CAPEC-76]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - "upload metadata: file.originalname, req.body.filename"
+      - req.params used as a storage key
+    sinks:
+      - fs.writeFile / writeFileSync / appendFile / createWriteStream / mkdir / rename / copyFile
+      - "multer diskStorage filename/destination callbacks"
+      - "fs.chmod / chown with a tainted path"
+      - "archive extraction (see no-zip-slip)"
+    sanitizers:
+      - "a server-generated filename (crypto.randomUUID) with the client name stored only as metadata"
+      - basename plus an extension allowlist plus resolved-path containment
+    known_false_positives:
+      - Scaffolding tools and generators writing developer-specified paths
+      - Cache and build-output writers with computed paths
+      - Test fixtures writing to a temp directory
+    known_false_negatives:
+      - Filename chosen in one module and written in another
+      - Extension-only validation that permits a traversal in the stem
+      - Writes performed by a dependency (upload middleware, image processors)
+    prior_art:
+      - "CodeQL js/path-injection"
+      - "CodeQL js/http-to-file-access"
+      - "eslint-plugin-security detect-non-literal-fs-filename"
+      - "Semgrep javascript/lang/security/audit/detect-non-literal-fs-filename.yaml (id: detect-non-literal-fs-filename)"
+    references:
+      - https://cwe.mitre.org/data/definitions/73.html
+      - https://cwe.mitre.org/data/definitions/22.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+      - https://github.com/advisories/GHSA-3jfq-g458-7qm9
+    notes: >
+      CWE-73 (external control of file name or path) is the right weakness for the write case;
+      CWE-22 is the traversal mechanism and is listed as context. GHSA-3jfq-g458-7qm9 (tar,
+      CVE-2021-32804) is the canonical npm-ecosystem instance and also motivates no-zip-slip.
+
+  - id: no-unrestricted-file-upload
+    family: filesystem
+    title: Configure upload middleware with size, count and type limits
+    description: >
+      `multer()` with no options accepts any file, any size, any name, into memory or disk.
+      Without limits it is a denial-of-service vector; without a type check and a server-generated
+      name it is a webshell-upload vector.
+    owasp_top10_2021: A04:2021-Insecure Design
+    owasp_api_top10_2023: API4:2023 - Unrestricted Resource Consumption
+    cwe: [CWE-434]
+    cwe_parents: [CWE-669, CWE-664]
+    capec: [CAPEC-1]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "multer({}) with no `limits` and no `fileFilter`"
+      - "multer.diskStorage with `filename` echoing file.originalname"
+      - "express-fileupload without limits or with `safeFileNames` off"
+      - "busboy / formidable without maxFileSize"
+      - "body-parser / express.json with no `limit`"
+    sanitizers:
+      - "limits: { fileSize, files, fields }"
+      - "a fileFilter checking the declared MIME type *and* server-side content sniffing"
+      - "a server-generated filename plus storage outside the web root"
+    known_false_positives:
+      - Internal admin tooling with a trusted user set
+      - Limits enforced at the reverse proxy or CDN instead
+      - Upload configuration composed in another module
+    known_false_negatives:
+      - Type validation by extension only, which is bypassable
+      - Content-Type trust without sniffing
+      - Storage in a public bucket with a guessable key
+    prior_art:
+      - "SonarJS S5693 — 'HTTP request content length should be limited' (CWE-400, CWE-770)"
+      - "CodeQL js/resource-exhaustion"
+      - "CodeQL js/missing-rate-limiting (adjacent)"
+    references:
+      - https://cwe.mitre.org/data/definitions/434.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+      - https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/
+      - https://capec.mitre.org/data/definitions/1.html
+    notes: >
+      A positive-obligation configuration rule: "these options must be present". Cheap, and the
+      missing-`limits` half is unambiguous. The dangerous-type half is much weaker because static
+      analysis cannot evaluate whether a `fileFilter` is adequate — ship the limits check, mention
+      the type check in docs.
+
+  - id: no-zip-slip
+    family: filesystem
+    title: Validate archive entry paths before extracting
+    description: >
+      Archive formats store arbitrary entry names, including `../../etc/cron.d/x` and absolute
+      paths. Extracting without checking that each resolved destination stays inside the target
+      directory is arbitrary file write — the Zip Slip vulnerability.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-22]
+    cwe_parents: [CWE-706, CWE-664]
+    capec: [CAPEC-126, CAPEC-76]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - "archive entry names (entry.fileName, entry.path, header.name) — the source is inside the archive, not the request"
+    sinks:
+      - "path.join(destDir, entry.name) feeding a write or createWriteStream"
+      - "adm-zip extractAllTo / extractEntryTo"
+      - "unzipper / yauzl entry streams piped to a computed path"
+      - "tar.x / tar.extract without a filter or `strip`"
+      - "node-stream-zip, extract-zip, decompress"
+    sanitizers:
+      - "resolve the destination and assert it starts with destDir + path.sep"
+      - "tar's `filter` / `onentry` rejecting absolute and `..` paths"
+      - "libraries that containment-check by default (modern `tar` does; document the version)"
+    known_false_positives:
+      - Extracting archives the application itself produced
+      - Build-time extraction of vendored dependencies
+      - Libraries that already validate internally, so the user code looks unguarded but is safe
+    known_false_negatives:
+      - Symlink entries pointing outside the destination, which containment checks on the entry name do not catch
+      - Extraction inside a dependency
+      - Zip bombs, a different weakness (CWE-409)
+    prior_art:
+      - "CodeQL js/zipslip"
+      - "SonarJS S5042 — 'Expanding archive files should not be done without controlling resource consumption' (CWE-409) — adjacent, covers zip bombs rather than zip slip"
+      - "SonarJS S6096 — UNVERIFIED (closed-source Sonar security engine)"
+    references:
+      - https://cwe.mitre.org/data/definitions/22.html
+      - https://security.snyk.io/research/zip-slip-vulnerability
+      - https://codeql.github.com/codeql-query-help/javascript/js-zipslip/
+      - https://github.com/advisories/GHSA-3jfq-g458-7qm9
+    notes: >
+      Unusually good fit for a linter: extraction is nearly always a single localised block, the
+      unsafe shape (`path.join(dest, entry.name)` then write) is recognisable without cross-file
+      taint, and there is no legitimate reason to omit the check. Note that Sonar's S5042 is about
+      resource consumption (CWE-409), not zip slip — do not conflate them, and do not claim S6096
+      until it is verified.
+
+  - id: no-insecure-temp-file
+    family: filesystem
+    title: Do not create temporary files with predictable names in shared directories
+    description: >
+      A predictable path in `/tmp` is a symlink-attack and race-condition target: an attacker who
+      pre-creates the path can redirect the write or read the contents.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-377]
+    cwe_parents: [CWE-668, CWE-664]
+    capec: [CAPEC-149, CAPEC-155]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "a literal '/tmp/...' path passed to an fs write"
+      - "path.join(os.tmpdir(), '<fixed name>')"
+      - "os.tmpdir() combined with Date.now() or a process id"
+      - "fs.exists-then-write sequences (CWE-367 race shape)"
+    sanitizers:
+      - "fs.mkdtemp / mkdtempSync"
+      - "the `tmp` / `tempy` packages with random names"
+      - "fs.open with O_CREAT|O_EXCL"
+    known_false_positives:
+      - Single-user CLI tools and build scripts
+      - Containers where `/tmp` is not shared with other principals
+      - Deterministic cache paths that are intentionally reused
+    known_false_negatives:
+      - Temp path built in a helper
+      - Predictable names inside a dependency
+      - Directory created with overly permissive mode (CWE-379)
+    prior_art:
+      - "CodeQL js/insecure-temporary-file"
+      - "CodeQL js/file-system-race"
+      - "SonarJS S5443 — 'Temporary files should not be created in publicly writable directories' (CWE-377, CWE-379)"
+    references:
+      - https://cwe.mitre.org/data/definitions/377.html
+      - https://cwe.mitre.org/data/definitions/379.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-insecure-temporary-file/
+      - https://nodejs.org/api/crypto.html
+    notes: >
+      Low impact in containerised single-tenant deployments, which is most JS deployments — hence
+      the modest impact score. Very cheap, and `fs.mkdtemp` is a clean suggested fix, so it is a
+      reasonable "free" addition to a crypto/filesystem bundle rather than a headline rule.
+
+  # =============================================================================================
+  # FAMILY: deserialization-objects
+  # =============================================================================================
+
+  - id: no-unsafe-deserialization
+    family: deserialization-objects
+    title: Do not deserialize untrusted data with a format that can instantiate behaviour
+    description: >
+      `node-serialize`, `serialize-javascript` round-tripped through eval, `js-yaml` legacy
+      `load`, and any format that reconstructs functions or class instances from the payload gives
+      the attacker code execution or type confusion at parse time.
+    owasp_top10_2021: A08:2021-Software and Data Integrity Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-502]
+    cwe_parents: [CWE-913, CWE-664]
+    capec: [CAPEC-586]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.body / req.cookies (a serialized session or state blob)
+      - message-queue payloads, cache entries, uploaded files
+    sinks:
+      - "node-serialize unserialize()"
+      - "funcster / cryo / serialize-to-js deserialization"
+      - "js-yaml `load` with an unsafe schema (pre-4.x default)"
+      - "eval-based revival of a serialize-javascript output"
+      - "JSON.parse with a reviver that reconstructs prototypes or invokes methods"
+      - "structured-clone-like custom deserializers that call constructors named in the payload"
+    sanitizers:
+      - "JSON.parse with no reviver"
+      - "js-yaml `load` with the default safe schema (4.x) or explicit JSON_SCHEMA"
+      - "schema validation of the parsed value before use"
+    known_false_positives:
+      - Deserializing data the application itself produced and signed
+      - Build-time YAML/config parsing
+      - Tests exercising a deserializer
+    known_false_negatives:
+      - Deserialization inside a dependency
+      - Prototype-pollution-based gadget chains through plain JSON (see no-prototype-pollution-assignment)
+      - Payload arriving from a database rather than the request
+    prior_art:
+      - "CodeQL js/unsafe-deserialization"
+      - "Semgrep javascript/express/security/audit/express-third-party-object-deserialization.yaml (id: express-third-party-object-deserialization)"
+      - "Semgrep javascript/serialize-javascript/security/audit/unsafe-serialize-javascript.yaml (id: unsafe-serialize-javascript)"
+      - "SonarJS S5334 — UNVERIFIED (closed-source Sonar security engine)"
+    references:
+      - https://cwe.mitre.org/data/definitions/502.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+      - https://capec.mitre.org/data/definitions/586.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-unsafe-deserialization/
+    notes: >
+      Mostly a known-bad-library list, which makes it cheap and precise but limited: the modern JS
+      version of this weakness is prototype pollution and framework-specific server-function
+      deserialization, not `node-serialize`. Recent advisories in the CWE-502 npm set are almost
+      all framework deserialization (React Router turbo-stream, TanStack server functions), which
+      no linter would catch. Keep the library list, do not oversell the rule.
+
+  - id: no-prototype-pollution-assignment
+    family: deserialization-objects
+    title: Do not assign to a dynamically computed property without excluding prototype keys
+    description: >
+      `obj[key] = value` where `key` can be `__proto__`, `constructor` or `prototype` writes to
+      the prototype chain, affecting every object in the process — turning a data write into
+      denial of service, logic bypass, or a gadget for code execution.
+    owasp_top10_2021: A08:2021-Software and Data Integrity Failures
+    owasp_api_top10_2023: API3:2023 - Broken Object Property Level Authorization
+    cwe: [CWE-1321]
+    cwe_parents: [CWE-915, CWE-913, CWE-664]
+    capec: [CAPEC-77]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - "req.body / req.query keys (qs produces nested objects, so `?__proto__[x]=y` is reachable)"
+      - JSON.parse of untrusted input, then iterated
+      - archive entry names, CSV headers, form field names
+    sinks:
+      - "target[key] = value with a non-literal key"
+      - "target[a][b] = value walking a tainted path array"
+      - "Object.defineProperty / Reflect.set with a computed key"
+      - "recursive copy loops (see no-unsafe-object-merge)"
+    sanitizers:
+      - "rejecting the keys `__proto__`, `constructor`, `prototype` explicitly"
+      - "Object.create(null) or a Map as the target"
+      - "Object.hasOwn / hasOwnProperty guard on the source, plus a key allowlist"
+      - "Object.freeze(Object.prototype) at startup (process-level mitigation, not per-site)"
+    known_false_positives:
+      - "Every legitimate dynamic-property write: reducers, groupers, memo caches, i18n bundles, index building"
+      - Keys that are provably from a literal set or an enum
+      - Writes to a `Map` or a `null`-prototype object where the weakness does not apply
+      - Class instances where the key set is fixed
+    known_false_negatives:
+      - Path array built in another module
+      - Pollution through a dependency's merge/clone/set helper (the most common real-world vector)
+      - "`Object.assign` / spread with a tainted source object"
+    prior_art:
+      - "CodeQL js/prototype-polluting-assignment"
+      - "CodeQL js/prototype-pollution-utility"
+      - "CodeQL js/invalid-prototype-value"
+      - "Semgrep javascript/lang/security/audit/prototype-pollution/prototype-pollution-assignment.yaml (id: prototype-pollution-assignment)"
+      - "Semgrep javascript/lang/security/audit/prototype-pollution/prototype-pollution-loop.yaml (id: prototype-pollution-loop)"
+      - "eslint-plugin-security detect-object-injection (the same syntax, much broader and far noisier)"
+      - "ESLint core no-proto (adjacent: literal `__proto__` access only)"
+    references:
+      - https://cwe.mitre.org/data/definitions/1321.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-prototype-polluting-assignment/
+      - https://github.com/advisories/GHSA-jf85-cpcp-j695
+      - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+    notes: >
+      CWE-1321 is a Variant under CWE-915, not a peer — worth stating because the two are often
+      cited interchangeably. `detect-object-injection` is the cautionary tale here: it fires on
+      every computed member expression and is one of the most-disabled security rules in the
+      ecosystem. The taint-gated form is the only defensible version. Real instances:
+      GHSA-jf85-cpcp-j695 (lodash, CVE-2019-10744), GHSA-vh95-rmgr-6w4m (minimist, CVE-2020-7598).
+
+  - id: no-unsafe-object-merge
+    family: deserialization-objects
+    title: Do not deep-merge or deep-clone untrusted objects into trusted ones
+    description: >
+      A recursive merge that copies `source.__proto__` or walks a `constructor.prototype` path
+      pollutes the prototype. This is the single most exploited prototype-pollution shape in the
+      npm ecosystem.
+    owasp_top10_2021: A08:2021-Software and Data Integrity Failures
+    owasp_api_top10_2023: API3:2023 - Broken Object Property Level Authorization
+    cwe: [CWE-1321]
+    cwe_parents: [CWE-915, CWE-913, CWE-664]
+    capec: [CAPEC-77]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.body / req.query passed as a merge source
+      - a parsed config or JSON document from an untrusted origin
+    sinks:
+      - "lodash merge / mergeWith / defaultsDeep / set / setWith with a tainted source or path"
+      - "Object.assign(target, req.body) where target is a shared object or a prototype"
+      - "deepmerge, merge-deep, deep-extend, `$.extend(true, ...)`"
+      - "a hand-written recursive `for (const k in src)` copy without a hasOwn/key guard"
+      - "config libraries merging request-derived overrides"
+    sanitizers:
+      - "merging into Object.create(null)"
+      - "an explicit field allowlist (pick) rather than a merge"
+      - "schema validation with unknown-key stripping before the merge"
+      - "structuredClone of the source, which drops the prototype"
+    known_false_positives:
+      - Merging application-controlled defaults, which is the normal use of these functions
+      - Component prop merging in UI code
+      - Test helpers building fixtures
+    known_false_negatives:
+      - Merge inside a dependency (the historical CVE pattern)
+      - Source object reshaped through helpers before the merge
+      - Pollution via array index paths
+    prior_art:
+      - "CodeQL js/prototype-pollution"
+      - "CodeQL js/prototype-pollution-utility"
+      - "Semgrep javascript/lang/security/insecure-object-assign.yaml (id: insecure-object-assign)"
+      - "Semgrep javascript/lang/security/audit/prototype-pollution/prototype-pollution-loop.yaml (id: prototype-pollution-loop)"
+    references:
+      - https://cwe.mitre.org/data/definitions/1321.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-prototype-pollution/
+      - https://github.com/advisories/GHSA-jf85-cpcp-j695
+      - https://github.com/advisories/GHSA-9c47-m6qq-7p4h
+      - https://github.com/advisories/GHSA-c4w7-xm78-47vh
+    notes: >
+      More tractable than the general assignment rule because the sink is a *named function* with
+      a known dangerous parameter position, so the registry does most of the work. Three verified
+      real-world instances: lodash (CVE-2019-10744), JSON5 (CVE-2022-46175), y18n (CVE-2020-7774).
+      Best of the prototype-pollution family for a first implementation.
+
+  - id: no-dangerous-dynamic-property-access
+    family: deserialization-objects
+    title: Do not read or invoke a property selected by user input
+    description: >
+      `obj[userKey]` can read `constructor`, and `obj[userKey]()` can invoke arbitrary methods
+      including `constructor.constructor` — which is `Function` — giving code execution. Reading
+      can also leak fields the caller was not meant to see.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: API3:2023 - Broken Object Property Level Authorization
+    cwe: [CWE-915]
+    cwe_parents: [CWE-913, CWE-664]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 4
+      confidence: 2
+      false_positive_risk: 5
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.query / req.body field names used as lookup keys
+      - "GraphQL field arguments naming a handler or column"
+    sinks:
+      - "obj[tainted] read where obj is a module or namespace object"
+      - "obj[tainted](...) — dynamic method dispatch"
+      - "handlers[req.body.action]() dispatch tables"
+      - "sort/filter builders indexing by a client-supplied column name"
+    sanitizers:
+      - "Object.hasOwn(map, key) plus a Map or null-prototype container"
+      - "membership test against a literal allowlist"
+      - "a switch statement over literal cases"
+    known_false_positives:
+      - "Ordinary dynamic lookup, which is idiomatic JavaScript and enormously common"
+      - Array indexing with a validated integer
+      - Well-guarded dispatch tables where the guard is one line away
+      - TypeScript code where the key type is a literal union and the compiler proves safety
+    known_false_negatives:
+      - Key computed in another module
+      - Dispatch through a framework router
+      - Access to inherited properties that the analysis treats as own-property-safe
+    prior_art:
+      - "CodeQL js/remote-property-injection"
+      - "CodeQL js/unsafe-dynamic-method-access"
+      - "CodeQL js/unvalidated-dynamic-method-call"
+      - "CodeQL js/template-object-injection"
+      - "Semgrep javascript/lang/security/audit/unsafe-dynamic-method.yaml (id: unsafe-dynamic-method)"
+      - "Semgrep javascript/express/security/audit/remote-property-injection.yaml (id: remote-property-injection)"
+      - "eslint-plugin-security detect-object-injection"
+    references:
+      - https://cwe.mitre.org/data/definitions/915.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-remote-property-injection/
+      - https://cheatsheetseries.owasp.org/cheatsheets/Prototype_Pollution_Prevention_Cheat_Sheet.html
+    notes: >
+      MITRE lists no CAPEC for CWE-915. Scored with fp_risk 5 deliberately: this is
+      `detect-object-injection`, and its reputation is earned. The only version worth shipping is
+      the *invocation* half (`obj[tainted](...)`), where the impact is code execution and the
+      pattern is rare — not the read half. In a TypeScript codebase with `noUncheckedIndexedAccess`
+      much of this is already handled by the type system, which is a better answer than a lint rule.
+
+  - id: no-mass-assignment
+    family: deserialization-objects
+    title: Do not pass a whole request body into a model create or update
+    description: >
+      `User.update(req.body)` lets the client set any writable field — `isAdmin`, `role`,
+      `emailVerified`, `balance`. The fix is an explicit field allowlist.
+    owasp_top10_2021: A04:2021-Insecure Design
+    owasp_api_top10_2023: API3:2023 - Broken Object Property Level Authorization
+    cwe: [CWE-915]
+    cwe_parents: [CWE-913, CWE-664]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.body used directly as an entity payload
+    sinks:
+      - "mongoose Model.create / findByIdAndUpdate / updateOne with req.body"
+      - "sequelize Model.create / update with req.body and no `fields` option"
+      - "prisma create/update `data: req.body`"
+      - "typeorm repository.save(req.body)"
+      - "Object.assign(entity, req.body)"
+    sanitizers:
+      - "an explicit pick of allowed fields"
+      - "a validated DTO from zod/joi/class-validator with unknown keys stripped"
+      - "sequelize's `fields` option; mongoose schema `strict` plus a select-based update"
+    known_false_positives:
+      - A validated DTO that is still named or reachable like the body
+      - Admin endpoints where full-object update is the intent
+      - Schemas that are strict enough that extra fields are dropped anyway
+      - Internal service-to-service handlers
+    known_false_negatives:
+      - Body reshaped through a helper before the model call
+      - Nested-object mass assignment past a shallow allowlist
+      - ORMs the registry does not model
+    prior_art:
+      - "CodeQL js/remote-property-injection (adjacent)"
+      - "CodeQL js/type-confusion-through-parameter-tampering (adjacent)"
+    references:
+      - https://cwe.mitre.org/data/definitions/915.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+      - https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/
+    notes: >
+      The clearest API-Top-10 mapping in the inventory (API3:2023). Detection is a one-hop check —
+      does `req.body` reach an ORM write argument without an intervening pick or parse — which the
+      intra-file taint layer can already answer. The false-positive driver is validated DTOs, so
+      the registry needs zod/joi/class-validator `parse` results treated as sanitized.
+
+  # =============================================================================================
+  # FAMILY: regex
+  # =============================================================================================
+
+  - id: no-unsafe-regex
+    family: regex
+    title: Do not use regular expressions with exponential backtracking
+    description: >
+      Nested quantifiers and overlapping alternations — `(a+)+`, `(a|a)*`, `(\s*,)*` — make
+      matching exponential in the input length, so one crafted string blocks the event loop and
+      takes the whole process down.
+    owasp_top10_2021: A05:2021-Security Misconfiguration
+    owasp_api_top10_2023: API4:2023 - Unrestricted Resource Consumption
+    cwe: [CWE-1333]
+    cwe_parents: [CWE-407, CWE-405, CWE-400, CWE-664]
+    capec: [CAPEC-492]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 4
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - "any request-derived string tested against the pattern (needed only to upgrade severity)"
+    sinks:
+      - regex literals with nested quantifiers or ambiguous alternation
+      - "new RegExp('<literal>') with the same shapes"
+      - "patterns used in .test / .match / .replace / .split / router path definitions"
+    sanitizers:
+      - "rewriting to a non-ambiguous pattern (possessive/atomic behaviour is unavailable in JS)"
+      - "bounding input length before matching"
+      - "a linear-time engine (RE2 via `re2` bindings)"
+    known_false_positives:
+      - Patterns only ever applied to short, bounded, application-controlled strings
+      - Build-time and codegen patterns
+      - Patterns whose theoretical blow-up needs an input longer than any real one
+      - Test fixtures that deliberately contain pathological patterns
+    known_false_negatives:
+      - "Polynomial (not exponential) backtracking, which still causes real DoS — see no-polynomial-redos"
+      - Patterns assembled at runtime from parts
+      - Patterns inside dependencies (historically where most ReDoS CVEs live)
+      - "Backtracking triggered by lookarounds and backreferences, which simple analyses miss"
+    prior_art:
+      - "CodeQL js/redos"
+      - "eslint-plugin-security detect-unsafe-regex"
+      - "Semgrep javascript/lang/security/audit/detect-redos.yaml (id: detect-redos)"
+      - "SonarJS S5852 — 'Regular expressions should not cause catastrophic backtracking' (CWE-1333)"
+    references:
+      - https://cwe.mitre.org/data/definitions/1333.html
+      - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+      - https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-redos/
+      - https://github.com/advisories/GHSA-c2qf-rxjj-qqgw
+      - https://github.com/advisories/GHSA-9wv6-86v2-598j
+    notes: >
+      Implementation cost is the honest 4: doing this properly means building an NFA-ambiguity
+      analysis, not pattern-matching on `(x+)+`. There is no OWASP cheat sheet for regular
+      expressions (checked); the www-community ReDoS page is the primary source. Real instances are
+      abundant: GHSA-c2qf-rxjj-qqgw (semver, CVE-2022-25883), GHSA-9wv6-86v2-598j (path-to-regexp,
+      CVE-2024-45296), GHSA-f8q6-p94x-37v3 (minimatch, CVE-2022-3517). Consider depending on an
+      existing analysis rather than writing one.
+
+  - id: no-polynomial-redos
+    family: regex
+    title: Do not apply super-linear patterns to unbounded user input
+    description: >
+      Even without nested quantifiers, patterns like `^\s+|\s+$` or `.*foo.*` are quadratic on
+      crafted input. Applied to a large request body they are a practical denial of service.
+    owasp_top10_2021: A05:2021-Security Misconfiguration
+    owasp_api_top10_2023: API4:2023 - Unrestricted Resource Consumption
+    cwe: [CWE-1333]
+    cwe_parents: [CWE-407, CWE-405, CWE-400, CWE-664]
+    capec: [CAPEC-492]
+    detectability: REQUIRES_INTERPROCEDURAL_ANALYSIS
+    scores:
+      security_impact: 3
+      static_detectability: 3
+      ecosystem_prevalence: 4
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 4
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.body / req.query strings of unbounded length
+      - file contents, uploaded documents
+    sinks:
+      - trim-style patterns applied to request data
+      - "`.replace(/\\s+/g, ...)` chains over large inputs"
+      - "sanitisation libraries running many patterns over one string"
+    sanitizers:
+      - length limits before matching
+      - String.prototype.trim / replaceAll with string arguments
+    known_false_positives:
+      - Patterns applied to short inputs whose length is bounded by validation
+      - Client-side use where the only victim is the attacker's own browser
+    known_false_negatives:
+      - Taint arriving from another module
+      - Cumulative cost across many individually-cheap patterns
+    prior_art:
+      - "CodeQL js/polynomial-redos"
+      - "CodeQL js/resource-exhaustion"
+    references:
+      - https://cwe.mitre.org/data/definitions/1333.html
+      - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+      - https://codeql.github.com/codeql-query-help/javascript/js-polynomial-redos/
+      - https://github.com/advisories/GHSA-7fh5-64p2-3v2j
+    notes: >
+      Needs taint to be useful (a quadratic pattern on a bounded string is fine), which is why
+      CodeQL keeps it as a separate query from js/redos. Documented for completeness; realistically
+      out of scope for this plugin. GHSA-7fh5-64p2-3v2j (postcss, CVE-2023-44270) is a real
+      instance of the shape.
+
+  - id: no-user-controlled-regexp
+    family: regex
+    title: Do not build regular expressions from user input
+    description: >
+      `new RegExp(userInput)` lets the attacker choose the pattern: a catastrophic pattern is
+      denial of service, and in a security check (an allowlist match) a crafted pattern changes
+      what the check accepts.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: API4:2023 - Unrestricted Resource Consumption
+    cwe: [CWE-1333]
+    cwe_parents: [CWE-407, CWE-405, CWE-400, CWE-664]
+    capec: [CAPEC-492]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - "req.query.search / req.body.pattern (search and filter features are the usual shape)"
+      - stored user-authored rules
+    sinks:
+      - new RegExp(x) / RegExp(x) with a non-literal argument
+      - "String.prototype.match / replace / split given a constructed RegExp"
+      - "MongoDB $regex with a client-supplied pattern"
+    sanitizers:
+      - "escaping regex metacharacters in the interpolated segment (escape-string-regexp)"
+      - "using indexOf / includes instead of a regex for substring search"
+      - "a linear-time engine, or a pattern-complexity guard"
+    known_false_positives:
+      - Patterns built from application constants at module load
+      - Dynamic patterns built from an already-escaped identifier
+      - Developer-facing tooling where regex input is the feature
+      - i18n/route table construction
+    known_false_negatives:
+      - Pattern assembled in another module
+      - Regex reaching a dependency's matcher
+      - Regex injection into a MongoDB query object
+    prior_art:
+      - "CodeQL js/regex-injection"
+      - "eslint-plugin-security detect-non-literal-regexp"
+      - "Semgrep javascript/lang/security/audit/detect-non-literal-regexp.yaml (id: detect-non-literal-regexp)"
+    references:
+      - https://cwe.mitre.org/data/definitions/1333.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-regex-injection/
+      - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    notes: >
+      Cheapest rule in the regex family (one AST node), but `detect-non-literal-regexp` is noisy
+      in practice because building patterns from constants is normal. Taint-gate it, or restrict to
+      the case where the constructed regex is used in a comparison that gates access.
+
+  # =============================================================================================
+  # FAMILY: logging
+  # =============================================================================================
+
+  - id: no-secret-in-log
+    family: logging
+    title: Do not log passwords, tokens, keys or secrets
+    description: >
+      Logs are aggregated, retained, replicated to third-party services and read by people who
+      are not authorised to see the credentials in them. A logged secret is a leaked secret.
+    owasp_top10_2021: A09:2021-Security Logging and Monitoring Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-532]
+    cwe_parents: [CWE-538, CWE-200, CWE-668, CWE-664]
+    capec: [CAPEC-215]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 4
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "console.log / info / warn / error / debug with an argument whose identifier or property path matches password, passwd, secret, token, apiKey, privateKey, credentials, sessionId, ssn, creditCard, cvv"
+      - "pino / winston / bunyan / debug calls with the same"
+      - "Sentry/Rollbar captureException with a context object containing credentials"
+      - "logging an entire user or credentials object"
+    sanitizers:
+      - "a redaction configuration (pino `redact`, winston format that strips fields)"
+      - "logging only an identifier or a hash"
+      - "explicit field selection instead of the whole object"
+    known_false_positives:
+      - Logging that a token is *absent* or logging its length
+      - Identifiers containing `token` that are not secrets (lexer tokens, design tokens, CSRF token presence)
+      - Development-only logging behind a debug flag
+      - Loggers with a redaction layer the rule cannot see
+    known_false_negatives:
+      - Secret nested inside an object that is logged wholesale under a neutral name
+      - Secret logged after being renamed to a neutral identifier
+      - Secrets written to a file or a metrics label rather than a logger
+      - Secrets in an error object's message
+    prior_art:
+      - "CodeQL js/clear-text-logging"
+      - "CodeQL js/clear-text-storage-of-sensitive-data"
+      - "SonarJS S5757 — 'Confidential information should not be logged' (CWE-532)"
+      - "Semgrep javascript/jsonwebtoken/security/audit/jwt-exposed-data.yaml"
+      - "Semgrep javascript/jose/security/audit/jose-exposed-data.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/532.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-clear-text-logging/
+      - https://capec.mitre.org/data/definitions/215.html
+    notes: >
+      Name-based, which normally means unreliable — but here the asymmetry helps: a false negative
+      costs nothing extra (the secret was already going to be logged) while a true positive is a
+      real leak caught for the price of an identifier match. The configurable-denylist design is
+      the right one, and this is the best rule in the logging family.
+
+  - id: no-authorization-header-log
+    family: logging
+    title: Do not log request headers wholesale
+    description: >
+      `console.log(req.headers)` prints `Authorization`, `Cookie`, `X-Api-Key` and
+      `Proxy-Authorization` — every credential the client sent — into the log stream.
+    owasp_top10_2021: A09:2021-Security Logging and Monitoring Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-532]
+    cwe_parents: [CWE-538, CWE-200, CWE-668, CWE-664]
+    capec: [CAPEC-215]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "logging req.headers / request.headers / event.headers (Lambda) / ctx.request.header"
+      - "logging req.headers.authorization / .cookie / ['x-api-key'] specifically"
+      - "logging req.cookies"
+      - "attaching headers to an error report or a span attribute"
+    sanitizers:
+      - "logging a named subset of non-sensitive headers"
+      - "a redaction list covering authorization, cookie, set-cookie, x-api-key, proxy-authorization"
+    known_false_positives:
+      - Debug logging in local development
+      - Logging headers of an *outgoing* request the application constructed itself with no credentials
+      - Header logging in test code
+    known_false_negatives:
+      - Headers spread into a larger object that is then logged
+      - Headers logged by a middleware or an APM agent
+    prior_art:
+      - "CodeQL js/clear-text-logging"
+      - "SonarJS S5757 — 'Confidential information should not be logged' (CWE-532)"
+    references:
+      - https://cwe.mitre.org/data/definitions/532.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    notes: >
+      A specific, syntactic, high-confidence slice of no-secret-in-log — `req.headers` as a logger
+      argument. Cheap enough to be worth having as its own check even if it is folded into the same
+      rule implementation.
+
+  - id: no-request-body-log
+    family: logging
+    title: Do not log entire request bodies on credential-handling routes
+    description: >
+      Logging `req.body` on a login, registration, password-reset, payment or profile route writes
+      passwords, card numbers and personal data to the log stream.
+    owasp_top10_2021: A09:2021-Security Logging and Monitoring Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-532]
+    cwe_parents: [CWE-538, CWE-200, CWE-668, CWE-664]
+    capec: [CAPEC-215]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 4
+      confidence: 2
+      false_positive_risk: 4
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "console.* / logger.* with req.body, request.body, ctx.request.body, event.body"
+      - "JSON.stringify(req.body) inside a log call"
+      - "error reports attaching the request body as context"
+    sanitizers:
+      - "logging a redacted projection of the body"
+      - "logging only field names or a body size"
+    known_false_positives:
+      - Debug logging on routes that carry no sensitive data
+      - Local development middleware
+      - Webhook receivers logging payloads for replay, which is often a deliberate operational choice
+    known_false_negatives:
+      - Body logged after destructuring into locals
+      - Body captured by an APM agent's automatic instrumentation
+      - Sensitive data in the query string rather than the body (CodeQL js/sensitive-get-query covers this)
+    prior_art:
+      - "CodeQL js/clear-text-logging"
+      - "CodeQL js/sensitive-get-query"
+      - "SonarJS S5757 — 'Confidential information should not be logged' (CWE-532)"
+    references:
+      - https://cwe.mitre.org/data/definitions/532.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+    notes: >
+      Confidence is 2 because "is this route sensitive" is not visible in the file. Only worth
+      shipping if it can be scoped — e.g. fire when the same function also references a
+      password/card/token field. Otherwise it is a debug-logging tax.
+
+  # =============================================================================================
+  # FAMILY: browser-dom
+  # =============================================================================================
+
+  - id: no-inner-html
+    family: browser-dom
+    title: Do not assign non-literal values to innerHTML or outerHTML
+    description: >
+      Assigning a string to `innerHTML`/`outerHTML` parses it as HTML. Any attacker-influenced
+      substring becomes markup, and `<img src=x onerror=...>` executes in the page's origin
+      without needing a `<script>` tag.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-588, CAPEC-63]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - location.hash / location.search / location.pathname / document.referrer
+      - "window.name, postMessage event.data"
+      - localStorage / sessionStorage values
+      - API responses containing user-authored content
+    sinks:
+      - "element.innerHTML = x"
+      - "element.outerHTML = x"
+      - "Element.prototype.setHTMLUnsafe(x)"
+      - "$(el).html(x) (jQuery)"
+      - "svg.innerHTML and template.innerHTML"
+    sanitizers:
+      - "DOMPurify.sanitize(x)"
+      - "textContent instead of innerHTML (a fix, not a sanitizer)"
+      - "Element.setHTML() with a Sanitizer configuration"
+      - "Trusted Types policy objects (createHTML)"
+    known_false_positives:
+      - "Clearing an element: `el.innerHTML = ''`"
+      - Assigning a template literal with no substitutions
+      - Assigning markup the application generated from a sanitized markdown pipeline
+      - Icon/SVG injection from a build-time constant map
+      - Tests building DOM fixtures
+    known_false_negatives:
+      - Assignment through a helper (`setHtml(el, value)`)
+      - "`insertAdjacentHTML` and `document.write`, which are separate sinks"
+      - Framework-level HTML injection (`dangerouslySetInnerHTML`, `v-html`)
+      - Sanitizer configured permissively enough to still allow script
+    prior_art:
+      - "eslint-plugin-no-unsanitized rule `property` (verified: the plugin provides exactly `method` and `property`)"
+      - "CodeQL js/xss-through-dom"
+      - "CodeQL js/xss"
+      - "Semgrep javascript/browser/security/insecure-innerhtml.yaml (id: insecure-innerhtml)"
+      - "Semgrep javascript/jquery/security/audit/prohibit-jquery-html.yaml"
+      - "Semgrep javascript/browser/security/raw-html-concat.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+      - https://capec.mitre.org/data/definitions/588.html
+    notes: >
+      This is the rule that should replace the brief's generic "no-xss" in the first ten. Same
+      weakness (CWE-79), one AST node, no taint required, and the `= ''` and no-substitution
+      template cases cover most of the false-positive surface with two trivial exemptions. Note
+      that `eslint-plugin-no-unsanitized/property` already does this well — our value is
+      integrating it into the shared severity/confidence model and covering the jQuery and
+      `setHTMLUnsafe` sinks.
+
+  - id: no-insert-adjacent-html
+    family: browser-dom
+    title: Do not pass non-literal values to insertAdjacentHTML
+    description: >
+      `insertAdjacentHTML` is an HTML parser entry point with the same consequences as
+      `innerHTML`, and it is frequently missed because it looks like a DOM insertion API rather
+      than a string-to-markup one.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-588, CAPEC-63]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - location.* / document.referrer / postMessage data / storage values
+    sinks:
+      - "element.insertAdjacentHTML(position, x)"
+      - "$(el).append/prepend/before/after(x) with an HTML string (jQuery)"
+      - "Range.createContextualFragment(x)"
+      - "DOMParser.parseFromString(x, 'text/html') followed by adoption into the live document"
+    sanitizers:
+      - DOMPurify.sanitize
+      - insertAdjacentText
+      - Trusted Types createHTML
+    known_false_positives:
+      - Inserting build-time constant markup
+      - Component libraries inserting their own generated templates
+    known_false_negatives:
+      - Call through a wrapper helper
+      - jQuery insertion where the argument is ambiguous between selector and HTML
+    prior_art:
+      - "eslint-plugin-no-unsanitized rule `method`"
+      - "CodeQL js/xss-through-dom"
+      - "Semgrep javascript/jquery/security/audit/jquery-insecure-method.yaml"
+      - "Semgrep javascript/fbjs/security/audit/insecure-createnodesfrommarkup.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    notes: >
+      Same implementation as no-inner-html with a different sink table; there is a good argument
+      for one rule with a sink registry rather than three rules. Keeping them separate in the
+      inventory so the sink coverage is explicit and auditable.
+
+  - id: no-document-write
+    family: browser-dom
+    title: Do not use document.write or document.writeln
+    description: >
+      `document.write` injects into the parser stream. Beyond XSS it destroys the document when
+      called after load, blocks rendering, and is ignored for cross-origin scripts in Chrome on
+      slow connections.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-588, CAPEC-63]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - location.search / location.hash / document.referrer
+    sinks:
+      - document.write(x) / document.writeln(x)
+      - "iframe.contentDocument.write(x)"
+      - "newWindow.document.write(x)"
+    sanitizers:
+      - "DOM construction with createElement/textContent (a fix, not a sanitizer)"
+    known_false_positives:
+      - Third-party tag-manager and ad snippets, which are written this way by the vendor
+      - Legacy polyfill loaders
+      - Deliberate writes into a freshly opened `about:blank` document for printing or previews
+    known_false_negatives:
+      - "`document['write'](x)` computed access"
+      - Writes performed by an injected third-party script
+    prior_art:
+      - "eslint-plugin-no-unsanitized rule `method`"
+      - "CodeQL js/xss-through-dom"
+      - "CodeQL js/eval-like-call"
+      - "Semgrep javascript/browser/security/insecure-document-method.yaml (id: insecure-document-method)"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    notes: >
+      Overlaps a performance/best-practice concern, which is helpful for adoption: teams accept
+      "don't use document.write" more readily than a security-framed rule. Worth shipping with
+      both justifications in the docs.
+
+  - id: no-dangerously-set-inner-html
+    family: browser-dom
+    title: Do not use dangerouslySetInnerHTML with non-constant HTML
+    description: >
+      React escapes everything except `dangerouslySetInnerHTML`, which is a deliberate hole in
+      the framework's XSS protection. A non-constant `__html` value is the standard React XSS.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-63, CAPEC-592]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - CMS/rich-text field values
+      - markdown rendered to HTML without sanitisation
+      - API responses containing user-authored content
+      - "router params and query values"
+    sinks:
+      - "dangerouslySetInnerHTML={{ __html: x }}"
+      - "React.createElement(tag, { dangerouslySetInnerHTML: { __html: x } })"
+      - "Vue `v-html`, Svelte `{@html ...}`, Solid `innerHTML` prop"
+      - "react-markdown with `rehype-raw` / `allowDangerousHtml`"
+      - "next/script `dangerouslySetInnerHTML` for inline scripts"
+    sanitizers:
+      - "DOMPurify.sanitize applied to the value at the assignment site"
+      - "a sanitize-html pipeline with a restrictive allowlist"
+      - "a server-side sanitiser recorded in the registry"
+    known_false_positives:
+      - Inline JSON-LD / structured data, which is a legitimate and very common use
+      - Inline critical CSS or a nonce-bearing inline script
+      - HTML from a build-time content pipeline (MDX compiled at build)
+      - Icon sprite injection from a constant
+    known_false_negatives:
+      - Value sanitized in a helper the registry does not know
+      - Sanitizer configured to allow `onerror`/`href="javascript:"`
+      - Content sanitized server-side, which the client file cannot see
+    prior_art:
+      - "eslint-plugin-react react/no-danger (verified in the locally installed eslint-plugin-react)"
+      - "eslint-plugin-react react/no-danger-with-children (verified locally)"
+      - "CodeQL js/xss"
+      - "Semgrep typescript/react/security/audit/react-dangerouslysetinnerhtml.yaml (id: react-dangerouslysetinnerhtml)"
+      - "Semgrep typescript/react/security/audit/react-unsanitized-property.yaml"
+      - "Semgrep typescript/react/security/react-markdown-insecure-html.yaml"
+      - "Semgrep javascript/vue/security/audit/xss/templates/avoid-v-html.yaml (id: avoid-v-html)"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://react.dev/reference/react-dom/components/common
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    notes: >
+      Highest ecosystem prevalence of any DOM rule for a React-centric plugin, which is what this
+      plugin is. `react/no-danger` already flags the attribute unconditionally; the improvement is
+      to allow a constant or registry-sanitized value and reserve the error for the rest, so the
+      rule survives contact with JSON-LD. Belongs in the first ten.
+
+  - id: no-javascript-url
+    family: browser-dom
+    title: Do not build javascript: or data: URLs, and do not assign unvalidated URLs to href/src
+    description: >
+      A `javascript:` URL in `href`, `src`, `action` or `formaction` executes on activation. If the
+      URL comes from user data — a profile link, a redirect parameter, a CMS field — that is XSS
+      with no HTML injection required.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-83]
+    cwe_parents: [CWE-79, CWE-74, CWE-707]
+    capec: [CAPEC-63, CAPEC-588]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - user-supplied profile/website URLs
+      - CMS link fields
+      - "`?next=` / `?returnTo=` parameters"
+    sinks:
+      - "a literal `javascript:` in href/src/action"
+      - "<a href={x}> / <img src={x}> / <iframe src={x}> with a non-validated value"
+      - "element.setAttribute('href'|'src'|'srcdoc'|'formaction', x)"
+      - "location.href = x, location.assign(x), window.open(x)"
+      - "`data:text/html` and `blob:` URLs assigned to iframe src"
+    sanitizers:
+      - "an explicit protocol allowlist after `new URL(x, base)` — http, https, mailto, tel"
+      - "a scheme check that rejects javascript:, data:, vbscript: including whitespace and control-character variants"
+    known_false_positives:
+      - "`href=\"#\"` and `href=\"javascript:void(0)\"` in legacy code (still worth flagging, but as style)"
+      - Bookmarklet authoring tools
+      - Internal links built from a constant route table
+    known_false_negatives:
+      - Scheme obfuscation (`java\tscript:`, `JaVaScRiPt:`, HTML-entity encoded forms) if the check is a naive prefix match
+      - URL validated in another module
+      - Relative URLs that resolve to an attacker-controlled origin via a `<base>` tag
+    prior_art:
+      - "ESLint core no-script-url (verified in local eslint 9.39.4)"
+      - "eslint-plugin-react react/jsx-no-script-url (verified locally)"
+      - "CodeQL js/xss-through-dom"
+      - "CodeQL js/incomplete-url-scheme-check"
+      - "Semgrep typescript/react/security/audit/react-href-var.yaml (id: react-href-var)"
+      - "Semgrep javascript/express/security/audit/xss/ejs/var-in-href.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/83.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+    notes: >
+      CWE-83 (script in attributes) is the precise weakness rather than bare CWE-79. Two halves:
+      the literal `javascript:` half is free (ESLint core already does it) and the
+      dynamic-URL-in-href half needs either taint or a "was the protocol checked" heuristic. The
+      second half is where the real bugs are.
+
+  - id: no-dom-xss-sink
+    family: browser-dom
+    title: Do not let location, referrer or window.name reach an HTML or code sink
+    description: >
+      DOM XSS proper: the source and the sink are both in client code, so there is no server
+      involvement and no WAF in the path. `location.hash` into `innerHTML` is the canonical form.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-588]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - location.href / .search / .hash / .pathname
+      - document.URL / documentURI / baseURI / referrer
+      - window.name
+      - "postMessage event.data"
+      - "localStorage / sessionStorage / IndexedDB values"
+      - "document.cookie"
+    sinks:
+      - "innerHTML / outerHTML / insertAdjacentHTML / document.write (see the dedicated rules)"
+      - "eval / new Function / setTimeout(string)"
+      - "location assignment, jQuery `$(x)` selector-or-HTML ambiguity"
+      - "element.setAttribute with an event-handler attribute name"
+      - "iframe srcdoc"
+    sanitizers:
+      - DOMPurify.sanitize
+      - encodeURIComponent for URL-component contexts
+      - "textContent assignment"
+      - "URLSearchParams parsing followed by an allowlist"
+    known_false_positives:
+      - Hash-based routing that assigns a parsed route id to a safe sink
+      - Analytics reading location and never rendering it
+      - Values passed through a framework's escaping layer
+    known_false_negatives:
+      - Source and sink in different modules or different components
+      - Source stored then read later (storage-mediated)
+      - jQuery selector injection, where the sink is not obviously HTML
+    prior_art:
+      - "CodeQL js/xss-through-dom"
+      - "CodeQL js/client-side-unvalidated-url-redirection"
+      - "Semgrep javascript/browser/security/dom-based-xss.yaml (id: dom-based-xss)"
+      - "Semgrep javascript/jquery/security/audit/jquery-insecure-selector.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+      - https://capec.mitre.org/data/definitions/588.html
+    notes: >
+      The one XSS rule where intra-file taint genuinely pays off, because DOM XSS is usually
+      contained in a single component file. Best implemented as the taint-gated *upgrade* path for
+      no-inner-html and friends rather than as a separate rule: same sinks, higher severity when a
+      DOM source reaches them.
+
+  - id: no-postmessage-without-origin-check
+    family: browser-dom
+    title: Verify event.origin in message event handlers
+    description: >
+      A `message` handler receives events from any window that has a reference to yours. Without
+      an `event.origin` check the handler is an unauthenticated, cross-origin RPC endpoint.
+    owasp_top10_2021: A08:2021-Software and Data Integrity Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-346]
+    cwe_parents: [CWE-345, CWE-284, CWE-693]
+    capec: [CAPEC-111, CAPEC-21]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "addEventListener('message', handler) where handler never reads event.origin"
+      - "window.onmessage = handler with the same"
+      - "an origin check that uses includes/indexOf instead of equality"
+      - "worker/iframe message handlers acting on event.data without validation"
+    sanitizers:
+      - "an early return unless event.origin equals an expected literal or is in a literal allowlist"
+      - "MessageChannel with a transferred port, which is origin-scoped by construction"
+    known_false_positives:
+      - Handlers that only act on a same-origin protocol tag and do nothing sensitive
+      - Dev-tooling handlers (HMR, Storybook, React DevTools bridges)
+      - Origin checked in a shared helper called from the handler
+      - Handlers filtering on `event.source === expectedWindow`, which is a valid alternative check
+    known_false_negatives:
+      - Origin compared with a permissive substring match
+      - Handler defined in one module and registered in another
+      - Origin check present but the data still used before it
+    prior_art:
+      - "CodeQL js/missing-origin-check"
+      - "CodeQL js/cross-window-information-leak"
+      - "SonarJS S2819 — 'Origins should be verified during cross-origin communications' (CWE-345)"
+      - "Semgrep javascript/browser/security/insufficient-postmessage-origin-validation.yaml (id: insufficient-postmessage-origin-validation)"
+    references:
+      - https://cwe.mitre.org/data/definitions/346.html
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-missing-origin-check/
+    notes: >
+      A positive-obligation rule with a clean signature: within the handler function body, is
+      `event.origin` (or `event.source`) read at all. Accepting `event.source` comparison as valid
+      is important — it is a legitimate pattern and rejecting it would produce confident false
+      positives.
+
+  - id: no-wildcard-postmessage-target
+    family: browser-dom
+    title: Do not use "*" as the postMessage target origin
+    description: >
+      `targetWindow.postMessage(data, '*')` delivers the message to whatever document currently
+      occupies that window. If the target navigated, the data — often a token — goes to the
+      attacker.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-346]
+    cwe_parents: [CWE-345, CWE-284, CWE-693]
+    capec: [CAPEC-111]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "postMessage(data, '*')"
+      - "iframe.contentWindow.postMessage(data, '*')"
+      - "window.parent.postMessage(data, '*')"
+      - "window.opener.postMessage(data, '*')"
+    sanitizers:
+      - "an explicit target origin literal or a value derived from a trusted allowlist"
+    known_false_positives:
+      - Broadcasting genuinely non-sensitive data (a resize notification) where `*` is acceptable
+      - Communication with a sandboxed iframe whose origin is `null`, where `*` is the only option
+      - Dev tooling
+    known_false_negatives:
+      - Target origin from a variable that is `'*'` at runtime
+      - postMessage inside a dependency (embed SDKs commonly use `*`)
+    prior_art:
+      - "CodeQL js/cross-window-information-leak"
+      - "SonarJS S2819 — 'Origins should be verified during cross-origin communications' (CWE-345)"
+      - "Semgrep javascript/browser/security/wildcard-postmessage-configuration.yaml (id: wildcard-postmessage-configuration)"
+    references:
+      - https://cwe.mitre.org/data/definitions/346.html
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+    notes: >
+      Trivial to implement (a string literal in argument position 2) and the sandboxed-iframe
+      exception is real, so this wants a suppression path. Pairs naturally with
+      no-postmessage-without-origin-check as one "cross-origin messaging" rule.
+
+  - id: no-target-blank-without-noopener
+    family: browser-dom
+    title: Add rel="noopener" to links and window.open calls that open new windows
+    description: >
+      Without `noopener`, the opened document gets a `window.opener` reference and can navigate the
+      original page — reverse tabnabbing. Modern browsers imply `noopener` for `target="_blank"`
+      anchors, but not for `window.open`.
+    owasp_top10_2021: none
+    owasp_api_top10_2023: none
+    cwe: [CWE-1022]
+    cwe_parents: [CWE-284]
+    capec: []
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 2
+      static_detectability: 5
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "<a target=\"_blank\"> without rel containing noopener (and, for older browsers, noreferrer)"
+      - "window.open(url) without 'noopener' in the windowFeatures argument"
+      - "a dynamically created anchor with target set and rel unset"
+    sanitizers:
+      - "rel=\"noopener\" / rel=\"noopener noreferrer\""
+      - "window.open(url, name, 'noopener')"
+    known_false_positives:
+      - Deliberate opener use for OAuth popups and payment flows that need to postMessage back
+      - Same-origin links where the risk is nil
+      - Browsers where `_blank` already implies noopener, making the anchor case cosmetic
+    known_false_negatives:
+      - "`rel` set dynamically"
+      - Links rendered by a markdown or CMS pipeline
+      - Anchors created in a dependency
+    prior_art:
+      - "eslint-plugin-react react/jsx-no-target-blank (verified in the locally installed eslint-plugin-react)"
+      - "SonarJS S5148 — 'Opened windows should not have access to the originating page' (CWE-1022)"
+    references:
+      - https://cwe.mitre.org/data/definitions/1022.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+    notes: >
+      MITRE lists no CAPEC for CWE-1022, and it maps to no OWASP Top 10 2021 category, hence `none`
+      in both fields. Impact is genuinely low now that browsers default `_blank` to noopener — the
+      `window.open` case is the part that still matters. Already covered by
+      `react/jsx-no-target-blank`, so our marginal value is small. Listed for completeness rather
+      than recommended.
+
+  - id: no-jquery-html-sink
+    family: browser-dom
+    title: Do not pass user data to jQuery APIs that parse HTML
+    description: >
+      `$(x)` treats a string starting with `<` as HTML rather than a selector, and `.html()`,
+      `.append()`, `.wrap()`, `.replaceWith()` all parse HTML. jQuery also executes scripts in
+      inserted markup.
+    owasp_top10_2021: A03:2021-Injection
+    owasp_api_top10_2023: none
+    cwe: [CWE-79]
+    cwe_parents: [CWE-74, CWE-707]
+    capec: [CAPEC-588, CAPEC-63]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources:
+      - location.hash used as a selector
+      - user-authored content
+    sinks:
+      - "$(x) with a non-literal x"
+      - ".html(x) / .append(x) / .prepend(x) / .after(x) / .before(x) / .replaceWith(x) / .wrap(x)"
+      - "$.parseHTML(x)"
+      - "$.globalEval / $.getScript"
+    sanitizers:
+      - ".text(x) instead of .html(x)"
+      - "$(document).find(x) with a validated selector"
+      - DOMPurify.sanitize
+    known_false_positives:
+      - Selector strings built from constants
+      - jQuery plugin internals operating on their own markup
+    known_false_negatives:
+      - jQuery accessed through an alias the rule does not recognise
+      - Unsafe plugin options (CodeQL has a dedicated query for this)
+    prior_art:
+      - "CodeQL js/unsafe-jquery-plugin"
+      - "CodeQL js/xss-through-dom"
+      - "Semgrep javascript/jquery/security/audit/jquery-insecure-method.yaml"
+      - "Semgrep javascript/jquery/security/audit/jquery-insecure-selector.yaml"
+      - "Semgrep javascript/jquery/security/audit/prohibit-jquery-html.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/79.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    notes: >
+      Low prevalence for a React-first plugin. Include the sinks in the shared registry so
+      no-inner-html covers them if jQuery is present, rather than shipping a jQuery-specific rule.
+
+  - id: no-sensitive-data-in-web-storage
+    family: browser-dom
+    title: Do not store tokens or personal data in localStorage or sessionStorage
+    description: >
+      Web storage is readable by any script in the origin, has no expiry, and survives the
+      session. A JWT in `localStorage` is a permanent XSS payoff; an httpOnly cookie is not.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-922]
+    cwe_parents: [CWE-664]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 4
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "localStorage.setItem / sessionStorage.setItem with a token/secret/credential-named key or value"
+      - "localStorage['accessToken'] = x"
+      - "IndexedDB writes of credential-shaped objects"
+      - "document.cookie = ... without HttpOnly (which client JS cannot set anyway)"
+    sanitizers:
+      - "an httpOnly, secure, sameSite cookie set by the server"
+      - "in-memory storage for the lifetime of the tab"
+    known_false_positives:
+      - Storing a public identifier or a feature flag whose name matches the denylist
+      - Deliberate, documented token storage in a SPA where the alternative is not available
+      - Storing an already-encrypted blob
+    known_false_negatives:
+      - Token stored under a neutral key name
+      - Whole auth-state object persisted by a state library (redux-persist, zustand persist) — very common and invisible to a name check
+    prior_art:
+      - "CodeQL js/clear-text-storage-of-sensitive-data"
+      - "CodeQL js/build-artifact-leak (adjacent)"
+    references:
+      - https://cwe.mitre.org/data/definitions/922.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    notes: >
+      MITRE lists no CAPEC for CWE-922. Contested guidance — plenty of competent teams store
+      access tokens in memory but refresh tokens nowhere, and plenty ship localStorage tokens
+      deliberately. Ship at info level, or as an opt-in rule, with the state-persistence false
+      negative documented since that is where most real instances hide.
+
+  # =============================================================================================
+  # FAMILY: redirects
+  # =============================================================================================
+
+  - id: no-open-redirect
+    family: redirects
+    title: Do not redirect to a URL derived from the request
+    description: >
+      `res.redirect(req.query.next)` lets an attacker send the victim anywhere while the link
+      appears to point at the trusted site — the standard phishing and OAuth-token-theft primitive.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-601]
+    cwe_parents: [CWE-610, CWE-664]
+    capec: [CAPEC-178]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - "req.query.next / returnTo / redirect_uri / continue / url"
+      - "Referer header"
+      - "a stored `redirectAfterLogin` value"
+    sinks:
+      - "res.redirect(x) / res.location(x)"
+      - "res.setHeader('Location', x) plus a 3xx status"
+      - "Next.js redirect() / NextResponse.redirect(x)"
+      - "koa ctx.redirect(x), fastify reply.redirect(x)"
+      - "OAuth `redirect_uri` echoed back without allowlist validation"
+    sanitizers:
+      - "an allowlist of literal paths or hosts, compared by equality"
+      - "forcing a relative path: reject anything with a scheme or `//` prefix"
+      - "new URL(x, base) followed by an origin equality check"
+    known_false_positives:
+      - Redirects to a path derived from a validated route parameter
+      - Redirect targets from an internal allowlist that looks dynamic
+      - Locale or trailing-slash normalisation redirects
+      - Framework-level redirects to a computed internal path
+    known_false_negatives:
+      - Redirect target passed across modules (typical for auth flows)
+      - "Protocol-relative bypass: `//evil.tld` is treated as relative by a naive check but absolute by the browser"
+      - "Backslash and unicode-normalisation bypasses of a `startsWith('/')` check"
+      - Redirect chains where only the second hop is tainted
+    prior_art:
+      - "CodeQL js/server-side-unvalidated-url-redirection"
+      - "CodeQL js/client-side-unvalidated-url-redirection"
+      - "Semgrep javascript/express/security/audit/express-open-redirect.yaml (id: express-open-redirect)"
+      - "Semgrep javascript/browser/security/open-redirect.yaml (id: js-open-redirect)"
+      - "Semgrep javascript/express/security/audit/possible-user-input-redirect.yaml"
+      - "Semgrep javascript/angular/security/detect-angular-open-redirect.yaml"
+      - "SonarJS S5146 — UNVERIFIED (closed-source Sonar security engine)"
+    references:
+      - https://cwe.mitre.org/data/definitions/601.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+      - https://capec.mitre.org/data/definitions/178.html
+      - https://github.com/advisories/GHSA-rv95-896h-c2vc
+    notes: >
+      A disagreement with the brief's first ten: impact is phishing-grade rather than
+      RCE-grade, and it needs taint. The higher-value sibling is the *validation-correctness*
+      check inside no-dangerous-url-construction — `startsWith('/')` accepting `//evil.tld` is a
+      purely syntactic bug and is the actual cause of most real open redirects.
+      GHSA-rv95-896h-c2vc (express, CVE-2024-29041) is a framework-level instance.
+
+  - id: no-client-side-open-redirect
+    family: redirects
+    title: Do not assign a URL from location or a query parameter to location
+    description: >
+      Client-side open redirect: `location.href = new URLSearchParams(location.search).get('next')`.
+      Same weakness as the server-side form, entirely within one file, and therefore much more
+      tractable for a linter.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-601]
+    cwe_parents: [CWE-610, CWE-664]
+    capec: [CAPEC-178]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - location.search / location.hash parsed for a redirect target
+      - "postMessage event.data"
+      - a storage value written earlier from a query parameter
+    sinks:
+      - "location.href / location.assign / location.replace"
+      - "window.open(x)"
+      - "router.push(x) / router.replace(x) with an absolute URL"
+      - "form.action assignment"
+    sanitizers:
+      - "rejecting values containing a scheme or starting with `//`"
+      - "new URL(x, location.origin) plus an origin equality check"
+      - "a literal allowlist of internal paths"
+    known_false_positives:
+      - Hash-based routing assigning a validated route
+      - Reloading the current URL with modified parameters
+      - Locale switchers rebuilding the current path
+    known_false_negatives:
+      - Target read in one module, assigned in another
+      - Protocol-relative and backslash bypasses of a naive relative-path check
+      - Redirect via a framework router that normalises differently than the check assumed
+    prior_art:
+      - "CodeQL js/client-side-unvalidated-url-redirection"
+      - "Semgrep javascript/browser/security/open-redirect.yaml (id: js-open-redirect)"
+      - "Semgrep javascript/browser/security/open-redirect-from-function.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/601.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+    notes: >
+      Better fit for this plugin than the server-side variant because source and sink are usually
+      in the same component. Also catches the `javascript:` case when the sink is `location.href`,
+      which overlaps no-javascript-url — worth sharing the protocol-allowlist sanitizer between
+      the two.
+
+  # =============================================================================================
+  # FAMILY: access-control
+  #
+  # Read the honesty note in the header before using anything in this family. Access control is
+  # the highest-impact OWASP category and the one static analysis of a single JavaScript file is
+  # least able to reason about. Nothing here is recommended for the first wave. Two entries
+  # (no-client-side-only-authorization, no-user-controlled-authorization-bypass) are worth
+  # building because they detect a structurally wrong *shape*; the rest are documented so that
+  # "we deliberately do not do this" is on the record rather than an omission.
+  # =============================================================================================
+
+  - id: no-idor-shaped-query
+    family: access-control
+    title: Do not look up a record by a client-supplied id without an ownership predicate
+    description: >
+      `Order.findById(req.params.id)` returns any order to any authenticated caller. The
+      IDOR-shaped pattern is a lookup keyed only on a client-supplied identifier, with no
+      tenant/owner constraint anywhere in the query.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: API1:2023 - Broken Object Level Authorization
+    cwe: [CWE-639]
+    cwe_parents: [CWE-863, CWE-285, CWE-284]
+    capec: []
+    detectability: REQUIRES_RUNTIME_INFORMATION
+    scores:
+      security_impact: 5
+      static_detectability: 2
+      ecosystem_prevalence: 4
+      confidence: 2
+      false_positive_risk: 5
+      implementation_cost: 4
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - req.params.id / req.query.id / req.body.id
+      - a path segment or GraphQL node id
+    sinks:
+      - "Model.findById(req.params.id) / findByPk / findUnique({ where: { id } })"
+      - "a SQL WHERE clause keyed only on the supplied id"
+      - "res.json of the fetched entity"
+    sanitizers:
+      - "an ownership predicate in the same query: `{ id, userId: req.user.id }` or `WHERE id = $1 AND tenant_id = $2`"
+      - "a `can(user, 'read', entity)` policy check between fetch and response"
+      - "row-level security in the database"
+    known_false_positives:
+      - "The overwhelming majority of matches: public resources, admin endpoints, entities that are not user-scoped, lookups already behind middleware authorization, multi-tenant isolation enforced by a connection-scoped schema or RLS policy"
+      - Internal service endpoints
+      - Reference-data lookups
+    known_false_negatives:
+      - Authorization present but incorrect (checks the wrong tenant, wrong role, or a stale claim)
+      - Ownership enforced in a service layer the rule cannot see
+      - Indirect IDOR through a nested include or a join
+      - "Enumeration risk from sequential ids, which is a design issue, not a code pattern"
+    prior_art:
+      - "CodeQL: no JavaScript IDOR/BOLA query exists on the published query list"
+      - "SonarJS: no verified open-source IDOR rule for JavaScript"
+      - "Semgrep: no ecosystem-wide JS IDOR rule found in semgrep-rules; Semgrep's guidance for this class is project-specific custom rules"
+    references:
+      - https://cwe.mitre.org/data/definitions/639.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+      - https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/
+    notes: >
+      Do not ship this as a general rule. MITRE lists no CAPEC for CWE-639, and — more tellingly —
+      neither CodeQL nor the open-source Semgrep ruleset ships a generic JS IDOR query, because the
+      pattern is indistinguishable from correct code without knowing the authorization model. The
+      only defensible version is *project-configured*: the consuming project declares which models
+      are tenant-scoped and which field carries the tenant, and the rule enforces that declaration.
+      That is a genuinely useful rule and a completely different product from "detect IDOR".
+
+  - id: no-missing-authorization-middleware
+    family: access-control
+    title: Do not register a mutating route without an authorization middleware
+    description: >
+      A route handler registered without any recognised auth middleware in its chain, on a method
+      that mutates state, is a candidate missing-authorization defect.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: API5:2023 - Broken Function Level Authorization
+    cwe: [CWE-862]
+    cwe_parents: [CWE-285, CWE-284]
+    capec: []
+    detectability: REQUIRES_RUNTIME_INFORMATION
+    scores:
+      security_impact: 5
+      static_detectability: 2
+      ecosystem_prevalence: 3
+      confidence: 1
+      false_positive_risk: 5
+      implementation_cost: 4
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "router.post / put / patch / delete with no middleware between the path and the handler"
+      - "Next.js route handlers with no auth call in the body"
+      - "tRPC procedures using publicProcedure for a mutation"
+      - "GraphQL resolvers with no authorization directive or guard"
+    sanitizers:
+      - "a middleware or guard from a project-declared list of authorization helpers"
+      - "an explicit in-handler check against req.user / session"
+    known_false_positives:
+      - "Auth applied globally with `app.use` before the router, in another file"
+      - Auth enforced by an API gateway, service mesh, or reverse proxy
+      - Intentionally public endpoints (login, register, webhooks, health checks, public search)
+      - Auth applied by a framework convention (route grouping, file-system-based middleware)
+      - Auth in a shared router factory
+    known_false_negatives:
+      - Middleware present but authorizing the wrong thing (authentication mistaken for authorization)
+      - Role check that is trivially bypassable
+      - Handler reachable through a second, unprotected route
+    prior_art:
+      - "CodeQL js/missing-rate-limiting (the closest analogue — rate limiting, not authorization)"
+      - "CodeQL js/missing-token-validation (CSRF middleware presence)"
+      - "CodeQL js/case-sensitive-middleware-path (adjacent: middleware that fails to match)"
+      - "CodeQL: no generic missing-authorization query for JavaScript"
+    references:
+      - https://cwe.mitre.org/data/definitions/862.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+      - https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/
+    notes: >
+      Confidence 1 is not pessimism, it is the correct value: a clean result means nothing and a
+      finding is usually wrong, because the middleware is legitimately somewhere else. That CodeQL
+      ships `js/missing-rate-limiting` but *not* a missing-authorization query — despite having
+      whole-program analysis, which we do not — is the clearest available evidence that this is not
+      tractable. If we build anything here it should be a project-declared allowlist ("these
+      middleware names count as authorization; every mutating route must have one"), which is
+      configuration enforcement rather than vulnerability detection. Recommend: do not ship.
+
+  - id: no-client-side-only-authorization
+    family: access-control
+    title: Do not treat a client-side role check as an authorization decision
+    description: >
+      `if (user.role === 'admin')` in browser code hides UI; it does not protect data. When the
+      same condition guards a fetch that returns privileged data, the server is the only real
+      control and the client check is decoration.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: API5:2023 - Broken Function Level Authorization
+    cwe: [CWE-602]
+    cwe_parents: [CWE-693]
+    capec: [CAPEC-162, CAPEC-207, CAPEC-21]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 3
+      ecosystem_prevalence: 4
+      confidence: 2
+      false_positive_risk: 4
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "a role/permission comparison in a file under a client-only directory"
+      - "a role check read from localStorage or a decoded-but-unverified JWT (overlaps no-jwt-decode-without-verify)"
+      - "feature gating on a client-computed `isAdmin` that also gates a privileged fetch"
+      - "hidden form fields or disabled inputs used as the only constraint on a value"
+    sanitizers:
+      - "a server-side check on the corresponding endpoint (not verifiable from client code — this is the rule's limit)"
+      - "role information from a verified session on the server"
+    known_false_positives:
+      - "Correct UI gating, which is the intended use and by far the common case"
+      - Progressive-disclosure and feature-flag UI
+      - Optimistic rendering ahead of a server check
+    known_false_negatives:
+      - Server-side check absent, which the client file cannot reveal
+      - Authorization by obscurity (an unlinked admin route)
+      - Client check on a value that the server then trusts
+    prior_art:
+      - "CodeQL js/user-controlled-bypass"
+      - "CodeQL js/type-confusion-through-parameter-tampering (adjacent)"
+    references:
+      - https://cwe.mitre.org/data/definitions/602.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+    notes: >
+      Worth building, but only in the narrow form: flag a role check whose *result is used as the
+      only guard on a privileged network call*, in a file the config marks as client-only. Framed
+      as "this hides UI, it does not authorize" it is educational rather than accusatory, which
+      matters for adoption. Best of the access-control family for us, and still only a warn.
+
+  - id: no-user-controlled-authorization-bypass
+    family: access-control
+    title: Do not let request data decide the outcome of a security check
+    description: >
+      A conditional that grants access based on a value the client supplies — `if (req.body.isAdmin)`,
+      `if (req.query.debug)`, `if (req.headers['x-internal'])` — is an authorization bypass by
+      construction, whatever the surrounding policy is.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: API5:2023 - Broken Function Level Authorization
+    cwe: [CWE-807]
+    cwe_parents: [CWE-693, CWE-20, CWE-707]
+    capec: [CAPEC-21, CAPEC-162]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: true
+    sources:
+      - "req.body.isAdmin / role / permissions / userId"
+      - "req.query.debug / admin / bypass / preview"
+      - "client-settable headers: x-user-id, x-internal, x-forwarded-for, x-admin"
+      - a decoded-but-unverified JWT claim
+    sinks:
+      - "an if/ternary/logical guard whose condition reads a request-derived value and whose branch performs a privileged action or skips a check"
+      - "`const userId = req.body.userId || req.user.id` — client-preferred identity"
+      - "trusting X-Forwarded-For for an IP allowlist"
+    sanitizers:
+      - "deriving identity and role from a verified session or a verified token only"
+      - "a comparison against a server-side value rather than a client-supplied one"
+    known_false_positives:
+      - Feature-preview flags that gate nothing privileged
+      - Debug flags in development-only code paths
+      - A client-supplied id that is subsequently authorized against the session
+      - Internal headers set by a trusted proxy that strips them at the edge (a real and legitimate architecture)
+    known_false_negatives:
+      - Guard split across modules
+      - Bypass through a value that reaches the condition after transformation
+      - Trust in a header the rule's list does not cover
+    prior_art:
+      - "CodeQL js/user-controlled-bypass"
+      - "CodeQL js/host-header-forgery-in-email-generation (a specific instance of trusting a client header)"
+      - "CodeQL js/type-confusion-through-parameter-tampering"
+      - "Semgrep javascript/lang/security/audit/unsafe-formatstring.yaml (unrelated; listed only to note that no equivalent Semgrep bypass rule was found)"
+    references:
+      - https://cwe.mitre.org/data/definitions/807.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+      - https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/
+    notes: >
+      CWE-807 (reliance on untrusted inputs in a security decision) is a distinct weakness from
+      CWE-862/863 and is the one that is actually detectable: the defect is that a *request value*
+      appears in a *security condition*, which is a dataflow question inside one handler, not a
+      policy question. The `req.body.userId || req.user.id` shape alone justifies the rule. This
+      and no-client-side-only-authorization are the two access-control rules worth building.
+
+  - id: no-missing-csrf-protection
+    family: access-control
+    title: Do not accept cookie-authenticated state-changing requests without CSRF defence
+    description: >
+      If the session travels in a cookie and the endpoint mutates state, a cross-site form or
+      fetch can perform the action as the victim. SameSite cookies mitigate but do not replace a
+      token for cross-site-capable flows.
+    owasp_top10_2021: A01:2021-Broken Access Control
+    owasp_api_top10_2023: none
+    cwe: [CWE-352]
+    cwe_parents: [CWE-345, CWE-693]
+    capec: [CAPEC-62, CAPEC-111, CAPEC-467]
+    detectability: REQUIRES_RUNTIME_INFORMATION
+    scores:
+      security_impact: 4
+      static_detectability: 2
+      ecosystem_prevalence: 3
+      confidence: 2
+      false_positive_risk: 4
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "a session-cookie app registering mutating routes with no csrf middleware"
+      - "csurf registered after method-override, which can be bypassed"
+      - "`csrf: false` / `csrfProtection: false` in a framework config"
+      - "SameSite=None session cookies without a token"
+    sanitizers:
+      - "a CSRF token middleware, double-submit cookie, or Origin/Sec-Fetch-Site verification"
+      - "SameSite=Strict/Lax plus bearer-token (non-cookie) authentication"
+    known_false_positives:
+      - "Token-authenticated APIs, where CSRF does not apply — the dominant case in modern JS"
+      - CSRF handled by the framework by default (Next.js server actions, Rails-style meta tags)
+      - Protection applied globally in another file
+      - Webhook endpoints authenticated by signature
+    known_false_negatives:
+      - Middleware present but scoped to the wrong routes
+      - Token generated but never compared
+      - Login CSRF, which the presence of a token does not necessarily address
+    prior_art:
+      - "CodeQL js/missing-token-validation"
+      - "SonarJS S4502 — 'CSRF protections should not be disabled' (CWE-352)"
+      - "eslint-plugin-security detect-no-csrf-before-method-override"
+      - "Semgrep javascript/lang/security/detect-no-csrf-before-method-override.yaml"
+      - "Semgrep javascript/express/security/audit/express-check-csurf-middleware-usage.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/352.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    notes: >
+      "Is this app cookie-authenticated" is not answerable from one file, so the general rule is
+      out. The two *specific* checks are worth having and both already exist as prior art: CSRF
+      middleware explicitly disabled (`csrf: false`), and csurf registered after method-override.
+      Ship those narrow forms; skip the general one.
+
+  - id: no-disabled-security-framework-check
+    family: access-control
+    title: Do not disable framework or middleware security features
+    description: >
+      Helmet configured with protections switched off, `contentSecurityPolicy: false`, Angular SCE
+      disabled, Electron `webSecurity: false` or `nodeIntegration: true`, debug endpoints enabled
+      in production — each is a single literal that removes a layer.
+    owasp_top10_2021: A05:2021-Security Misconfiguration
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-1188]
+    cwe_parents: [CWE-1419, CWE-665, CWE-344, CWE-664]
+    capec: []
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "helmet({ contentSecurityPolicy: false, hsts: false, frameguard: false })"
+      - "Electron BrowserWindow webPreferences with webSecurity: false, nodeIntegration: true, contextIsolation: false, allowRunningInsecureContent: true"
+      - "AngularJS $sceProvider.enabled(false)"
+      - "graphql introspection/playground enabled in production, `debug: true` on an error handler"
+      - "puppeteer/playwright launched with --disable-web-security"
+    sanitizers:
+      - "leaving the protection at its default, or configuring it correctly rather than disabling it"
+    known_false_positives:
+      - Development and test configuration
+      - Electron apps that genuinely need node integration in a trusted local window
+      - CSP disabled in the middleware because it is set at the CDN
+    known_false_negatives:
+      - Options built from configuration or environment
+      - Protection disabled in a deployment manifest rather than in code
+    prior_art:
+      - "CodeQL js/insecure-helmet-configuration"
+      - "CodeQL js/disabling-electron-websecurity"
+      - "CodeQL js/enabling-electron-insecure-content"
+      - "CodeQL js/angular-disabling-sce"
+      - "SonarJS S4507 — 'Debugging features should not be enabled in production' (CWE-489, CWE-215)"
+      - "SonarJS S5739 — 'HTTP Strict-Transport-Security policy should not be disabled' (CWE-319, CWE-693)"
+      - "SonarJS S5730 — 'Content Security Policy should block mixed-content' (CWE-319, CWE-311, CWE-693)"
+      - "SonarJS S5691 — 'Hidden files should not be served statically' (CWE-538)"
+      - "Semgrep javascript/playwright/security/audit/playwright-exposed-chrome-devtools.yaml"
+      - "Semgrep javascript/express/security/x-frame-options-misconfiguration.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/1188.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Nodejs_Security_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+      - https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/
+    notes: >
+      MITRE lists no CAPEC for CWE-1188. Not strictly an access-control weakness — it is
+      misconfiguration — but it is placed here because every instance removes an enforcement layer.
+      Cheap, precise, and a good "grab bag" rule driven entirely by registry data, which means new
+      sinks cost a data entry rather than a code change.
+
+  - id: no-missing-rate-limiting
+    family: access-control
+    title: Apply rate limiting to authentication and expensive endpoints
+    description: >
+      Without throttling, a login endpoint is a credential-stuffing target and an expensive query
+      is a denial-of-service target.
+    owasp_top10_2021: A04:2021-Insecure Design
+    owasp_api_top10_2023: API4:2023 - Unrestricted Resource Consumption
+    cwe: [CWE-307, CWE-770]
+    cwe_parents: [CWE-1390, CWE-287, CWE-799, CWE-400, CWE-665, CWE-284]
+    capec: [CAPEC-49, CAPEC-16, CAPEC-560, CAPEC-112]
+    detectability: REQUIRES_RUNTIME_INFORMATION
+    scores:
+      security_impact: 3
+      static_detectability: 2
+      ecosystem_prevalence: 3
+      confidence: 2
+      false_positive_risk: 4
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "a login/register/reset route with no rate-limiting middleware in its chain"
+      - "an expensive query or file operation on an unauthenticated route"
+      - "an unbounded loop or allocation driven by a request parameter"
+    sanitizers:
+      - "express-rate-limit, rate-limiter-flexible, or a framework equivalent on the route"
+      - "an account-lockout or exponential-backoff mechanism"
+    known_false_positives:
+      - Rate limiting applied at the CDN, gateway, or load balancer, which is the normal production setup
+      - Middleware applied globally elsewhere
+      - Internal endpoints
+    known_false_negatives:
+      - Limiter present but with a useless threshold
+      - Limiter keyed on a spoofable header
+      - Limiting bypassed via a second route to the same handler
+    prior_art:
+      - "CodeQL js/missing-rate-limiting"
+      - "CodeQL js/resource-exhaustion"
+      - "CodeQL js/loop-bound-injection"
+      - "SonarJS S5693 — 'HTTP request content length should be limited' (CWE-400, CWE-770)"
+    references:
+      - https://cwe.mitre.org/data/definitions/307.html
+      - https://cwe.mitre.org/data/definitions/770.html
+      - https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/
+      - https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+    notes: >
+      Same structural problem as no-missing-authorization-middleware — the control is usually
+      infrastructure, not code — with lower impact. CodeQL does ship this query, but with
+      whole-program analysis and an explicit "expensive route" heuristic. Documented, not
+      recommended. The tractable sub-case is the request-driven unbounded loop
+      (CodeQL js/loop-bound-injection), which is a genuine intra-file pattern.

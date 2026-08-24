@@ -1,6 +1,6 @@
 const docsUrl = require('../../machinery/docsUrl')
 const { analyze } = require('../../machinery/security/taint')
-const { report, settings } = require('../../machinery/security/finding')
+const { report, settings, explainConfidence } = require('../../machinery/security/finding')
 
 module.exports = {
   meta: {
@@ -48,9 +48,15 @@ module.exports = {
         if (!taint) return
         if (taint.sanitizedFor.has('sql') || taint.sanitizedFor.has('*')) return
 
+        // The qualified message names the hops that cost confidence. With no
+        // inexact hops there is nothing to name, and the template rendered as
+        // "passes through ." — so fall back to the plain message rather than
+        // emitting a sentence with a hole in it.
+        const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
+
         report(context, {
           node: query,
-          messageId: taint.confidence >= 0.8 ? 'sqlInjection' : 'sqlInjectionQualified',
+          messageId: qualify ? 'sqlInjectionQualified' : 'sqlInjection',
           data: { sink: describeSink(context.sourceCode, node) },
           severity: sink.severity,
           confidence: taint.confidence,

@@ -118,9 +118,14 @@ practice:
 
 - A **browser global** source (`location`, `document.referrer`) is unambiguous and
   yields ~0.85 — high.
-- An **Express request** source is matched by parameter name and handler arity. That
-  is a heuristic, so it is capped at 0.75, and findings rooted in it land in the
-  0.5–0.7 band — medium.
+- An **HTTP request** source is matched by parameter name (`req` / `request`) plus the
+  property accessed. The name half is a heuristic, so it is capped at 0.75, and
+  findings rooted in it land in the 0.54–0.70 band — medium.
+
+The property is part of the match, not incidental to it: `req.query`, `req.body`,
+`req.params`, `req.headers`, `req.cookies`, `req.url` and friends are untrusted;
+`req.user`, `req.session` and `req.app.locals` are not. Matching on the name alone
+made the rule fire across every authenticated Express application.
 
 ## Configuration
 
@@ -137,21 +142,35 @@ The rule itself takes no options. The analysis is configured through shared sett
       // Extend the knowledge base. Consumer entries take precedence.
       registry: {
         sinks: [
-          { id: 'my.orm.rawQuery', root: { method: /^rawQuery$/ }, argument: 0,
-            requires: 'sql', severity: 'high', cwe: 'CWE-89' },
+          { id: 'my.orm.rawQuery', root: { method: /^rawQuery$/, receiver: /^orm$/ },
+            argument: 0, requires: 'sql', severity: 'high', cwe: 'CWE-89' },
         ],
+
+        // Remove a built-in entry entirely. Use this if a parameter in your
+        // codebase is legitimately named `req` and is not an HTTP request.
+        disable: ['express.request.query'],
       },
     },
   },
 }
 ```
 
-A sink with a misspelled `requires` throws at startup rather than silently never
-matching — never matching looks exactly like being secure.
+The registry fails loudly at load rather than quietly at runtime, because never
+matching looks exactly like being secure. It throws on: a misspelled `requires`
+kind, a severity no report decision recognises, a wildcard sanitizer with no written
+justification, and a sanitizer matched by bare method name.
 
-**Registering a sanitizer is a security decision.** An entry with `clears: ['*']`
-disables detection for every sink kind, so the registry requires a written
-justification for any wildcard and the test suite caps how many may exist.
+**Registering a sanitizer is a security decision, not configuration.** A
+wrongly-registered sanitizer is strictly worse than a missing one: a missing escaper
+costs you a false positive, while a wrongly-trusted one converts an honest "I don't
+know" into an assertion of safety and the finding disappears with no diagnostic at
+all. This is why:
+
+- `clears: ['*']` requires a note explaining why it is sound, and the test suite caps
+  how many such entries may exist.
+- A sanitizer matched by method name **must** carry a `receiver` pattern. `escape` is
+  the cautionary example: lodash, `he` and `validator` all export an *HTML* escaper by
+  that name, and trusting one of those as a SQL escaper silently disables the rule.
 
 ## Framework coverage
 
@@ -162,12 +181,26 @@ justification for any wildcard and the test suite caps how many may exist.
 | Sequelize | `sequelize.query(sql, options)` | `bind` (server-side) or `replacements` |
 | TypeORM | `.query(sql, parameters)` | argument 1 |
 | Knex | `.raw()`, `.whereRaw()`, `.joinRaw()`, `.havingRaw()`, `.orderByRaw()`, `.groupByRaw()` | bindings argument |
-| Prisma | `$queryRawUnsafe()`, `$executeRawUnsafe()` | use the tagged `$queryRaw` form |
-| better-sqlite3 / sqlite3 | `.prepare()`, `.exec()` | `.prepare('… ?').run(values)`; `exec()` has none |
+| Prisma | `$queryRawUnsafe()`, `$executeRawUnsafe()` | argument 1+, or the tagged `$queryRaw` form |
+| better-sqlite3 / sqlite3 | `.prepare()`, `.exec()`, `.all()`, `.get()`, `.run()`, `.each()` | `.prepare('… ?').run(values)`; `exec()` has none |
 
-Sources: Express-style `req`/`request` handler parameters, `location`,
-`document.URL`, `document.referrer`, `document.cookie`, `window.name`,
-`process.argv`.
+Sinks are matched by method name **and receiver**. A receiver that does not look like
+a database handle is not a SQL sink — `child_process.exec` shares a name with
+`db.exec`, and reporting the wrong vulnerability class is worse than reporting
+nothing. Extend the receiver list through `registry` if your handles are named
+unusually.
+
+Sources:
+
+- **HTTP request** — a parameter named `req` or `request`, accessed via `query`,
+  `body`, `params`, `headers`, `cookies`, `signedCookies`, `url`, `originalUrl`,
+  `path`, `hostname`, `host`, `ip`, `rawBody`, `files` or `file`. No constraint on the
+  handler signature, so Express error middleware — `(err, req, res, next)` — is
+  covered.
+- **Browser** — `location` (also via `window`, `document`, `self`, `globalThis`),
+  `document.URL`, `document.documentURI`, `document.referrer`, `document.cookie`,
+  `window.name`.
+- **Node** — `process.argv`, at low confidence.
 
 ## Limitations
 
@@ -187,18 +220,46 @@ Not detected:
 4. **Destructured handler parameters.** `function handler({ query }, res)` has no
    parameter name for the heuristic to match.
 5. **Loops and recursion.** Accumulation across iterations is missed.
-6. **Class instance state.** `this.query = tainted` is not tracked.
+6. **Class instance state.** `this.query = tainted` is not tracked, and `this.query(…)`
+   is not recognised as a sink (only `this.db.query(…)`).
+7. **Tags other than the known parameterizing ones.** `String.raw` is plain string
+   building, but an unrecognised tag is treated as an unknown call and walls.
+8. **Chains longer than `maxHops`** (default 12) are dropped regardless of how exact
+   each hop was.
+9. **Destructured handler parameters.** `function handler({ query }, res)` has no
+   parameter name to match.
+10. **Sinks reached indirectly.** `const { query } = pool; query(sql)` and
+    `db.query.bind(db)` are not recognised — a sink must be a direct method call.
 
 Known false positives:
 
-7. **Reassignment does not clear taint.** `let x = req.query.id; x = 'safe'` is still
-   reported, at reduced confidence.
-8. **Guard clauses are not understood.** `if (!isValid(x)) return` does not clear
-   taint unless `isValid` is a registered sanitizer.
-9. **A parameter named `req` that is not a request object** is a false positive. This
-   is why the source is capped at 0.75 and is configurable away.
-10. **Propagator methods are matched by name.** A user-defined `join` is assumed to
-    be `Array.prototype.join`.
+11. **Reassignment does not clear taint.** `let x = req.query.id; x = 'safe'` is still
+    reported, at reduced confidence.
+12. **Guard clauses are not understood.** `if (!isValid(x)) return` does not clear
+    taint unless `isValid` is a registered sanitizer, and an allowlist check
+    (`ALLOWED.includes(v) ? v : 'default'`) is not recognised as a proof of safety
+    even though it is one.
+13. **A parameter named `req` or `request` that is not an HTTP request** and is
+    accessed through one of the qualifying properties. Much narrower than matching the
+    whole object, but still possible — an axios request config has `params`, `headers`
+    and `url`. Remove the source with `registry.disable` if this affects you.
+14. **Propagator and sink methods are matched by name.** A user-defined `join` is
+    assumed to be `Array.prototype.join`, and a non-database object named `db` or
+    `client` with a `.query()` method is treated as a database.
+
+## How these limitations were found
+
+The lists above are not a design-time guess. The rule was attacked from both
+directions before release: an adversarial pass tried ~150 shapes to evade detection
+and found 85 misses, and a false-positive pass wrote 96 pieces of safe, idiomatic
+code and found 33 spurious reports. Both corpora ship as tests
+(`adversarial.test.js`, `false-positive.test.js`), including the cases that are still
+missed — a `valid` case in the adversarial corpus is a recorded false negative, not a
+claim that the code is safe.
+
+An independent review then rejected the first implementation over five findings, the
+most serious being that `escape` was trusted by name. See
+`docs/research/security-review-no-sql-injection.md`.
 
 ## No autofix
 

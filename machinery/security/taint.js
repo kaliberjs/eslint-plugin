@@ -398,7 +398,65 @@ function createAnalysis(sourceCode, options) {
   }
 
   function resolveConditional(node) {
+    if (isAllowlistProven(node)) return null
     return worstOf([node.consequent, node.alternate], node, 'ternary', PENALTY.ternary)
+  }
+
+  /**
+   * `ALLOWED.includes(v) ? v : fallback` — and the negated, swapped form.
+   *
+   * The consequent is only evaluated when `v` is a member of `ALLOWED`, so if
+   * `ALLOWED` folds to a statically-known collection of primitives the result is
+   * provably one of those primitives, whatever `v` came from. That is a proof,
+   * not a heuristic, which is the bar this file sets for clearing taint.
+   *
+   * It matters because this is the canonical *correct* way to write a dynamic
+   * `ORDER BY`, the one case parameter binding cannot cover. Reporting it meant
+   * rejecting the version developers actually write while staying quiet on the
+   * lookup-table version — pushing people away from the safe pattern.
+   *
+   * Deliberately narrow: only a ternary. The early-return form
+   * (`if (!ALLOWED.includes(v)) return`) needs flow sensitivity and remains a
+   * documented false positive.
+   */
+  function isAllowlistProven(node) {
+    const test = unwrap(node.test)
+
+    if (test.type === 'UnaryExpression' && test.operator === '!')
+      return isMembershipCheckOf(unwrap(test.argument), node.alternate)
+
+    return isMembershipCheckOf(test, node.consequent)
+  }
+
+  function isMembershipCheckOf(test, guarded) {
+    if (test.type !== 'CallExpression' || test.callee.type !== 'MemberExpression') return false
+
+    const method = getPropertyName(test.callee, scopeOf(test.callee))
+    if (method !== 'includes' && method !== 'has') return false
+
+    const [candidate] = test.arguments
+    if (!candidate || !guarded) return false
+
+    // Text comparison rather than structural: the guarded expression has to be
+    // the *same* expression that was checked, and anything subtler than
+    // textual identity is not something we should be claiming to prove.
+    if (sourceCode.getText(candidate) !== sourceCode.getText(unwrap(guarded))) return false
+
+    return isPrimitiveCollection(test.callee.object)
+  }
+
+  function isPrimitiveCollection(node) {
+    const folded = getStaticValue(node, scopeOf(node))
+    if (!folded) return false
+
+    const values =
+      Array.isArray(folded.value) ? folded.value :
+      folded.value instanceof Set ? [...folded.value] :
+      null
+
+    return Boolean(values?.length) && values.every(value =>
+      value === null || ['string', 'number', 'boolean', 'bigint'].includes(typeof value)
+    )
   }
 
   function resolveLogical(node) {

@@ -98,9 +98,9 @@ const sources = [
     id: 'node.process.argv',
     root: { global: 'process' },
     path: ['argv'],
-    confidence: 0.55,
+    confidence: 0.45,
     cwe: ['CWE-20'],
-    note: 'CLI arguments. Low confidence deliberately: a CLI tool interpolating its own argv into a query is usually an accepted risk rather than a vulnerability, so one further inexact hop should take it below the reporting floor.',
+    note: 'CLI arguments. Below the default reporting floor deliberately, so it is computed but not reported: whoever runs a CLI tool already controls its database connection, so argv reaching a query is normally an accepted risk rather than a vulnerability. Lower minConfidence to 0.3 for an audit pass and these appear.',
   },
 ]
 
@@ -141,13 +141,13 @@ const sinks = [
   },
   {
     id: 'sql.sqlite.exec',
-    root: { method: /^exec$/, receiver: /^(db|dbc|database|sqlite\d?|conn|connection|pool|sql|trx|transaction)$/i },
+    root: { method: /^exec$/, receiver: /^(db|dbc|database|sqlite\d?|pool|sql|trx|transaction)$/i },
     argument: 0,
     requires: 'sql',
     severity: 'high',
     cwe: 'CWE-89',
     owasp: 'A03:2021',
-    note: 'better-sqlite3 / sqlite3 db.exec(sql) executes a statement batch and cannot be parameterized at all — the only remedy is not to build it from input. The receiver constraint is load-bearing: child_process.exec shares the name, and reporting "SQL injection" on a command injection is worse than missing it.',
+    note: 'better-sqlite3 / sqlite3 db.exec(sql) executes a statement batch and cannot be parameterized at all — the only remedy is not to build it from input. The receiver constraint is load-bearing and deliberately narrow: child_process.exec shares the name (reporting "SQL injection" on a command injection is worse than missing it), and `conn`/`connection` are excluded because a network socket or pub/sub connection is commonly named that and commonly has an unrelated exec(). sqlite handles are named db/database/sqlite in practice.',
   },
   {
     id: 'sql.prepare',
@@ -161,13 +161,13 @@ const sinks = [
   },
   {
     id: 'sql.statement.run',
-    root: { method: /^(all|get|run|each|iterate|pluck)$/, receiver: /^(db|dbc|database|sqlite\d?|conn|connection|pool|sql|stmt|statement)$/i },
+    root: { method: /^(all|get|run|each)$/, receiver: /^(db|dbc|database|sqlite\d?|conn|connection|pool)$/i },
     argument: 0,
     requires: 'sql',
     severity: 'high',
     cwe: 'CWE-89',
     owasp: 'A03:2021',
-    note: 'sqlite3 db.all/get/run/each and better-sqlite3 statement runners. These are the primary API of both drivers — far more used than exec() — and take SQL directly when called on the database handle. The receiver constraint matters: `all`, `get` and `run` are extremely common method names.',
+    note: 'node-sqlite3 db.all/get/run/each(sql, params, cb) — the primary API of that driver and far more used than exec().\n\nThe receiver list deliberately excludes `stmt` and `statement`, and this is the opposite of an oversight. On a *database handle* argument 0 is SQL; on a *prepared statement* it is a bind parameter, so `stmt.get(req.params.id)` is the correct, safe better-sqlite3 usage. Including statement receivers made the safe API a sink and reported the recommended pattern. `db.prepare(sql).get(x)` is unaffected either way, because its receiver is a call expression rather than a name.',
   },
 ]
 
