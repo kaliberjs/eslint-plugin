@@ -48,6 +48,35 @@ import DOMPurify from 'dompurify'
 <div>{parsedReactNodes}</div>
 ```
 
+## Trusting your project's HTML helpers
+
+A value that passes through a registered sanitizer stays quiet. Register
+them in your project's ESLint settings — this is an explicit, reviewable
+declaration that the helper is trusted:
+
+```js
+// eslint.config.js
+settings: {
+  '@kaliber/security': {
+    registry: {
+      sanitizers: [
+        // A project helper whose output is trusted HTML (e.g. the i18n
+        // pipeline renders sanitized rich text):
+        { id: 'i18n', root: { helper: 'i18n' }, argument: 0, clears: ['html'] },
+
+        // A library sanitizer:
+        { id: 'dompurify', root: { method: 'sanitize', receiver: /^dompurify$/i }, argument: 0, clears: ['html'] },
+      ],
+    },
+  },
+}
+```
+
+The `root.helper` shape exists precisely so name-trust is a *decision*:
+bare method names are still rejected at load time (the lodash-`escape`
+trap), but `helper` records that you looked at this function and vouch for
+it. The same registration is honored by `security-no-dom-xss-sink`.
+
 ## Limitations
 
 - Sanitized-but-dynamic values are reported until sanitizer modelling ships.

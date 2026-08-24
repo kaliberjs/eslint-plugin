@@ -79,7 +79,7 @@ function createAnalysis(sourceCode, options) {
   const inProgress = new Set()
   const references = indexReferences(sourceCode)
 
-  return { taintOf, sinkAt, sourceAt, referenceFor, stats }
+  return { taintOf, sinkAt, sourceAt, referenceFor, sanitizedAt, stats }
 
   function referenceFor(identifier) {
     return references.get(identifier) ?? null
@@ -627,7 +627,16 @@ function createAnalysis(sourceCode, options) {
   function sanitizerFor(callee) {
     if (callee.type === 'Identifier') {
       // A local named `Number` shadows the global and must not be trusted.
-      return known.sanitizers.find(sanitizer => isGlobalNamed(callee, sanitizer.root.global)) ?? null
+      const global = known.sanitizers.find(sanitizer => sanitizer.root.global && isGlobalNamed(callee, sanitizer.root.global))
+      if (global) return global
+
+      // Helper-rooted sanitizers: bare calls of a name the consumer
+      // explicitly declared trustworthy (`root: { helper: 'i18n' }`). The
+      // shape itself records that name-trust was a decision, which is what
+      // separates this from the forbidden bare-method matching.
+      return known.sanitizers.find(sanitizer =>
+        sanitizer.root.helper && helperMatches(sanitizer.root.helper, callee.name)
+      ) ?? null
     }
 
     if (callee.type === 'MemberExpression') {
@@ -639,12 +648,18 @@ function createAnalysis(sourceCode, options) {
       // and validator all export an HTML escaper by that name, and trusting one
       // of those as a SQL escaper turns detection off silently.
       return known.sanitizers.find(sanitizer =>
-        sanitizer.root.method?.test(String(name)) &&
+        matchesPattern(sanitizer.root.method, String(name)) &&
         (!sanitizer.root.receiver || matchesReceiver(callee.object, sanitizer.root.receiver))
       ) ?? null
     }
 
     return null
+  }
+
+  /** Consumer entries may use plain strings where built-ins use regexes. */
+  function matchesPattern(pattern, value) {
+    if (typeof pattern === 'string') return pattern === value
+    return Boolean(pattern?.test(value))
   }
 
   function propagatorFor(node) {
@@ -660,6 +675,26 @@ function createAnalysis(sourceCode, options) {
     if (name === null) return null
 
     return known.propagators.find(propagator => propagator.method === String(name)) ?? null
+  }
+
+  /**
+   * Has this expression been passed through a registered sanitizer for the
+   * kind? Unlike taintOf — which returns null when the *input* was untainted,
+   * indistinguishable from "no sanitizer here" — this answers the question
+   * matcher-style rules (no-dangerously-set-inner-html) actually need: was a
+   * clearing call made, regardless of whether the argument happened to be
+   * tainted.
+   */
+  function sanitizedAt(node, kind) {
+    if (node?.type !== 'CallExpression') return false
+    const sanitizer = sanitizerFor(node.callee)
+    return Boolean(sanitizer && (sanitizer.clears.includes('*') || sanitizer.clears.includes(kind)))
+  }
+
+  /** Helper names match by exact string or by regex. */
+  function helperMatches(pattern, name) {
+    if (!name) return false
+    return typeof pattern === 'string' ? pattern === name : pattern.test(name)
   }
 
   // --- helpers -------------------------------------------------------------

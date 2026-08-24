@@ -112,3 +112,20 @@ user-registered helpers, distinct from built-in escapers.
 Interim guidance for CMS-heavy projects until then: disable
 security-no-dangerously-set-inner-html per project, or line-disable with a
 comment at trusted render sites. Both keep the other 23 rules active.
+
+### Tier 3 item 1: sanitizer modelling — shipped 2026-08-24
+
+The minimal high-leverage version is done:
+
+- `root.helper` — consumers register bare trusted helpers (`i18n()`, CMS
+  getters) explicitly; bare *method*-name registration stays rejected.
+- Consumer entries accept plain-string method/receiver patterns, matching
+  built-in regex ergonomics.
+- `sanitizedAt(node, kind)` on the analysis lets matcher-style rules ask
+  "was a clearing call made here" independent of taint; dsih consumes it,
+  so both DOM rules honor registrations.
+
+This resolves the dogfood blocker: the alliander CMS family and the asito
+config-script family are now one settings block per project instead of
+per-line disables. Remaining Tier 3: flow sensitivity, interprocedural-lite,
+string/value analysis, non-JS processors.

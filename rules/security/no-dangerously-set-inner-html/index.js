@@ -1,5 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
-const { report } = require('../../../machinery/security/finding')
+const { analyze } = require('../../../machinery/security/taint')
+const { report, settings } = require('../../../machinery/security/finding')
 
 // dangerouslySetInnerHTML is a deliberate hole in React's escaping. The
 // constant-only form (icon sprites, static strings) is safe and common, so —
@@ -28,6 +29,14 @@ module.exports = {
   },
 
   create(context) {
+    // Sanitizer-aware: a value that passed through a registered `html`
+    // sanitizer (settings['@kaliber/security'].registry.sanitizers — e.g.
+    // DOMPurify, or the project's own trusted helper declared with
+    // root.helper) is trusted even though it is not constant. The shared
+    // analysis is cached per SourceCode, so this costs nothing extra.
+    const options = settings(context)
+    const analysis = analyze(context.sourceCode, options)
+
     return {
       JSXAttribute(node) {
         if (node.name?.name !== 'dangerouslySetInnerHTML') return
@@ -41,6 +50,7 @@ module.exports = {
         if (!htmlProperty) return
 
         if (isConstant(htmlProperty.value)) return
+        if (analysis.sanitizedAt(htmlProperty.value, 'html')) return
 
         report(context, {
           node,
@@ -70,6 +80,7 @@ module.exports = {
 
         if (!htmlProperty) return
         if (isConstant(htmlProperty.value)) return
+        if (analysis.sanitizedAt(htmlProperty.value, 'html')) return
 
         report(context, {
           node: dangerous,

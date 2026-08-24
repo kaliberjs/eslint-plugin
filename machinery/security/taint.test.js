@@ -4,6 +4,8 @@ const { Linter } = require('eslint')
 const globals = require('globals')
 const { analyze } = require('./taint')
 const { DEFAULTS, confidenceBucket } = require('./finding')
+const registry = require('./registry')
+const { describe } = require('node:test')
 
 const linter = new Linter()
 
@@ -354,4 +356,42 @@ test('a source can be configured away', () => {
   })
 
   assert.deepStrictEqual(found, [])
+})
+
+describe('consumer sanitizer registration', () => {
+  const { rules } = require('../../index.js')
+
+  function findings(code, sanitizers) {
+    const found = []
+    new Linter().verify(code, {
+      plugins: { x: { rules } },
+      rules: {
+        'x/security-no-dangerously-set-inner-html': 'warn',
+        'x/security-no-dom-xss-sink': 'warn',
+      },
+      settings: { '@kaliber/security': { registry: { sanitizers } } },
+      languageOptions: { ecmaVersion: 2022, sourceType: 'module', parserOptions: { ecmaFeatures: { jsx: true } } },
+    })
+      .forEach(m => { if (!m.fatal) found.push(m.ruleId) })
+    return found
+  }
+
+  test('helper root clears html for matcher rules without silencing others', () => {
+    const i18n = [{ id: 'i18n', root: { helper: 'i18n' }, argument: 0, clears: ['html'], confidence: 0.9 }]
+    const code = `<> <p dangerouslySetInnerHTML={{ __html: i18n('msg') }} /> <span dangerouslySetInnerHTML={{ __html: raw }} /> </>`
+
+    assert.deepStrictEqual(findings(code, i18n), ['x/security-no-dangerously-set-inner-html'])
+  })
+
+  test('string method spellings work for consumer entries', () => {
+    const dompurify = [{ id: 'dompurify', root: { method: 'sanitize', receiver: /^dompurify$/i }, argument: 0, clears: ['html'] }]
+    assert.deepStrictEqual(
+      findings('<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(x) }} />', dompurify),
+      []
+    )
+  })
+
+  test('bare method registration is still rejected at merge time', () => {
+    assert.throws(() => registry.merge({ sanitizers: [{ id: 'trap', root: { method: 'escape' }, argument: 0, clears: ['sql'] }] }), /receiver.*constraint/)
+  })
 })

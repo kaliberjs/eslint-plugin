@@ -435,8 +435,16 @@ function validate({ sinks, sanitizers }) {
 
     // A sanitizer matched by bare method name trusts a function because of what
     // it is called, which AGENTS.md forbids outright. `escape` is the canonical
-    // trap: lodash, he and validator all export an HTML escaper by that name.
-    if (sanitizer.root.method && !sanitizer.root.receiver) throw new Error(`security registry: sanitizer '${sanitizer.id}' is matched by method name with no \`receiver\` constraint, which trusts a function because of what it is called. Add a receiver pattern, or root the entry in a module or global.`)
+    // trap: lodash, he and validator all export an *HTML* escaper by that name.
+    // Consumers who need to trust a bare helper (a project's own i18n(), a CMS
+    // getter) use the explicit `root.helper` shape instead — same matching,
+    // but the entry itself declares that name-trust was a conscious decision.
+    const hasMethodRoot = sanitizer.root.method && !sanitizer.root.receiver
+    const hasHelperRoot = Boolean(sanitizer.root.helper)
+    if (hasMethodRoot && !hasHelperRoot) throw new Error(`security registry: sanitizer '${sanitizer.id}' is matched by method name with no \`receiver\` constraint, which trusts a function because of what it is called. Add a receiver pattern, or use \`root: { helper: '<name>' }\` to declare the name-trust explicitly.`)
+
+    // A helper entry without anything else would match nothing.
+    if (!sanitizer.root.method && !sanitizer.root.global && !hasHelperRoot) throw new Error(`security registry: sanitizer '${sanitizer.id}' has no recognizable root (global, method+receiver, or helper).`)
   }
 }
 
