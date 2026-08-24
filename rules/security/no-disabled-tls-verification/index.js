@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -37,17 +39,20 @@ module.exports = {
   create(context) {
     return {
       Property(node) {
-        const name = propertyName(node)
+        const name = getStaticPropertyName(node)
         if (!name) return
 
-        if (DISABLED_VERIFICATION.has(name) && node.value.type === 'Literal' && node.value.value === false) {
-          report(context, {
-            node,
-            messageId: 'verificationDisabled',
-            data: { property: name },
-            severity: 'high',
-            confidence: 1,
-          })
+        if (DISABLED_VERIFICATION.has(name)) {
+          const value = getStaticValue(node.value, context.sourceCode.getScope(node.value))
+          if (value?.value === false) {
+            report(context, {
+              node,
+              messageId: 'verificationDisabled',
+              data: { property: name },
+              severity: 'high',
+              confidence: 1,
+            })
+          }
           return
         }
 
@@ -63,11 +68,6 @@ module.exports = {
       },
     }
   },
-}
-
-function propertyName(property) {
-  if (property.computed) return property.key?.type === 'Literal' ? property.key.value : undefined
-  return property.key?.name ?? property.key?.value
 }
 
 function isFunction(node) {

@@ -1,3 +1,4 @@
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -61,13 +62,14 @@ module.exports = {
       Property(node) {
         // express-jwt({ secret: 'literal' }), passport strategies,
         // session middlewares: an options property named like a secret.
-        if (node.computed || !SECRET_PARAMS.has(String(node.key?.name ?? ''))) return
+        const key = getStaticPropertyName(node)
+        if (!SECRET_PARAMS.has(String(key ?? ''))) return
         if (!isStringLiteral(node.value)) return
 
         report(context, {
           node,
           messageId: 'hardcodedSecret',
-          data: { callee: `the '${node.key.name}' option` },
+          data: { callee: `the '${key}' option` },
           severity: 'medium',
           confidence: 1,
         })

@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -30,11 +32,10 @@ module.exports = {
   create(context) {
     return {
       Property(node) {
-        const key = propertyName(node)
+        const key = getStaticPropertyName(node)
         if (!ALGORITHM_KEYS.has(key)) return
 
-        const noneNode = findNone(node.value)
-        if (!noneNode) return
+        if (!includesNone(node.value, context.sourceCode.getScope(node.value))) return
 
         report(context, {
           node,
@@ -48,32 +49,18 @@ module.exports = {
   },
 }
 
-function propertyName(property) {
-  if (property.computed) return property.key?.type === 'Literal' ? String(property.key.value) : undefined
-  return property.key?.name ?? property.key?.value
-}
-
 /**
  * The singular form is a direct comparison against `'none'`; the plural form
  * is an array containing it. Both spellings appear in the wild — jsonwebtoken
- * uses `algorithms`, older versions and jwt-simple use `algorithm`.
+ * uses `algorithms`, older versions and jwt-simple use `algorithm`. Folding
+ * through getStaticValue rather than checking Literal/TemplateLiteral by
+ * hand also catches a const alias (`const NONE = 'none'; { algorithm: NONE }`),
+ * which is ordinary code, not an evasion.
  */
-function findNone(value) {
-  if (value.type === 'Literal') return value.value === 'none' ? value : null
+function includesNone(value, scope) {
+  const result = getStaticValue(value, scope)
+  if (!result) return false
 
-  // A no-substitution template folds to its cooked string, so `algorithms:
-  // [`none`]` is the same finding with different syntax.
-  if (value.type === 'TemplateLiteral' && !value.expressions.length) {
-    return value.quasis[0].value.cooked === 'none' ? value : null
-  }
-
-  if (value.type === 'ArrayExpression') {
-    return value.elements.find(
-      element => element?.type === 'Literal'
-        ? element.value === 'none'
-        : element?.type === 'TemplateLiteral' && !element.expressions.length && element.quasis[0].value.cooked === 'none'
-    ) || null
-  }
-
-  return null
+  const values = Array.isArray(result.value) ? result.value : [result.value]
+  return values.includes('none')
 }

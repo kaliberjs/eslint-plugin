@@ -1,5 +1,5 @@
 module.exports = {
-  getPropertyName,
+  getPropertyName, getStaticPropertyName,
   getFunctionName, getFunctionNodeName,
   getJSXElementName, getParentJSXElement,
   isRootJSXElement, hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
@@ -21,6 +21,20 @@ function getPropertyName(property) {
     }
     default: return null
   }
+}
+
+/**
+ * An ObjectExpression Property's key name, gated on `computed`: a computed
+ * Identifier key (`{ [x]: v }`) is a variable reference, not a name, so only
+ * a computed Literal key is trusted there. A non-computed key goes through
+ * getPropertyName as usual — this is what an options-object matcher wants
+ * (`{ secret: v }` and `{ 'secret': v }` are the same key), where
+ * getPropertyName alone is not enough because it has no way to know
+ * `property` came from a computed position.
+ */
+function getStaticPropertyName(property) {
+  if (!property.computed) return getPropertyName(property.key)
+  return property.key?.type === 'Literal' ? property.key.value : undefined
 }
 
 function getFunctionName(sourceCode, node) {

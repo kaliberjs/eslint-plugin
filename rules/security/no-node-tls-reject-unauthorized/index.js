@@ -1,3 +1,5 @@
+const { findVariable } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -32,7 +34,7 @@ module.exports = {
   create(context) {
     return {
       AssignmentExpression(node) {
-        if (!isEnvVariable(node.left)) return
+        if (!isEnvVariable(node.left, context)) return
         if (!isDisablingValue(node.right)) return
 
         report(context, {
@@ -46,11 +48,11 @@ module.exports = {
 
       // Object.assign(process.env, { NODE_TLS_REJECT_UNAUTHORIZED: '0' })
       CallExpression(node) {
-        if (!isObjectAssignOntoProcessEnv(node)) return
+        if (!isObjectAssignOntoProcessEnv(node, context)) return
         const properties = node.arguments[1]?.properties || []
         for (const property of properties) {
           if (property.type !== 'Property') continue
-          if (propertyName(property) !== VARIABLE) continue
+          if (getStaticPropertyName(property) !== VARIABLE) continue
           if (!isDisablingValue(property.value)) continue
 
           report(context, {
@@ -72,14 +74,9 @@ function isDisablingValue(node) {
   return value === 0 || value === '0'
 }
 
-function isEnvVariable(node) {
+function isEnvVariable(node, context) {
   if (node.type !== 'MemberExpression') return false
-  return node.object.type === 'MemberExpression'
-    && node.object.object.type === 'Identifier'
-    && node.object.object.name === 'process'
-    && node.object.property.type === 'Identifier'
-    && node.object.property.name === 'env'
-    && propertyNameFromMember(node) === VARIABLE
+  return isProcessEnvExpression(node.object, context) && propertyNameFromMember(node) === VARIABLE
 }
 
 function propertyNameFromMember(node) {
@@ -87,20 +84,37 @@ function propertyNameFromMember(node) {
   return node.property?.type === 'Literal' ? node.property.value : undefined
 }
 
-function isObjectAssignOntoProcessEnv(node) {
+/**
+ * `process.env` directly, or one level of local indirection: `const { env }
+ * = process` or `const env = process.env`. Destructuring process before
+ * reading a specific variable off it is ordinary code, not an evasion.
+ */
+function isProcessEnvExpression(node, context) {
+  if (isProcessDotEnv(node)) return true
+  if (node.type !== 'Identifier') return false
+
+  const variable = findVariable(context.sourceCode.getScope(node), node)
+  const definition = variable?.defs[0]
+  if (definition?.type !== 'Variable') return false
+
+  if (isProcessDotEnv(definition.node.init)) return true
+
+  const property = definition.name.parent
+  return property?.type === 'Property'
+    && property.key?.type === 'Identifier' && property.key.name === 'env'
+    && definition.node.init?.type === 'Identifier' && definition.node.init.name === 'process'
+}
+
+function isProcessDotEnv(node) {
+  return node?.type === 'MemberExpression'
+    && node.object.type === 'Identifier' && node.object.name === 'process'
+    && node.property.type === 'Identifier' && node.property.name === 'env'
+}
+
+function isObjectAssignOntoProcessEnv(node, context) {
   if (node.callee.type !== 'MemberExpression') return false
   if (node.callee.object.type !== 'Identifier' || node.callee.object.name !== 'Object') return false
   if (node.callee.property.type !== 'Identifier' || node.callee.property.name !== 'assign') return false
 
-  const target = node.arguments[0]
-  return target?.type === 'MemberExpression'
-    && target.object.type === 'Identifier'
-    && target.object.name === 'process'
-    && target.property.type === 'Identifier'
-    && target.property.name === 'env'
-}
-
-function propertyName(property) {
-  if (property.computed) return property.key?.type === 'Literal' ? property.key.value : undefined
-  return property.key?.name ?? property.key?.value
+  return Boolean(node.arguments[0]) && isProcessEnvExpression(node.arguments[0], context)
 }

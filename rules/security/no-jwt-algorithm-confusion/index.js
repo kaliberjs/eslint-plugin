@@ -1,4 +1,5 @@
 const { findVariable } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -111,8 +112,7 @@ function findOptionsObject(args) {
 function hasAlgorithms(options) {
   return options.properties.some(
     property => property.type === 'Property'
-      && !property.computed
-      && (property.key?.name === 'algorithms' || property.key?.value === 'algorithms')
+      && getStaticPropertyName(property) === 'algorithms'
       && !(property.value.type === 'Literal' && property.value.value === false)
   )
 }
