@@ -1,3 +1,5 @@
+const { getStaticValue, findVariable } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -32,7 +34,7 @@ module.exports = {
         if (name !== 'createCipheriv' && name !== 'createDecipheriv') return
 
         const iv = node.arguments[2]
-        if (!isStaticValue(iv)) return
+        if (!isStaticValue(context, iv)) return
 
         report(context, {
           node,
@@ -45,8 +47,8 @@ module.exports = {
 
       Property(node) {
         // crypto-js: AES.encrypt(data, key, { iv: literalWordArrayOrString })
-        if (node.computed || node.key?.name !== 'iv') return
-        if (!isStaticValue(node.value)) return
+        if (getStaticPropertyName(node) !== 'iv') return
+        if (!isStaticValue(context, node.value)) return
 
         report(context, {
           node,
@@ -66,15 +68,31 @@ function getCalleeName(callee) {
   return null
 }
 
-/** Literals and Buffer.from/alloc of literals are static by construction. */
-function isStaticValue(node) {
+/**
+ * Literals — including a const alias, folded through getStaticValue rather
+ * than requiring an inline node — and Buffer.from/alloc of one are static
+ * by construction. A const alias *of* a Buffer.from/alloc call
+ * (`const IV = Buffer.from('fixed'); …(IV)`) is resolved one hop through
+ * its initializer, since getStaticValue does not evaluate Buffer calls and
+ * would otherwise give up at the identifier.
+ */
+function isStaticValue(context, node) {
   if (!node) return false
-  if (node.type === 'Literal') return true
+  if (getStaticValue(node, context.sourceCode.getScope(node))) return true
+  if (isStaticBufferCall(context, node)) return true
 
-  if (node.type === 'CallExpression') {
-    const name = getCalleeName(node.callee)
-    if ((name === 'from' || name === 'alloc') && node.arguments[0]?.type === 'Literal') return true
+  if (node.type === 'Identifier') {
+    const variable = findVariable(context.sourceCode.getScope(node), node)
+    const init = variable?.defs[0]?.type === 'Variable' ? variable.defs[0].node.init : null
+    if (isStaticBufferCall(context, init)) return true
   }
 
   return false
+}
+
+function isStaticBufferCall(context, node) {
+  if (node?.type !== 'CallExpression') return false
+  const name = getCalleeName(node.callee)
+  const argument = node.arguments[0]
+  return (name === 'from' || name === 'alloc') && Boolean(argument) && Boolean(getStaticValue(argument, context.sourceCode.getScope(argument)))
 }

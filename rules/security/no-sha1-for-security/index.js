@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -30,7 +31,7 @@ module.exports = {
         const name = getCalleeName(node.callee)
         if (!name) return
 
-        if (NODE_HASH_FACTORIES.has(name) && isSha1(node.arguments[0])) {
+        if (NODE_HASH_FACTORIES.has(name) && isSha1(context, node.arguments[0])) {
           return reportSha1(context, node, `${name}('sha1')`)
         }
 
@@ -49,10 +50,11 @@ function getCalleeName(callee) {
   return null
 }
 
-function isSha1(argument) {
-  return argument?.type === 'Literal'
-    && typeof argument.value === 'string'
-    && ['sha1', 'ssl3-sha1', 'sha1withrsaencryption'].includes(argument.value.toLowerCase())
+function isSha1(context, argument) {
+  if (!argument) return false
+  const value = getStaticValue(argument, context.sourceCode.getScope(argument))
+  return typeof value?.value === 'string'
+    && ['sha1', 'ssl3-sha1', 'sha1withrsaencryption'].includes(value.value.toLowerCase())
 }
 
 function reportSha1(context, node, what) {

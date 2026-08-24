@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -41,13 +42,14 @@ module.exports = {
         if (!CIPHER_FACTORIES.has(name)) return
 
         const algorithm = node.arguments[0]
-        if (algorithm?.type !== 'Literal' || typeof algorithm.value !== 'string') return
-        if (!WEAK_ALGORITHM.test(algorithm.value)) return
+        if (!algorithm) return
+        const value = getStaticValue(algorithm, context.sourceCode.getScope(algorithm))
+        if (typeof value?.value !== 'string' || !WEAK_ALGORITHM.test(value.value)) return
 
         report(context, {
           node: algorithm,
           messageId: 'weakAlgorithm',
-          data: { algorithm: algorithm.value },
+          data: { algorithm: value.value },
           severity: 'high',
           confidence: 1,
         })

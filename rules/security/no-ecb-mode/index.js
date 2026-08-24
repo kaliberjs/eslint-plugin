@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -50,13 +52,14 @@ module.exports = {
         if (!CIPHER_FACTORIES.has(name)) return
 
         const algorithm = node.arguments[0]
-        if (algorithm?.type !== 'Literal' || typeof algorithm.value !== 'string') return
-        if (!/-ecb$/i.test(algorithm.value)) return
+        if (!algorithm) return
+        const value = getStaticValue(algorithm, context.sourceCode.getScope(algorithm))
+        if (typeof value?.value !== 'string' || !/-ecb$/i.test(value.value)) return
 
         report(context, {
           node: algorithm,
           messageId: 'ecbAlgorithm',
-          data: { algorithm: algorithm.value },
+          data: { algorithm: value.value },
           severity: 'high',
           confidence: 1,
         })
@@ -64,7 +67,7 @@ module.exports = {
 
       // crypto-js: { mode: CryptoJS.mode.ECB }
       Property(node) {
-        if (node.computed || node.key?.name !== 'mode') return
+        if (getStaticPropertyName(node) !== 'mode') return
 
         const value = node.value
         const isEcb = value?.type === 'MemberExpression'

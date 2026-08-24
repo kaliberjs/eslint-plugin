@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -60,10 +61,12 @@ function getCalleeName(callee) {
   return null
 }
 
-function isMd5(_context, argument) {
-  if (!argument || argument.type !== 'Literal' || typeof argument.value !== 'string') return false
+function isMd5(context, argument) {
+  if (!argument) return false
+  const value = getStaticValue(argument, context.sourceCode.getScope(argument))
+  if (typeof value?.value !== 'string') return false
 
   // Exact hash names only; a longer string that merely contains 'md5' is
   // left to the reader rather than guessed at.
-  return ['md5', 'ssl3-md5', 'md5withrsaencryption'].includes(argument.value.toLowerCase())
+  return ['md5', 'ssl3-md5', 'md5withrsaencryption'].includes(value.value.toLowerCase())
 }
