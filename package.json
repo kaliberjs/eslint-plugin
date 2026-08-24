@@ -11,6 +11,7 @@
   },
   "version": "2.2.1",
   "dependencies": {
+    "@eslint-community/eslint-utils": "^4.9.1",
     "@eslint/compat": "^2.1.0",
     "@eslint/js": "^10.0.0",
     "@stylistic/eslint-plugin": "^5.10.0",
