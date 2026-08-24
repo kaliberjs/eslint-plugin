@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
 const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
@@ -39,15 +40,13 @@ module.exports = {
       CallExpression(node) {
         const callee = node.callee
 
-        // res.setHeader('Location', untrusted)
-        if (
-          callee.type === 'MemberExpression'
-          && !callee.computed
-          && callee.property?.name === 'setHeader'
-          && node.arguments[0]?.type === 'Literal'
-          && /^location$/i.test(String(node.arguments[0].value))
-        ) {
-          return emit(context, analysis, node.arguments[1], "res.setHeader('Location', …)")
+        // res.setHeader('Location', untrusted) — the header name only has to
+        // be *provably* 'Location', not written as an inline literal: a
+        // shared HEADER_LOCATION constant is ordinary code, not an evasion.
+        if (callee.type === 'MemberExpression' && !callee.computed && callee.property?.name === 'setHeader' && node.arguments[0]) {
+          const headerName = getStaticValue(node.arguments[0], context.sourceCode.getScope(node.arguments[0]))
+          if (headerName && /^location$/i.test(String(headerName.value)))
+            return emit(context, analysis, node.arguments[1], "res.setHeader('Location', …)")
         }
 
         const sink = analysis.sinkAt(node)
