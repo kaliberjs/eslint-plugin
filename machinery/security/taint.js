@@ -6,9 +6,14 @@ const registry = require('./registry')
  * Confidence penalties, additive.
  *
  * Additive rather than multiplicative so that *exact* hops cost literally
- * nothing: a twenty-hop chain of `const` aliases stays at full confidence,
- * which is correct, because we are certain about every step. Multiplicative
- * decay would drop a real eight-hop bug below threshold purely for being long.
+ * nothing: a chain of `const` aliases keeps full confidence, which is correct,
+ * because we are certain about every step. Multiplicative decay would drop a
+ * real eight-hop bug below threshold purely for being long.
+ *
+ * The bound on that is `maxHops` (default 12), not the confidence: a chain
+ * longer than that is dropped outright regardless of how exact every hop was.
+ * So "any number of exact hops is free" is true only up to the hop limit, and
+ * the limit is a work bound doing double duty as a correctness cliff.
  *
  * These numbers are engineering judgement, not measurement. Every fixture in
  * the test corpus asserts an exact expected confidence, so changing one shows
@@ -31,8 +36,14 @@ const PENALTY = {
   ternary: 0.08,
   logical: 0.08,
 
-  // flow-insensitivity — we may be reading the wrong write
-  multiWrite: 0.15,
+  // flow-insensitivity — we may be reading a write that a later one replaced.
+  // Structurally the same uncertainty as a branch (one of several possible
+  // values reaches the sink), so priced the same. It was 0.15, which silently
+  // dropped the most common way to build a dynamic query in Node:
+  // `let where = '1=1'; if (req.query.name) where = '... ' + req.query.name`.
+  // That is a complete auth bypass, and stacking 0.15 on two ordinary
+  // string-building hops put it under the reporting floor with no output at all.
+  multiWrite: 0.08,
 }
 
 const cache = new WeakMap()
@@ -153,10 +164,20 @@ function createAnalysis(sourceCode, options) {
 
     return known.sources.find(source =>
       source.path.length &&
-      source.path.length === path.length &&
-      source.path.every((segment, i) => segment === path[i]) &&
+      isPrefix(source.path, path) &&
       matchesRoot(source, root)
     ) ?? null
+  }
+
+  /**
+   * A source path matches any deeper access beneath it: `req.query` being
+   * untrusted makes `req.query.filter.name` untrusted too. Requiring an exact
+   * length match broke `const { query: { id } } = req` — the destructured form
+   * of the same access — and would have made path-qualified sources a false
+   * negative rather than a narrowing.
+   */
+  function isPrefix(prefix, path) {
+    return prefix.length <= path.length && prefix.every((segment, i) => segment === path[i])
   }
 
   function matchesRoot(source, root) {
@@ -176,13 +197,17 @@ function createAnalysis(sourceCode, options) {
     const rule = source.root.param
     if (!rule) return false
     if (!rule.name.test(variable.name)) return false
+    if (!isFunctionNode(definition.node)) return false
 
-    const fn = definition.node
-    if (!isFunctionNode(fn)) return false
-    if (fn.params[rule.index] !== definition.name) return false
+    // `index` and `arity` are optional and unused by the shipped request
+    // sources. Gating on the handler signature was simultaneously too strict
+    // and too loose: it missed every Express error handler — `(err, req, res,
+    // next)`, arity 4 with `req` at index 1 — while still matching unrelated
+    // two-argument callbacks. Path qualification discriminates better.
+    if (rule.index !== undefined && definition.node.params[rule.index] !== definition.name) return false
 
     const [min, max] = rule.arity ?? []
-    if (min !== undefined && (fn.params.length < min || fn.params.length > max)) return false
+    if (min !== undefined && (definition.node.params.length < min || definition.node.params.length > max)) return false
 
     return true
   }
@@ -242,10 +267,12 @@ function createAnalysis(sourceCode, options) {
     const definition = variable.defs[0]
     if (!definition) return null
 
-    // A parameter that is not a registered source tells us nothing in phase 1:
-    // marking every parameter tainted is the classic way to make a SAST tool
-    // unusable.
-    if (definition.type === 'Parameter') return null
+    // A parameter that is not a registered source tells us nothing about its
+    // *incoming* value in phase 1 — marking every parameter tainted is the
+    // classic way to make a SAST tool unusable. But an assignment *to* it that
+    // we can see is an ordinary write and is followed like any other, which is
+    // what catches `req = req.body`.
+    if (definition.type === 'Parameter') return combineWrites(variable, node)
     if (definition.type === 'ImportBinding') return null
 
     if (definition.type === 'Variable' && definition.name !== definition.node.id) {
@@ -281,21 +308,15 @@ function createAnalysis(sourceCode, options) {
   }
 
   function matchSourcePath(root, path) {
-    return known.sources.find(source =>
-      source.path.length === path.length &&
-      source.path.every((segment, i) => segment === path[i]) &&
-      matchesRoot(source, root)
-    ) ?? null
+    return known.sources.find(source => isPrefix(source.path, path) && matchesRoot(source, root)) ?? null
   }
 
   function combineWrites(variable, node) {
     const writes = variable.references.filter(reference => reference.isWrite() && reference.writeExpr)
     if (!writes.length) return null
 
-    const tainted = writes.map(reference => taintFromWrite(reference, variable)).filter(Boolean)
-    if (!tainted.length) return null
-
-    const worst = tainted.reduce(pickWorse)
+    const worst = combine(writes.map(reference => taintFromWrite(reference, variable)))
+    if (!worst) return null
 
     // The multi-write penalty prices flow-insensitivity: with several writes we
     // may be reading a value that a later assignment replaced. A compound
@@ -325,13 +346,15 @@ function createAnalysis(sourceCode, options) {
     if (!reference.isReadWrite()) return written
 
     const previous = previousWriteTaint(reference, variable)
-    return pickWorse(written, previous)
+    return combine([written, previous])
   }
 
   function previousWriteTaint(reference, variable) {
-    // ponytail: positional, not loop-correct — `q += x` inside a loop where x
-    // becomes tainted on a later iteration is missed. Fails toward a missed
-    // finding rather than a false one; needs a CFG to do properly.
+    // ponytail: positional, not flow-correct. Comparing source positions is not
+    // the same as knowing which write executed, so this cuts both ways: it can
+    // miss a loop-carried taint (`q += x` where x becomes tainted on a later
+    // iteration) *and* it can attribute an earlier write to a compound
+    // assignment that a branch never reached. Needs a CFG to do properly.
     const earlier = variable.references.filter(other =>
       other !== reference &&
       other.isWrite() &&
@@ -339,16 +362,18 @@ function createAnalysis(sourceCode, options) {
       other.identifier.range[0] < reference.identifier.range[0]
     )
 
-    const tainted = earlier.map(other => taintOf(other.writeExpr)).filter(Boolean)
-    return tainted.length ? tainted.reduce(pickWorse) : null
+    return combine(earlier.map(other => taintOf(other.writeExpr)))
   }
 
   function resolveMember(node) {
-    const source = sourceForMember(node)
-    if (source) return startTaint(source, node)
-
+    // Before source matching, not after: with prefix-matching source paths,
+    // `req.query.q.length` would otherwise match the `req.query` source and be
+    // reported as a tainted string when it is a number.
     const name = getPropertyName(node, scopeOf(node))
     if (name && known.nonPropagatingProperties.includes(name)) return null
+
+    const source = sourceForMember(node)
+    if (source) return startTaint(source, node)
 
     const objectTaint = taintOf(node.object)
     if (!objectTaint) return null
@@ -384,12 +409,16 @@ function createAnalysis(sourceCode, options) {
   }
 
   function resolveTaggedTemplate(node) {
-    // A tagged template's tag decides everything, and every tag we care about
-    // parameterizes its interpolations: `sql`...``, Drizzle's `sql`...``, and
-    // `prisma.$queryRaw`...``. That is exactly why Prisma's safe raw APIs are
-    // tagged and its unsafe ones take a plain string. So the value a tagged
-    // template produces is not a tainted string, and an unknown tag is an
-    // unknown call, which is a wall (see resolveCall).
+    // The tags this rule needs to reason about parameterize their
+    // interpolations: `sql`...``, Drizzle's `sql`...``, `prisma.$queryRaw`...``.
+    // That is exactly why Prisma's safe raw APIs are tagged and its unsafe ones
+    // take a plain string.
+    //
+    // Not every tag does, though — `String.raw` is plain string building, and a
+    // user-defined tag can be anything. Treating an unrecognised tag as an
+    // unknown call is the same wall as resolveCall, so the failure is a missed
+    // finding rather than a false one, but it is a real miss and it is listed
+    // in the rule's documented limitations.
     bail('taggedTemplate')
     return null
   }
@@ -437,26 +466,42 @@ function createAnalysis(sourceCode, options) {
 
     if (callee.type === 'MemberExpression') {
       const name = getPropertyName(callee, scopeOf(callee))
-      if (!name) return null
-      return known.sanitizers.find(sanitizer => sanitizer.root.method?.test(name)) ?? null
+      if (name === null) return null
+
+      // The receiver constraint is mandatory for method-rooted sanitizers (the
+      // registry refuses to load one without it). `escape` is why: lodash, he
+      // and validator all export an HTML escaper by that name, and trusting one
+      // of those as a SQL escaper turns detection off silently.
+      return known.sanitizers.find(sanitizer =>
+        sanitizer.root.method?.test(String(name)) &&
+        (!sanitizer.root.receiver || matchesReceiver(callee.object, sanitizer.root.receiver))
+      ) ?? null
     }
 
     return null
   }
 
   function propagatorFor(node) {
+    // Global functions: String(x), decodeURIComponent(x), JSON.stringify(x).
+    // The registry previously had no way to express these at all, so
+    // `db.query('… ' + String(req.query.id))` propagated nothing.
+    if (node.callee.type === 'Identifier')
+      return known.propagators.find(propagator => isGlobalNamed(node.callee, propagator.global)) ?? null
+
     if (node.callee.type !== 'MemberExpression') return null
+
     const name = getPropertyName(node.callee, scopeOf(node.callee))
-    if (!name) return null
-    return known.propagators.find(propagator => propagator.method === name) ?? null
+    if (name === null) return null
+
+    return known.propagators.find(propagator => propagator.method === String(name)) ?? null
   }
 
   // --- helpers -------------------------------------------------------------
 
   function worstOf(nodes, node, kind, penalty, label = null) {
-    const tainted = nodes.map(taintOf).filter(Boolean)
-    if (!tainted.length) return null
-    return hop(tainted.reduce(pickWorse), { node, kind, label, penalty })
+    const combined = combine(nodes.map(taintOf))
+    if (!combined) return null
+    return hop(combined, { node, kind, label, penalty })
   }
 
   function hop(taint, step) {
@@ -508,19 +553,42 @@ function createAnalysis(sourceCode, options) {
 }
 
 /**
- * For a string built from several tainted parts, the string is only as safe as
- * its *least* sanitised part. One unescaped interpolation ruins the query.
+ * Merge several tainted values into the one that reaches the sink.
+ *
+ * The sanitised kinds are **intersected**, and that is the whole point. Two
+ * cases, both requiring it:
+ *
+ *   string building   `escape(a) + encode(b)` contains both parts, so it is
+ *                     safe for a kind only if both parts were made safe for it.
+ *   alternatives      `cond ? a : b`, or a variable with several writes — one
+ *                     of them reaches the sink and we do not know which, so
+ *                     only kinds cleared on *every* path may be assumed.
+ *
+ * Picking a single "worst" value instead was order-dependent and lost findings:
+ * `{sql}` and `{url}` are both size one, so the tiebreak could select the
+ * branch already safe for the kind the sink cares about and report nothing.
+ * Two semantically identical queries differing only in operand order then gave
+ * different answers.
+ *
+ * Confidence takes the *strongest* candidate: if some path reaches the sink at
+ * 0.9 then that path exists, and reporting it lower because another path is
+ * vaguer would understate a real finding.
  */
-function pickWorse(a, b) {
-  if (!a) return b
-  if (!b) return a
+function combine(values) {
+  const tainted = values.filter(Boolean)
+  if (!tainted.length) return null
+  if (tainted.length === 1) return tainted[0]
 
-  const cleanliness = value => value.sanitizedFor.has('*') ? Infinity : value.sanitizedFor.size
-  if (cleanliness(a) !== cleanliness(b)) return cleanliness(a) < cleanliness(b) ? a : b
+  const strongest = tainted.reduce((a, b) => a.confidence >= b.confidence ? a : b)
+  return { ...strongest, sanitizedFor: intersectKinds(tainted.map(value => value.sanitizedFor)) }
+}
 
-  // Equally sanitised: keep the one we are most confident about, so the report
-  // we make is the strongest one available.
-  return a.confidence >= b.confidence ? a : b
+/** `'*'` is the universal set, so it never narrows the intersection. */
+function intersectKinds(sets) {
+  const concrete = sets.filter(set => !set.has('*'))
+  if (!concrete.length) return new Set(['*'])
+
+  return concrete.reduce((shared, set) => new Set([...shared].filter(kind => set.has(kind))))
 }
 
 /** Strip wrappers that cannot change the value. */

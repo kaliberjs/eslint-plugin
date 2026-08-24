@@ -35,7 +35,21 @@ const plugin = {
     'no-sql-injection': require('./rules/no-sql-injection'),
   },
 
-  configs: {},
+  configs: {
+    // Opt-in only, and deliberately not part of any recommended config. The
+    // security rules carry a different risk profile from the house rules: a
+    // noisy security rule does not just get itself disabled, it gets the whole
+    // shared config distrusted. Enabling them has to be a decision.
+    //
+    // `warn` rather than `error` for the first release: the analysis reports
+    // medium-confidence findings, and a medium-confidence finding failing CI on
+    // day one is how a plugin gets removed.
+    security: {
+      rules: {
+        '@kaliber/no-sql-injection': 'warn',
+      },
+    },
+  },
 }
 
 module.exports = plugin

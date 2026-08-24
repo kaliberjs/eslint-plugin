@@ -65,9 +65,9 @@ test('confidence: an Express request source starts at the heuristic ceiling', ()
   // findings are `medium` and browser-sourced ones are `high`.
   const taint = onlyTaint(handler('db.query(`SELECT ${req.query.id}`)'))
 
-  assert.strictEqual(round(taint.confidence), 0.66)  // 0.75 - member - member - template
+  assert.strictEqual(round(taint.confidence), 0.70)  // 0.75 - template
   assert.strictEqual(confidenceBucket(taint.confidence), 'medium')
-  assert.deepStrictEqual(taint.path.map(hop => hop.kind), ['source', 'member', 'member', 'template'])
+  assert.deepStrictEqual(taint.path.map(hop => hop.kind), ['source', 'template'])
 })
 
 test('confidence: an unambiguous browser global is high', () => {
@@ -92,7 +92,7 @@ test('confidence: exact hops cost nothing', () => {
   `))
 
   assert.strictEqual(round(short.confidence), round(long.confidence))
-  assert.strictEqual(round(long.confidence), 0.68)
+  assert.strictEqual(round(long.confidence), 0.70)
 })
 
 test('confidence: compound assignment is not charged as a competing write', () => {
@@ -105,7 +105,7 @@ test('confidence: compound assignment is not charged as a competing write', () =
     db.query(sql)
   `))
 
-  assert.strictEqual(round(accumulated.confidence), 0.66)
+  assert.strictEqual(round(accumulated.confidence), 0.70)
   assert.ok(!accumulated.path.some(hop => hop.kind === 'multiWrite'))
 })
 
@@ -119,7 +119,7 @@ test('confidence: a genuinely competing write is charged', () => {
   `))
 
   assert.ok(contested.path.some(hop => hop.kind === 'multiWrite'))
-  assert.strictEqual(round(contested.confidence), 0.51)  // 0.66 - multiWrite
+  assert.strictEqual(round(contested.confidence), 0.62)  // 0.70 - multiWrite
 })
 
 test('a compound assignment does not hide the taint in its earlier write', () => {
@@ -181,7 +181,7 @@ test('the flow path records every hop, for the diagnostic and for auditing the n
 
   assert.deepStrictEqual(
     taint.path.map(hop => `${hop.kind}:${hop.label}`),
-    ['source:req', 'member:query', 'read:q', 'member:id', 'read:id', 'template:null']
+    ['source:req.query', 'read:q', 'member:id', 'read:id', 'template:null']
   )
 
   // Every penalty is recorded on the hop that incurred it, so "why is this
@@ -216,3 +216,142 @@ test('the analysis is cached per SourceCode, so fifty rules cost one constructio
 function round(value) {
   return Math.round(value * 1000) / 1000
 }
+
+test('the request source is path-qualified, so req.user and req.session are not input', () => {
+  // Treating the whole `req` object as untrusted fired on every authenticated
+  // Express app, many times per file. Untrusted input arrives through a known
+  // set of properties and nowhere else.
+  assert.deepStrictEqual(taintAtSinks(handler('db.query(`SELECT ${req.user.id}`)')), [])
+  assert.deepStrictEqual(taintAtSinks(handler('db.query(`SELECT ${req.session.uid}`)')), [])
+  assert.deepStrictEqual(taintAtSinks(handler('db.query(`SELECT ${req.app.locals.table}`)')), [])
+
+  // ...but the qualifying properties still are, including deeper accesses.
+  assert.strictEqual(taintAtSinks(handler('db.query(`SELECT ${req.query.id}`)')).length, 1)
+  assert.strictEqual(taintAtSinks(handler('db.query(`SELECT ${req.query.filter.name}`)')).length, 1)
+})
+
+test('a non-request parameter named req is not a source unless it is accessed like one', () => {
+  // `.map`, `.filter` and `.forEach` all hand you a two-argument callback, so
+  // gating on arity matched unrelated callbacks while missing real handlers.
+  assert.deepStrictEqual(
+    taintAtSinks(`const pending = []; pending.map((request, index) => db.query('INSERT INTO audit VALUES (' + request.kind + ')'))`),
+    []
+  )
+})
+
+test('an Express error handler is a source, despite its four-argument signature', () => {
+  // (err, req, res, next) puts req at index 1 with arity 4. Gating on the
+  // handler signature made every error handler in every Express app invisible.
+  const taint = onlyTaint('function onError(err, req, res, next) { db.query(`SELECT * FROM logs WHERE id = ${req.query.id}`) }')
+  assert.strictEqual(confidenceBucket(taint.confidence), 'medium')
+})
+
+test('the dominant dynamic-query idiom stays above the reporting floor', () => {
+  // `let x = default; if (input) x = input` is the most common way to build a
+  // dynamic query in Node, and `?name=x' OR '1'='1` through it is a complete
+  // auth bypass. The multi-write penalty used to stack on top of the ordinary
+  // string-building hops and push these under minConfidence, so the analysis
+  // found the flow, computed a confidence, and then discarded it with no output
+  // at all — the worst failure mode available to a security tool.
+  const guarded = onlyTaint(handler(`
+    let where = '1=1'
+    if (req.query.name) where = 'name = ' + req.query.name
+    db.query('SELECT * FROM users WHERE ' + where)
+  `))
+  assert.strictEqual(round(guarded.confidence), 0.57)
+  assert.ok(guarded.confidence >= DEFAULTS.minConfidence)
+
+  const ternary = onlyTaint(handler(`
+    let order = 'id'
+    order = req.query.order ? req.query.order : 'id'
+    db.query(\`SELECT * FROM users ORDER BY \${order}\`)
+  `))
+  assert.strictEqual(round(ternary.confidence), 0.54)
+  assert.ok(ternary.confidence >= DEFAULTS.minConfidence)
+
+  // Calling .trim() does nothing whatsoever for SQL, and used to be enough to
+  // hide the finding.
+  const trimmed = onlyTaint(handler(`
+    let order = 'id'
+    if (req.query.order) order = req.query.order.trim()
+    db.query('SELECT * FROM users ORDER BY ' + order)
+  `))
+  assert.ok(trimmed.confidence >= DEFAULTS.minConfidence)
+})
+
+test('global functions propagate taint', () => {
+  // The registry had no way to express a global-rooted propagator at all, so
+  // String(x) and decodeURIComponent(x) broke every chain that used them.
+  assert.strictEqual(taintAtSinks(handler("db.query('SELECT ' + String(req.query.id))")).length, 1)
+  assert.strictEqual(taintAtSinks(handler("db.query('SELECT ' + decodeURIComponent(req.query.id))")).length, 1)
+})
+
+test('sanitized kinds are intersected, not chosen between', () => {
+  // `{sql}` and `{url}` are both size one, so picking a single "worst" value
+  // could select the branch already safe for the kind the sink cares about and
+  // report nothing — making the result depend on operand order.
+  const forward = onlyTaint(handler(`
+    const a = mysql.escape(req.query.a)
+    const b = encodeURIComponent(req.query.b)
+    db.query(\`SELECT \${a} \${b}\`)
+  `))
+  const reversed = onlyTaint(handler(`
+    const a = encodeURIComponent(req.query.a)
+    const b = mysql.escape(req.query.b)
+    db.query(\`SELECT \${a} \${b}\`)
+  `))
+
+  assert.deepStrictEqual([...forward.sanitizedFor], [])
+  assert.deepStrictEqual([...reversed.sanitizedFor], [])
+})
+
+test('escape is only a SQL sanitizer on a database receiver', () => {
+  // lodash, he and validator all export an *HTML* escaper called `escape`.
+  // Matching the bare name meant one `_.escape()` anywhere in a file asserted
+  // SQL safety it does not provide.
+  const real = onlyTaint(handler("db.query('SELECT * FROM u WHERE n = ' + connection.escape(req.query.n))"))
+  assert.deepStrictEqual([...real.sanitizedFor], ['sql'])
+
+  // On a non-database receiver it is now an unknown call, which is a wall.
+  // Note carefully what this does and does not achieve: both the old and the
+  // new behaviour produce no report here, so the observable outcome for this
+  // one expression is unchanged. What changed is the *reason* — the analysis no
+  // longer claims a value is SQL-safe when it has no basis to. That matters
+  // because sanitizedFor is intersected across a whole query, and because the
+  // registry now structurally cannot express a bare-name sanitizer at all
+  // (see registry.test.js).
+  assert.deepStrictEqual(taintAtSinks(handler("db.query('SELECT * FROM u WHERE n = ' + _.escape(req.query.n))")), [])
+})
+
+test('a wrongly-trusted sanitizer cannot suppress the rest of a query', () => {
+  // This is the case where the escape fix is observable: an unknown escaper on
+  // one interpolation must not vouch for a different, raw interpolation.
+  const taint = onlyTaint(handler(`
+    const safe = connection.escape(req.query.a)
+    const raw = req.query.b
+    db.query(\`SELECT \${safe} \${raw}\`)
+  `))
+
+  assert.deepStrictEqual([...taint.sanitizedFor], [])
+})
+
+test('a source can be configured away', () => {
+  const disabled = { ...DEFAULTS, registry: { ...DEFAULTS.registry, disable: ['express.request.query'] } }
+  const found = []
+
+  linter.verify(handler('db.query(`SELECT ${req.query.id}`)'), {
+    plugins: { probe: { rules: { c: { create(context) {
+      const analysis = analyze(context.sourceCode, disabled)
+      return { CallExpression(node) {
+        const sink = analysis.sinkAt(node)
+        if (sink?.requires !== 'sql') return
+        const taint = analysis.taintOf(node.arguments[sink.argument])
+        if (taint) found.push(taint)
+      } }
+    } } } } },
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module' },
+    rules: { 'probe/c': 'error' },
+  })
+
+  assert.deepStrictEqual(found, [])
+})

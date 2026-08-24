@@ -12,13 +12,17 @@ const DEFAULTS = {
  * `false` means: computed, but not worth a developer's attention.
  */
 const REPORTABLE = {
-  high:   { high: true, medium: true,  low: false },
-  medium: { high: true, medium: true,  low: false },
-  low:    { high: true, medium: false, low: false },
+  critical: { high: true, medium: true,  low: false },
+  high:     { high: true, medium: true,  low: false },
+  medium:   { high: true, medium: true,  low: false },
+  low:      { high: true, medium: false, low: false },
 }
+
+const SEVERITIES = Object.keys(REPORTABLE)
 
 module.exports = {
   report,
+  SEVERITIES,
   confidenceBucket,
   describePath,
   explainConfidence,
@@ -35,10 +39,17 @@ module.exports = {
 function report(context, { node, messageId, data = {}, severity, confidence, path = [] }) {
   const options = settings(context)
 
+  // An unrecognised severity previously made `REPORTABLE[severity]?.[bucket]`
+  // undefined, so the finding was silently dropped. A consumer registering a
+  // sink with a severity this table does not know would have got zero findings
+  // and no diagnostic — the worst possible failure for a security tool, because
+  // it is indistinguishable from having no vulnerabilities.
+  if (!REPORTABLE[severity]) throw new Error(`security: unknown severity '${severity}'. Known severities: ${SEVERITIES.join(', ')}`)
+
   if (confidence < options.minConfidence) return false
 
   const bucket = confidenceBucket(confidence)
-  if (!REPORTABLE[severity]?.[bucket]) return false
+  if (!REPORTABLE[severity][bucket]) return false
 
   context.report({
     node,

@@ -33,13 +33,36 @@ test('the wildcard sanitizer list stays short and every entry explains itself', 
 })
 
 test('no sanitizer is trusted because of its name alone', () => {
-  // Per AGENTS.md: `escape`, `clean`, `sanitize` and `validate` are matched only
-  // as registry entries with a known root, never as a naming convention.
-  for (const sanitizer of registry.sanitizers)
-    assert.ok(
-      sanitizer.root.global || sanitizer.root.method || sanitizer.root.module,
-      `sanitizer ${sanitizer.id} has no root to match against`
-    )
+  // The previous version of this test asserted that `root.method` *exists* —
+  // that is, it passed precisely *because* a sanitizer was name-matched. It was
+  // the inverse of the rule it claimed to enforce, and mysql.escape passed it.
+  //
+  // Per AGENTS.md a function is never a sanitizer because of what it is called.
+  // A method name is only acceptable when paired with a receiver constraint;
+  // otherwise the entry must be rooted in a module or a global.
+  for (const sanitizer of registry.sanitizers) {
+    if (sanitizer.root.method)
+      assert.ok(sanitizer.root.receiver, `sanitizer ${sanitizer.id} is matched by bare method name — it needs a receiver constraint`)
+    else
+      assert.ok(sanitizer.root.global || sanitizer.root.module, `sanitizer ${sanitizer.id} has no root to match against`)
+  }
+})
+
+test('a consumer cannot register a bare method-name sanitizer either', () => {
+  assert.throws(
+    () => registry.merge({ sanitizers: [{ id: 'custom', root: { method: /^clean$/ }, argument: 0, clears: ['sql'] }] }),
+    /matched by method name with no `receiver` constraint/
+  )
+})
+
+test('a consumer cannot register a sink with an unrecognised severity', () => {
+  // `critical` was silently unreportable: REPORTABLE had no such key, so the
+  // lookup returned undefined and every finding was dropped without a word.
+  assert.doesNotThrow(() => registry.merge({ sinks: [{ id: 'c', root: { method: /^run$/ }, requires: 'sql', severity: 'critical', cwe: 'CWE-89' }] }))
+  assert.throws(
+    () => registry.merge({ sinks: [{ id: 'c', root: { method: /^run$/ }, requires: 'sql', severity: 'catastrophic', cwe: 'CWE-89' }] }),
+    /no report decision recognises/
+  )
 })
 
 test('a SQL escaper does not claim to clear html', () => {

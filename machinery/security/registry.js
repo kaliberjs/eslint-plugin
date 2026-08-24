@@ -14,6 +14,8 @@
  * membership rather than out of fifty rules each remembering it.
  */
 
+const { SEVERITIES } = require('./finding')
+
 /**
  * Closed vocabulary. A typo in a consumer's custom entry (`requires: 'sqli'`)
  * throws at load rather than silently never matching anything.
@@ -34,34 +36,71 @@ const KINDS = {
   template: 'CWE-1336',
 }
 
+/**
+ * The properties of an HTTP request object that actually carry untrusted input.
+ *
+ * Path-qualifying the source is what makes the parameter-name heuristic
+ * tolerable. Treating the whole `req` object as untrusted fired on `req.user`,
+ * `req.session` and `req.app.locals` — present in every authenticated Express
+ * app, many times per file — and on any two-argument callback whose first
+ * parameter happens to be called `request`, which `.map`/`.filter`/`.forEach`
+ * hand you for free. Gating on the *shape of the access* instead is both
+ * quieter and stricter: untrusted input arrives through these properties and
+ * nowhere else.
+ */
+const REQUEST_PROPERTIES = [
+  'query', 'body', 'params', 'headers', 'cookies', 'signedCookies',
+  'url', 'originalUrl', 'path', 'hostname', 'host', 'ip',
+  'rawBody', 'files', 'file',
+]
+
+const REQUEST_ROOT = { param: { name: /^(req|request)$/ } }
+
 const sources = [
-  // --- Node HTTP frameworks. Parameter-name heuristic: priced, never above 0.75.
-  {
-    id: 'express.request',
-    root: { param: { name: /^(req|request)$/, index: 0, arity: [2, 3] } },
-    path: [],
+  // --- HTTP frameworks. Express, Connect, Fastify (`request`), Koa-ish, and
+  // any handler following the same convention.
+  //
+  // Note there is deliberately no `index` or `arity` constraint. Gating on the
+  // handler signature was both too strict and too loose: it missed every
+  // Express error handler — `(err, req, res, next)`, arity 4 with `req` at
+  // index 1, i.e. every error handler in every Express app — while still
+  // matching unrelated two-argument callbacks. Path qualification does the
+  // discriminating work now, so the signature gate earns nothing.
+  ...REQUEST_PROPERTIES.map(property => ({
+    id: `express.request.${property}`,
+    root: REQUEST_ROOT,
+    path: [property],
     confidence: 0.75,
     cwe: ['CWE-20'],
-    note: 'Express/Connect/Koa-style handler request object, identified by parameter name and handler arity. Heuristic: a non-request parameter named `req` is a false positive, which is why this is capped below high confidence and is configurable away.',
-  },
+    note: `Untrusted HTTP request input via \`${property}\`. Matched by parameter name, so capped below high confidence. Disable with settings['@kaliber/security'].registry.disable = ['express.request.${property}'].`,
+  })),
 
-  // --- Browser globals. An unambiguous global: high confidence.
+  // --- Browser globals. An unambiguous global, so high confidence.
+  //
+  // Both spellings of each are registered: `location.search` and
+  // `window.location.search` are the same source, and only registering the
+  // short form meant the *more common* spelling matched nothing.
   { id: 'browser.location', root: { global: 'location' }, path: [], confidence: 0.9, cwe: ['CWE-20'] },
+  { id: 'browser.window.location', root: { global: 'window' }, path: ['location'], confidence: 0.9, cwe: ['CWE-20'] },
+  { id: 'browser.document.location', root: { global: 'document' }, path: ['location'], confidence: 0.9, cwe: ['CWE-20'] },
+  { id: 'browser.self.location', root: { global: 'self' }, path: ['location'], confidence: 0.9, cwe: ['CWE-20'] },
+  { id: 'browser.globalThis.location', root: { global: 'globalThis' }, path: ['location'], confidence: 0.9, cwe: ['CWE-20'] },
+
   { id: 'browser.document.URL', root: { global: 'document' }, path: ['URL'], confidence: 0.9, cwe: ['CWE-20'] },
+  { id: 'browser.document.documentURI', root: { global: 'document' }, path: ['documentURI'], confidence: 0.9, cwe: ['CWE-20'] },
   { id: 'browser.document.referrer', root: { global: 'document' }, path: ['referrer'], confidence: 0.9, cwe: ['CWE-20'] },
   { id: 'browser.document.cookie', root: { global: 'document' }, path: ['cookie'], confidence: 0.85, cwe: ['CWE-20'] },
   { id: 'browser.window.name', root: { global: 'window' }, path: ['name'], confidence: 0.9, cwe: ['CWE-20'] },
 
-  // --- Node process environment. Untrusted in the sense that matters for
-  // injection: operator-controlled, not developer-controlled. Low confidence
-  // because in practice env vars are trusted in most codebases.
+  // --- Node process environment. Operator-controlled rather than
+  // developer-controlled, which is a real but much weaker claim.
   {
     id: 'node.process.argv',
     root: { global: 'process' },
     path: ['argv'],
-    confidence: 0.6,
+    confidence: 0.55,
     cwe: ['CWE-20'],
-    note: 'CLI arguments. Lower confidence: a CLI tool interpolating its own argv into a shell command is often an accepted risk rather than a vulnerability.',
+    note: 'CLI arguments. Low confidence deliberately: a CLI tool interpolating its own argv into a query is usually an accepted risk rather than a vulnerability, so one further inexact hop should take it below the reporting floor.',
   },
 ]
 
@@ -72,7 +111,7 @@ const sinks = [
   // conjunction with a *tainted* argument, which is what makes it precise.
   {
     id: 'sql.query',
-    root: { method: /^(query|execute)$/ },
+    root: { method: /^(query|execute)$/, receiver: /^(db|dbc|database|conn|connection|pool|client|knex|sequelize|prisma|sqlite\d?|sql|trx|transaction|manager|repository|dataSource|ds|orm|store|handle)$/i },
     argument: 0,
     requires: 'sql',
     severity: 'high',
@@ -82,7 +121,7 @@ const sinks = [
   },
   {
     id: 'sql.knex.raw',
-    root: { method: /^(raw|whereRaw|joinRaw|havingRaw|orderByRaw|groupByRaw|andWhereRaw|orWhereRaw)$/ },
+    root: { method: /^(raw|whereRaw|joinRaw|havingRaw|orderByRaw|groupByRaw|andWhereRaw|orWhereRaw)$/, receiver: /^(db|dbc|database|conn|connection|pool|client|knex|sequelize|prisma|sqlite\d?|sql|trx|transaction|manager|repository|dataSource|ds|orm|store|handle)$/i },
     argument: 0,
     requires: 'sql',
     severity: 'high',
@@ -102,7 +141,7 @@ const sinks = [
   },
   {
     id: 'sql.sqlite.exec',
-    root: { method: /^exec$/, receiver: /^(db|database|sqlite\d?|conn|connection|client|handle)$/i },
+    root: { method: /^exec$/, receiver: /^(db|dbc|database|sqlite\d?|conn|connection|pool|sql|trx|transaction)$/i },
     argument: 0,
     requires: 'sql',
     severity: 'high',
@@ -112,13 +151,23 @@ const sinks = [
   },
   {
     id: 'sql.prepare',
-    root: { method: /^prepare$/ },
+    root: { method: /^prepare$/, receiver: /^(db|dbc|database|conn|connection|pool|client|knex|sequelize|prisma|sqlite\d?|sql|trx|transaction|manager|repository|dataSource|ds|orm|store|handle)$/i },
     argument: 0,
     requires: 'sql',
     severity: 'high',
     cwe: 'CWE-89',
     owasp: 'A03:2021',
     note: 'db.prepare(sql). Preparing an interpolated string defeats the point of preparing it.',
+  },
+  {
+    id: 'sql.statement.run',
+    root: { method: /^(all|get|run|each|iterate|pluck)$/, receiver: /^(db|dbc|database|sqlite\d?|conn|connection|pool|sql|stmt|statement)$/i },
+    argument: 0,
+    requires: 'sql',
+    severity: 'high',
+    cwe: 'CWE-89',
+    owasp: 'A03:2021',
+    note: 'sqlite3 db.all/get/run/each and better-sqlite3 statement runners. These are the primary API of both drivers — far more used than exec() — and take SQL directly when called on the database handle. The receiver constraint matters: `all`, `get` and `run` are extremely common method names.',
   },
 ]
 
@@ -158,19 +207,19 @@ const sanitizers = [
   // --- Kind-specific escapers. Note what each does NOT clear.
   {
     id: 'mysql.escape',
-    root: { method: /^escape$/ },
+    root: { method: /^escape$/, receiver: /^(mysql2?|sql|conn|connection|db|database|pool|client|knex)$/i },
     argument: 0,
     clears: ['sql'],
     confidence: 0.9,
-    note: 'mysql/mysql2 escape(). Clears sql only — this is emphatically not an HTML escaper. Confidence below 1 because the method name is matched without a resolved receiver.',
+    note: 'mysql/mysql2 escape(). Clears sql only — emphatically not an HTML escaper.\n\nThe receiver constraint is the load-bearing part and is not optional. `escape` is one of the most overloaded names in the ecosystem: lodash, he and validator all export an *HTML* escaper by that name. Matching the bare name meant a single `_.escape(req.query.n)` reaching a query silently turned SQL detection off, with no diagnostic, while the documentation told the developer they were covered. A wrongly-recognised sanitizer is strictly worse than an unrecognised one — an unrecognised escaper costs a false positive, a wrongly-recognised one converts an honest wall into an assertion of safety.',
   },
   {
     id: 'mysql.escapeId',
-    root: { method: /^escapeId$/ },
+    root: { method: /^escapeId$/, receiver: /^(mysql2?|sql|conn|connection|db|database|pool|client|knex)$/i },
     argument: 0,
     clears: ['sql'],
     confidence: 0.9,
-    note: 'Identifier quoting for table/column names — the one case parameter binding cannot cover.',
+    note: 'Identifier quoting for table/column names — the one case parameter binding cannot cover. Doubles backticks, so the output cannot break out of a quoted identifier and it does prevent injection, which is why it clears `sql`.\n\nKnown imprecision, recorded rather than modelled: escapeId makes an *identifier* position safe, not a *value* position. `WHERE name = ${escapeId(v)}` renders a column reference instead of a literal — a semantically wrong query, not an injection. Distinguishing the two positions needs a SQL parser, so this is deliberately out of scope; see docs/research/security-review-no-sql-injection.md.',
   },
   {
     id: 'global.encodeURIComponent',
@@ -189,8 +238,20 @@ const sanitizers = [
  * `args: 'all' | 'none' | number[]`
  */
 const propagators = [
+  // Global functions. A tainted value survives every one of these.
+  { global: 'String', args: 'all' },
+  { global: 'decodeURIComponent', args: 'all' },
+  { global: 'decodeURI', args: 'all' },
+  { global: 'encodeURI', args: 'all' },
+  { global: 'unescape', args: 'all' },
+
+  // Methods.
   { method: 'concat', receiver: true, args: 'all' },
-  { method: 'join', receiver: true, args: 'none' },
+  { method: 'split', receiver: true, args: 'none' },
+  { method: 'toLocaleLowerCase', receiver: true, args: 'none' },
+  { method: 'toLocaleUpperCase', receiver: true, args: 'none' },
+  { method: 'flat', receiver: true, args: 'none' },
+  { method: 'join', receiver: true, args: 'all' },
   { method: 'toString', receiver: true, args: 'none' },
   { method: 'trim', receiver: true, args: 'none' },
   { method: 'trimStart', receiver: true, args: 'none' },
@@ -231,13 +292,22 @@ module.exports = {
  * append to, not a registration API.
  */
 function merge(extra = {}) {
+  // `disable` is what makes "configurable away" a true statement rather than an
+  // aspiration. Prepending a replacement entry shadows a built-in for lookups,
+  // but there was previously no way to *remove* one, so a consumer whose
+  // parameter happens to be named `req` had no lever short of raising
+  // minConfidence globally — which would silence every other rule too.
+  const disabled = new Set(extra.disable ?? [])
+  const keep = entry => !disabled.has(entry.id)
+
   const merged = {
-    sources: [...(extra.sources ?? []), ...sources],
-    sinks: [...(extra.sinks ?? []), ...sinks],
-    sanitizers: [...(extra.sanitizers ?? []), ...sanitizers],
+    sources: [...(extra.sources ?? []), ...sources.filter(keep)],
+    sinks: [...(extra.sinks ?? []), ...sinks.filter(keep)],
+    sanitizers: [...(extra.sanitizers ?? []), ...sanitizers.filter(keep)],
     propagators: [...(extra.propagators ?? []), ...propagators],
     nonPropagatingProperties: [...(extra.nonPropagatingProperties ?? []), ...nonPropagatingProperties],
   }
+
   validate(merged)
   return merged
 }
@@ -250,6 +320,7 @@ function validate({ sinks, sanitizers }) {
   for (const sink of sinks) {
     if (!sink.requires) throw new Error(`security registry: sink '${sink.id}' has no \`requires\` kind. A sink that requires general safety is a sink whose author has not decided what it is vulnerable to.`)
     if (!(sink.requires in KINDS)) throw new Error(`security registry: sink '${sink.id}' requires unknown kind '${sink.requires}'. Known kinds: ${Object.keys(KINDS).join(', ')}`)
+    if (!SEVERITIES.includes(sink.severity)) throw new Error(`security registry: sink '${sink.id}' has severity '${sink.severity}', which no report decision recognises. Known severities: ${SEVERITIES.join(', ')}`)
   }
 
   for (const sanitizer of sanitizers) {
@@ -258,6 +329,11 @@ function validate({ sinks, sanitizers }) {
       if (kind !== '*' && !(kind in KINDS)) throw new Error(`security registry: sanitizer '${sanitizer.id}' clears unknown kind '${kind}'. Known kinds: ${Object.keys(KINDS).join(', ')}, or '*'`)
     }
     if (sanitizer.clears.includes('*') && !sanitizer.note) throw new Error(`security registry: sanitizer '${sanitizer.id}' clears '*' without a note. A wildcard sanitizer silently disables detection for every sink, so it must say why that is sound.`)
+
+    // A sanitizer matched by bare method name trusts a function because of what
+    // it is called, which AGENTS.md forbids outright. `escape` is the canonical
+    // trap: lodash, he and validator all export an HTML escaper by that name.
+    if (sanitizer.root.method && !sanitizer.root.receiver) throw new Error(`security registry: sanitizer '${sanitizer.id}' is matched by method name with no \`receiver\` constraint, which trusts a function because of what it is called. Add a receiver pattern, or root the entry in a module or global.`)
   }
 }
 
