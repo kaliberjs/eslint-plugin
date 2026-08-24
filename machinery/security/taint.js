@@ -130,6 +130,7 @@ function createAnalysis(sourceCode, options) {
       case 'ConditionalExpression': return resolveConditional(unwrapped)
       case 'LogicalExpression': return resolveLogical(unwrapped)
       case 'CallExpression': return resolveCall(unwrapped)
+      case 'NewExpression': return resolveNew(unwrapped)
       case 'TaggedTemplateExpression': return resolveTaggedTemplate(unwrapped)
       default: return null
     }
@@ -227,6 +228,16 @@ function createAnalysis(sourceCode, options) {
     return !variable.defs.length && variable.scope.type === 'global'
   }
 
+  /** Same shadowing check as isGlobalNamed, but for the regex-matched constructors. */
+  function isGlobalConstructorNamed(identifier, pattern) {
+    if (!pattern || identifier.type !== 'Identifier' || !pattern.test(identifier.name)) return false
+
+    const variable = referenceFor(identifier)?.resolved
+    if (!variable) return true
+
+    return !variable.defs.length && variable.scope.type === 'global'
+  }
+
   function sourceForMember(node) {
     const { root, path } = memberChain(node)
     if (!root || !path.length) return null
@@ -304,7 +315,12 @@ function createAnalysis(sourceCode, options) {
       const name = getPropertyName(node, scopeOf(node))
       if (name === null) return null
 
-      return known.sinks.find(sink => sink.root.property?.test(String(name))) ?? null
+      // An optional receiver constraint keeps property sinks from matching
+      // every object with that property name (location.href vs link.href).
+      return known.sinks.find(sink =>
+        sink.root.property?.test(String(name)) &&
+        (!sink.root.receiver || matchesReceiver(node.object, sink.root.receiver))
+      ) ?? null
     }
 
     if (node.callee.type === 'Identifier')
@@ -700,6 +716,34 @@ function createAnalysis(sourceCode, options) {
     // source of false positives in every tool that does it.
     bail('unknownCall')
     return null
+  }
+
+  /**
+   * `new URLSearchParams(location.search)` etc: a tainted argument taints the
+   * constructed object, gated by constructor name so a blanket NewExpression
+   * rule does not taint every object built from user input.
+   */
+  function resolveNew(node) {
+    const propagator = constructPropagatorFor(node)
+    if (propagator) return resolvePropagatorConstruct(node, propagator)
+
+    bail('unknownConstruct')
+    return null
+  }
+
+  function constructPropagatorFor(node) {
+    if (node.callee.type !== 'Identifier') return null
+    return known.propagators.find(propagator =>
+      propagator.construct && isGlobalConstructorNamed(node.callee, propagator.construct)
+    ) ?? null
+  }
+
+  function resolvePropagatorConstruct(node, propagator) {
+    const candidates = []
+    if (propagator.args === 'all') candidates.push(...node.arguments)
+    else if (Array.isArray(propagator.args)) candidates.push(...propagator.args.map(i => node.arguments[i]))
+
+    return worstOf(candidates, node, 'methodName', PENALTY.methodName, node.callee.name)
   }
 
   /**

@@ -522,12 +522,16 @@ test('security-no-sql-injection', merge(
       `async function route(c) { db.query('SELECT * FROM u WHERE id = ' + c.req.query('id')) }`,
       // ADVERSARIAL MISS: AWS Lambda / API Gateway event object.
       `exports.handler = async (event, context) => { db.query('SELECT * FROM u WHERE id = ' + event.queryStringParameters.id) }`,
-      // ADVERSARIAL MISS: URLSearchParams is how query strings are actually
-      // read in the browser. The constructor is an unknown call, so the taint
-      // from location.search dies at `new URLSearchParams(...)`.
-      `const p = new URLSearchParams(location.search); db.query(\`SELECT * FROM u WHERE id = \${p.get('id')}\`)`,
     ],
     invalid: [
+      // ADVERSARIAL MISS: URLSearchParams is how query strings are actually
+      // read in the browser. The constructor previously was an unknown call,
+      // so the taint from location.search died at `new URLSearchParams(...)`.
+      // Was a recorded miss; now detected.
+      {
+        code: `const p = new URLSearchParams(location.search); db.query(\`SELECT * FROM u WHERE id = \${p.get('id')}\`)`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
       // ADVERSARIAL MISS: Express error-handling middleware has arity 4 and
       // `req` at index 1. The source rule pins index 0 and arity [2, 3], so
       // every error handler in every Express app is invisible.

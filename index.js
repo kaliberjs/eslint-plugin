@@ -68,6 +68,8 @@ const plugin = {
     'security-no-hardcoded-credentials': require('./rules/security/no-hardcoded-credentials'),
     'security-no-hardcoded-api-key': require('./rules/security/no-hardcoded-api-key'),
     'security-no-path-traversal': require('./rules/security/no-path-traversal'),
+    'security-no-open-redirect': require('./rules/security/no-open-redirect'),
+    'security-no-client-side-open-redirect': require('./rules/security/no-client-side-open-redirect'),
   },
 
   configs: {
@@ -125,6 +127,8 @@ const plugin = {
         '@kaliber/security-no-hardcoded-credentials': 'warn',
         '@kaliber/security-no-hardcoded-api-key': 'warn',
         '@kaliber/security-no-path-traversal': 'warn',
+        '@kaliber/security-no-open-redirect': 'warn',
+        '@kaliber/security-no-client-side-open-redirect': 'warn',
       },
     },
   },

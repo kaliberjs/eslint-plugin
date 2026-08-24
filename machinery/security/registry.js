@@ -309,6 +309,80 @@ const sinks = [
     owasp: 'A01:2021',
     note: 'res.sendFile(path) is an arbitrary file read when the path is attacker-shaped.',
   },
+
+  // --- Open redirect, server side. res.redirect covers Express and Fastify
+  // reply shapes; ctx.redirect is koa. The Location header form is handled
+  // inside the rule (a literal header name paired with a tainted value).
+  {
+    id: 'url.server.redirect',
+    root: { method: /^(redirect|location)$/, receiver: /^(res|response|reply|ctx)$/i },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-601',
+    owasp: 'A01:2021',
+    note: 'An OAuth redirect_uri or login returnTo echoed without an allowlist sends the victim to an attacker-controlled origin after authentication.',
+  },
+  {
+    id: 'url.next.redirect',
+    root: { module: 'next/navigation', name: /^redirect$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-601',
+    owasp: 'A01:2021',
+    note: 'Next.js server-side redirect().',
+  },
+
+  // --- Open redirect, client side. Property form uses the new receiver
+  // constraint so link.href assignments are not confused with navigation.
+  {
+    id: 'url.location.href',
+    root: { property: /^href$/, receiver: /^location$/ },
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-601',
+    owasp: 'A01:2021',
+    note: 'location.href = untrusted navigates the page; the assignment target must be location (possibly via window.location).',
+  },
+  {
+    id: 'url.window.location',
+    root: { property: /^location$/, receiver: /^(window|self|top|parent|globalThis|document)$/ },
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-601',
+    owasp: 'A01:2021',
+    note: 'window.location = untrusted navigates the page, same as location.href.',
+  },
+  {
+    id: 'url.location.methods',
+    root: { method: /^(assign|replace)$/, receiver: /^location$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-601',
+    owasp: 'A01:2021',
+  },
+  {
+    id: 'url.window.open',
+    root: { method: /^open$/, receiver: /^window$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'medium',
+    cwe: 'CWE-601',
+    owasp: 'A01:2021',
+    note: 'Medium rather than high: a new context opens, so the impact depends on what the opened URL can do.',
+  },
+  {
+    id: 'url.router.push',
+    root: { method: /^(push|replace|navigateByUrl)$/, receiver: /^(router|history)$/i },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-601',
+    owasp: 'A01:2021',
+    note: 'Client router navigation with an external absolute URL leaves the application.',
+  },
 ]
 
 const sanitizers = [
@@ -420,6 +494,16 @@ const propagators = [
   { method: 'replace', receiver: true, args: [1] },
   { method: 'replaceAll', receiver: true, args: [1] },
   { method: 'at', receiver: true, args: 'none' },
+  // A tainted receiver's .get() stays tainted. Safe unqualified: propagation
+  // only fires when the receiver is already tainted, so cache.get(key) on a
+  // clean cache stays clean.
+  { method: 'get', receiver: true, args: 'none' },
+
+  // Constructors. A tainted string handed to a URL parser stays tainted
+  // through the object: new URLSearchParams(location.search).get('next') is
+  // the canonical client-side open redirect. Gated by constructor name — a
+  // blanket NewExpression rule would taint every object built from user input.
+  { construct: /^(URLSearchParams|URL)$/, args: 'all' },
 ]
 
 /**
