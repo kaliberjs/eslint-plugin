@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -63,7 +64,10 @@ module.exports = {
         if (!features) {
           return report(context, { node, messageId: 'windowOpenNoopener', severity: 'medium', confidence: 0.9 })
         }
-        if (features.type === 'Literal' && !/noopener/i.test(String(features.value))) {
+        // Folded through getStaticValue rather than requiring an inline
+        // Literal, so a const alias for the features string is not a wall.
+        const value = getStaticValue(features, context.sourceCode.getScope(features))
+        if (typeof value?.value === 'string' && !/noopener/i.test(value.value)) {
           return report(context, { node, messageId: 'windowOpenNoopener', severity: 'medium', confidence: 1 })
         }
       },

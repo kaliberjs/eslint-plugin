@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -35,8 +36,12 @@ module.exports = {
         if (!HTML_SINKS.has(method)) return
 
         const argument = node.arguments[0]
-        if (!argument || argument.type === 'Literal') return
-        if (argument.type === 'TemplateLiteral' && !argument.expressions.length) return
+        if (!argument) return
+        // Folded through getStaticValue rather than checking Literal/
+        // TemplateLiteral node types directly: a const alias of either is
+        // exactly as static, and treating it as "not a literal" made this
+        // a false positive on demonstrably safe code.
+        if (getStaticValue(argument, context.sourceCode.getScope(argument))) return
 
         report(context, {
           node,

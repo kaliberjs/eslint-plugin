@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -30,13 +32,13 @@ module.exports = {
   create(context) {
     return {
       Property(node) {
-        if (node.computed) return
-        const name = node.key?.name
+        const name = getStaticPropertyName(node)
+        const value = getStaticValue(node.value, context.sourceCode.getScope(node.value))
 
-        if (name === 'autoescape' && node.value?.type === 'Literal' && node.value.value === false) {
+        if (name === 'autoescape' && value?.value === false) {
           emit(context, node, 'autoescape: false')
         }
-        if (name === 'noEscape' && node.value?.type === 'Literal' && node.value.value === true) {
+        if (name === 'noEscape' && value?.value === true) {
           emit(context, node, 'noEscape: true')
         }
       },
