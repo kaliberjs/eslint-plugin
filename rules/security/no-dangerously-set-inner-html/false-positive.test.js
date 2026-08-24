@@ -23,6 +23,16 @@ test('security-no-dangerously-set-inner-html', merge(
       // module) is a documented miss, not a crash — the rule must not throw
       // walking the identifier chain.
       'import markup from "./markup"; const C = () => <div dangerouslySetInnerHTML={markup} />',
+      // @kaliber/safe-json-stringify is a registered sanitizer for exactly
+      // this shape: JSON embedded in a script tag. Found as the majority of
+      // findings in a dogfood run against a real Kaliber project before it
+      // was registered.
+      'import { safeJsonStringify } from "@kaliber/safe-json-stringify"; const C = () => <script dangerouslySetInnerHTML={{ __html: safeJsonStringify(data) }} />',
+      // The same sanitizer, one interpolation inside an otherwise-static
+      // template literal — the shape it almost always actually appears in
+      // (a dataLayer.push call), not a bare sanitizer call. Also found in
+      // the same dogfood run.
+      'import { safeJsonStringify } from "@kaliber/safe-json-stringify"; const C = () => <script dangerouslySetInnerHTML={{ __html: `window.dataLayer.push(${safeJsonStringify(data)});` }} />',
     ],
     invalid: [],
   },

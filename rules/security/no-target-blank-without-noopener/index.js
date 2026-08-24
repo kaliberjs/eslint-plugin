@@ -87,5 +87,10 @@ function hasNoopener(rel) {
   const text = value.type === 'JSXExpressionContainer'
     ? (value.expression?.type === 'Literal' ? String(value.expression.value) : null)
     : String(value.value ?? '')
-  return text ? /noopener/i.test(text) : true // dynamic rel: give benefit of the doubt? no—unknown means unchecked; treat as present to stay quiet on computed values
+  // noreferrer implies noopener per the HTML spec — browsers sever the
+  // opener handle for it too, specifically so the referrer-hiding keyword
+  // can't be defeated through the opener relationship. Confirmed a real
+  // false positive by a dogfood run: every target="_blank" in one real
+  // project used noreferrer alone.
+  return text ? /noopener|noreferrer/i.test(text) : true // dynamic rel: give benefit of the doubt? no—unknown means unchecked; treat as present to stay quiet on computed values
 }

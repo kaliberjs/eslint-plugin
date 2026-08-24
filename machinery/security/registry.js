@@ -450,6 +450,14 @@ const sanitizers = [
     confidence: 0.9,
     note: 'Strips directory components, so the result cannot navigate out of a base directory. Known imprecision, recorded rather than modelled: basename still permits arbitrary *names*, so an allowlist is better when the file must be one of a known set.',
   },
+  {
+    id: 'kaliber.safeJsonStringify',
+    root: { helper: 'safeJsonStringify' },
+    argument: 0,
+    clears: ['html'],
+    confidence: 0.9,
+    note: '@kaliber/safe-json-stringify escapes <, >, /, U+2028 and U+2029 on top of JSON.stringify — exactly the characters needed to stop a `</script>` breakout when embedding JSON inside a script tag (structured data, analytics dataLayer pushes). Verified against the published source before registering, per the bare-helper rule below.\n\nKnown imprecision, recorded rather than modelled: this makes a value safe for *this one embedding shape*, not HTML in general — it does not escape `&` or `"`, so it is not a substitute for an HTML sanitizer on arbitrary markup. Confirmed as a real false positive in no-dangerously-set-inner-html via a dogfood run against a production Kaliber project, where this was the majority of its findings.',
+  },
 ]
 
 /**

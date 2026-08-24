@@ -35,6 +35,14 @@ module.exports = {
         )
         if (!named) return
 
+        // An existence/emptiness check ("is there a value at all"), not a
+        // comparison against an expected secret — nothing about a secret's
+        // bytes is leaked by learning whether it is present. Found as a
+        // real false positive in a dogfood run: `hash !== ''`, where hash
+        // was a URL fragment, not secret material.
+        const other = node.left === named ? node.right : node.left
+        if (isEmptyCheck(other)) return
+
         report(context, {
           node,
           messageId: 'timingUnsafeCompare',
@@ -45,4 +53,10 @@ module.exports = {
       },
     }
   },
+}
+
+function isEmptyCheck(node) {
+  if (node?.type === 'Identifier') return node.name === 'undefined'
+  if (node?.type === 'Literal') return node.value === null || node.value === ''
+  return false
 }

@@ -6,10 +6,13 @@ const { report, settings } = require('../../../machinery/security/finding')
 // dangerouslySetInnerHTML is a deliberate hole in React's escaping. The
 // constant-only form (icon sprites, static strings) is safe and common, so —
 // unlike react/no-danger — the rule reserves its finding for non-constant
-// values, which is where XSS actually lives. Sanitizer modelling (DOMPurify
-// etc.) does not exist yet; until it does, a value that merely *passed
-// through* a sanitizer is still flagged, which errs on the noisy side for
-// one known false-positive family (JSON-LD built with JSON.stringify).
+// values, which is where XSS actually lives. A value that passed through a
+// registered `html` sanitizer (settings['@kaliber/security'].registry.sanitizers
+// — e.g. the project's own trusted helper declared with root.helper) is
+// trusted too, including when the sanitizer call is one interpolation
+// inside an otherwise-static template literal — the JSON-in-script-tag
+// shape (structured data, analytics dataLayer pushes) almost always looks
+// like that, not a bare sanitizer call.
 module.exports = {
   meta: {
     type: 'problem',
@@ -46,8 +49,7 @@ module.exports = {
         const htmlValue = findProperty(value, '__html', context.sourceCode)
         if (!htmlValue) return
 
-        if (isConstant(htmlValue)) return
-        if (analysis.sanitizedAt(htmlValue, 'html')) return
+        if (isSafe(analysis, htmlValue)) return
 
         report(context, {
           node,
@@ -66,8 +68,7 @@ module.exports = {
         const htmlValue = findProperty(inner, '__html', context.sourceCode)
         if (!htmlValue) return
 
-        if (isConstant(htmlValue)) return
-        if (analysis.sanitizedAt(htmlValue, 'html')) return
+        if (isSafe(analysis, htmlValue)) return
 
         report(context, {
           node: inner,
@@ -127,13 +128,17 @@ function findProperty(node, name, sourceCode) {
 }
 
 /**
- * A string literal, a template literal without expressions, or a template
- * whose expressions are themselves constants — enough to cover icon sprites
- * and static markup without pretending to understand string building.
+ * A string literal, a registered-sanitizer call, or a template literal whose
+ * expressions are each one of those — recursively, so a static wrapper
+ * around a sanitized interpolation
+ * (`` `window.dataLayer.push(${safeJsonStringify(data)})` ``) is exactly as
+ * safe as the sanitizer call would be inline. Enough to cover icon sprites,
+ * static markup, and the JSON-in-script family without pretending to
+ * understand string building in general.
  */
-function isConstant(node) {
+function isSafe(analysis, node) {
   if (!node) return false
   if (node.type === 'Literal') return true
-  if (node.type === 'TemplateLiteral') return node.expressions.every(isConstant)
-  return false
+  if (node.type === 'TemplateLiteral') return node.expressions.every(expression => isSafe(analysis, expression))
+  return analysis.sanitizedAt(node, 'html')
 }

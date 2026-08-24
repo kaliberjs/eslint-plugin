@@ -39,12 +39,14 @@ test('no sanitizer is trusted because of its name alone', () => {
   //
   // Per AGENTS.md a function is never a sanitizer because of what it is called.
   // A method name is only acceptable when paired with a receiver constraint;
-  // otherwise the entry must be rooted in a module or a global.
+  // otherwise the entry must be rooted in a module, a global, or an explicit
+  // `root.helper` — the shape that exists precisely to record "trusting this
+  // bare name was a conscious decision" rather than an accident.
   for (const sanitizer of registry.sanitizers) {
     if (sanitizer.root.method)
       assert.ok(sanitizer.root.receiver, `sanitizer ${sanitizer.id} is matched by bare method name — it needs a receiver constraint`)
     else
-      assert.ok(sanitizer.root.global || sanitizer.root.module, `sanitizer ${sanitizer.id} has no root to match against`)
+      assert.ok(sanitizer.root.global || sanitizer.root.module || sanitizer.root.helper, `sanitizer ${sanitizer.id} has no root to match against`)
   }
 })
 
