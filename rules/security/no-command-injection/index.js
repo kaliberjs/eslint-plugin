@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 module.exports = {
   meta: {
@@ -35,6 +35,8 @@ module.exports = {
 
     return {
       CallExpression(node) {
+        reportReachableSinks(context, analysis, node, 'shell', 'commandInjection', 'commandInjectionQualified')
+
         const sink = analysis.sinkAt(node)
         if (sink?.requires !== 'shell') return
 

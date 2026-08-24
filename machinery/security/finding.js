@@ -27,6 +27,7 @@ const SEVERITIES = Object.keys(REPORTABLE)
 
 module.exports = {
   report,
+  reportReachableSinks,
   SEVERITIES,
   confidenceBucket,
   describePath,
@@ -68,6 +69,34 @@ function report(context, { node, messageId, data = {}, severity, confidence, pat
   })
 
   return true
+}
+
+/**
+ * Report every sink reachable inside a called function's body, given a call
+ * site with tainted arguments — the delegate-to-a-data-layer shape that
+ * `report()` alone cannot see, because the sink node it would anchor to may
+ * not even belong to this file's AST. Reports always anchor at `node` (the
+ * call site), never at the sink itself, for exactly that reason.
+ *
+ * `filter` exists for sink kinds shared by two rules (e.g. 'path' for both
+ * no-path-traversal and no-firebase-path-injection) so each only reports the
+ * sink family it owns.
+ */
+function reportReachableSinks(context, analysis, node, kind, messageId, qualifiedMessageId, filter) {
+  for (const { sink, taint, sinkLabel } of analysis.reachableSinksOf(node, kind)) {
+    if (filter && !filter(sink)) continue
+
+    const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
+
+    report(context, {
+      node,
+      messageId: qualify ? qualifiedMessageId : messageId,
+      data: { sink: sinkLabel },
+      severity: sink.severity,
+      confidence: taint.confidence,
+      path: [...taint.path, { node, kind: 'sink', label: sinkLabel, penalty: 0 }],
+    })
+  }
 }
 
 /** @returns {'high' | 'medium' | 'low'} */

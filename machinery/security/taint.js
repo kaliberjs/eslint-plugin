@@ -101,8 +101,32 @@ function createAnalysis(sourceCode, options, filename) {
   // Active helper-summary parameter bindings, or null in normal resolution.
   let bindingScope = null
   const references = indexReferences(sourceCode)
+  // Cycle guard for reachableSinksOf's same-file recursion, keyed by
+  // function AST node — the cross-file equivalent of crossFileInProgress,
+  // but scoped to this analysis instance since node identity only means
+  // anything within one file.
+  const sinkScanInProgress = new Set()
+  // Memo for one top-level reachableSinksOf walk: without it, a call graph
+  // where two functions each call a shared third one re-walks that shared
+  // function once per path to it, and a chain of such fan-outs is
+  // exponential in its depth — an ordinary service-layer file with no sink
+  // in it at all, just a dozen small functions each calling two others,
+  // took over twenty seconds to lint. Keyed by function node + a signature
+  // of the bound parameter taints, so `f(x)` and `f('literal')` still
+  // resolve independently and no true positive is lost — only identical
+  // work within the same walk is shared. Reset after each top-level call:
+  // a call graph is walked once per rule visiting its entry call site, and
+  // two different entry calls can bind the same function differently.
+  let sinkScanMemo = null
+  // sinksReachableInExport's persistent twin: analyze() caches this whole
+  // analysis instance by SourceCode, so unlike the same-file memo above,
+  // this one is never reset — it lives as long as this file's analysis
+  // does, because a module that gets imported and called from several
+  // places (or several times from one place) is the cross-file version of
+  // the exact same fan-out.
+  const sinkExportMemo = new Map()
 
-  return { taintOf, sinkAt, sourceAt, referenceFor, sanitizedAt, stats, summarizeExport }
+  return { taintOf, sinkAt, sourceAt, referenceFor, sanitizedAt, stats, summarizeExport, reachableSinksOf, sinksReachableInExport }
 
   function referenceFor(identifier) {
     return references.get(identifier) ?? null
@@ -886,6 +910,35 @@ function createAnalysis(sourceCode, options, filename) {
    * generic unknown-call wall is unchanged for everything else.
    */
   function resolveCrossFileCall(node) {
+    const target = resolveCrossFileTarget(node)
+    if (!target) return null
+
+    // A→B→A mutual recursion across files: the same guard taintOf already
+    // uses for a single file's AST nodes, keyed here by path+export because
+    // there is no shared node identity across two analysis instances.
+    // Prefixed so this doesn't collide with reachableSinksOf's own use of
+    // the same set for the same target — they are independent questions
+    // ("what does the return value carry" vs "what sinks does calling this
+    // reach") and one being mid-resolution must not block the other.
+    const cycleKey = `return::${target.targetPath}::${target.importedName}`
+    if (crossFileInProgress.has(cycleKey)) return { taint: null }
+
+    crossFileInProgress.add(cycleKey)
+    try {
+      const targetAnalysis = analyze(target.targetSourceCode, options, target.targetPath)
+      const argumentTaints = node.arguments.map(argument => taintOf(argument))
+      const taint = targetAnalysis.summarizeExport(target.importedName, argumentTaints, {
+        node: node.callee,
+        label: getCalleeLabel(node.callee),
+      })
+      return { taint }
+    } finally {
+      crossFileInProgress.delete(cycleKey)
+    }
+  }
+
+  /** The shared first half of every cross-file resolution: specifier -> a real file, read and parsed. */
+  function resolveCrossFileTarget(node) {
     if (node.callee.type !== 'Identifier' || !filename) return null
 
     const variable = referenceFor(node.callee)?.resolved
@@ -894,29 +947,11 @@ function createAnalysis(sourceCode, options, filename) {
 
     const targetPath = resolveModulePath(info.specifier, filename, options.sourceRoot)
     if (!targetPath) return null
-    const importedName = info.importedName
-
-    // A→B→A mutual recursion across files: the same guard taintOf already
-    // uses for a single file's AST nodes, keyed here by path+export because
-    // there is no shared node identity across two analysis instances.
-    const cycleKey = `${targetPath}::${importedName}`
-    if (crossFileInProgress.has(cycleKey)) return { taint: null }
 
     const targetSourceCode = readCrossFileSourceCode(targetPath)
     if (!targetSourceCode) return null
 
-    crossFileInProgress.add(cycleKey)
-    try {
-      const targetAnalysis = analyze(targetSourceCode, options, targetPath)
-      const argumentTaints = node.arguments.map(argument => taintOf(argument))
-      const taint = targetAnalysis.summarizeExport(importedName, argumentTaints, {
-        node: node.callee,
-        label: getCalleeLabel(node.callee),
-      })
-      return { taint }
-    } finally {
-      crossFileInProgress.delete(cycleKey)
-    }
+    return { targetPath, importedName: info.importedName, targetSourceCode }
   }
 
   /**
@@ -1025,6 +1060,249 @@ function createAnalysis(sourceCode, options, filename) {
     })
 
     return summarizeWithBindings(fnNode, bindings, labelInfo)
+  }
+
+  /**
+   * The mirror image of summarizeCall: that asks what taint flows *out*
+   * through a called function's return value, this asks what sinks of a
+   * given kind become reachable *inside* a called function's body when it
+   * is invoked with these arguments. A rule visiting a plain business-logic
+   * call — `getUserSelection({ userId: req.params.userId })` — sees
+   * nothing at that node from sinkAt alone, because the sink is not there;
+   * it is one or more calls deep, inside a function this file (or another
+   * one) declares. Without this, every taint-based rule is blind to
+   * exactly the shape a request handler that delegates to a separate
+   * domain/data layer takes — which is not a corner case, it is the
+   * ordinary way to structure a route handler.
+   *
+   * Returns an array (a function body can reach more than one matching
+   * sink) of `{ sink, taint, sinkLabel }`, empty when the callee is not a
+   * resolvable function, has no reachable sink of this kind, or every
+   * candidate is sanitized. Transitive and cross-file: a call inside the
+   * body to another resolvable function is followed the same way,
+   * one function at a time, bounded by the same cycle guards used for
+   * return-value resolution (same-file: function node identity; cross
+   * file: path+export, since there is no shared node identity across two
+   * analysis instances).
+   */
+  function reachableSinksOf(node, kind) {
+    if (node.type !== 'CallExpression') return []
+
+    // Only the outermost call sets up the memo and dedupes; a call reached
+    // while a walk is already in progress just contributes into it. Without
+    // this split, the same shared function reached by two different paths
+    // (the ordinary shape of two callers sharing a helper) would be walked
+    // twice and reported twice — see sinksReachableInBody's sink match.
+    if (sinkScanMemo) return reachableSinksOfWithin(node, kind)
+
+    sinkScanMemo = new Map()
+    try {
+      const seen = new Set()
+      return reachableSinksOfWithin(node, kind).filter(found => {
+        if (seen.has(found.sinkNode)) return false
+        seen.add(found.sinkNode)
+        return true
+      })
+    } finally {
+      sinkScanMemo = null
+    }
+  }
+
+  function reachableSinksOfWithin(node, kind) {
+    const localFunction = localFunctionFor(node.callee)
+    if (localFunction) {
+      const bindings = new Map()
+      localFunction.params.forEach((param, index) => bindParam(param, node.arguments[index] ?? null, bindings))
+      return sinksReachableInLocalBody(localFunction, bindings, kind, node.callee)
+    }
+
+    const localMethod = localMethodFor(node.callee)
+    if (localMethod) {
+      const bindings = new Map()
+      localMethod.params.forEach((param, index) => bindParam(param, node.arguments[index] ?? null, bindings))
+      return sinksReachableInLocalBody(localMethod, bindings, kind, node.callee)
+    }
+
+    return reachableSinksOfCrossFile(node, kind)
+  }
+
+  /**
+   * A stable string for "this function, called with taint shaped like
+   * this" — confidence and sanitized-kinds only, not the taint's path, so
+   * two structurally different derivations of the same confidence still
+   * share one walk. Good enough to skip repeat work; not a taint identity.
+   */
+  function bindingSignature(bindings, kind) {
+    return kind + '#' + [...bindings.entries()]
+      .map(([name, taint]) => `${name}:${taint ? `${taint.confidence}|${[...taint.sanitizedFor].sort().join('+')}` : '-'}`)
+      .join(',')
+  }
+
+  function sinksReachableInLocalBody(fnNode, bindings, kind, calleeNode) {
+    // Same-file mutual recursion (`function a(x){ b(x) } function b(x){ a(x) }`,
+    // neither containing a sink) would otherwise walk forever — the
+    // same shape of problem crossFileInProgress solves across files,
+    // needed here too because this walk, unlike taintOf's node-level
+    // inProgress guard, revisits whole function bodies rather than single
+    // expressions.
+    if (sinkScanInProgress.has(fnNode)) return []
+
+    const signature = bindingSignature(bindings, kind)
+    const memoized = sinkScanMemo.get(fnNode)
+    if (memoized?.has(signature)) return memoized.get(signature)
+
+    sinkScanInProgress.add(fnNode)
+    let result
+    try {
+      result = sinksReachableInBody(fnNode, bindings, kind, calleeNode)
+    } finally {
+      sinkScanInProgress.delete(fnNode)
+    }
+
+    if (memoized) memoized.set(signature, result)
+    else sinkScanMemo.set(fnNode, new Map([[signature, result]]))
+    return result
+  }
+
+  function reachableSinksOfCrossFile(node, kind) {
+    const target = resolveCrossFileTarget(node)
+    if (!target) return []
+
+    const cycleKey = `sinks::${target.targetPath}::${target.importedName}`
+    if (crossFileInProgress.has(cycleKey)) return []
+
+    crossFileInProgress.add(cycleKey)
+    try {
+      const targetAnalysis = analyze(target.targetSourceCode, options, target.targetPath)
+      const argumentTaints = node.arguments.map(argument => taintOf(argument))
+      // The label is resolved *here*, from this (the caller's) sourceCode,
+      // before crossing the file boundary — the target analysis instance
+      // must never receive a node it would need to read text from, the
+      // exact bug fixed in hop() applies here one level earlier.
+      return targetAnalysis.sinksReachableInExport(target.importedName, argumentTaints, kind, getCalleeLabel(node.callee))
+    } finally {
+      crossFileInProgress.delete(cycleKey)
+    }
+  }
+
+  /**
+   * Cross-file entry point, mirroring summarizeExport but for sink
+   * reachability. Memoized on `sinkExportMemo`, which — unlike
+   * sinkScanMemo — is never reset: this analysis instance is itself cached
+   * by SourceCode (see `analyze`), so the same target module imported and
+   * called from several call sites, or several times from one, reuses this
+   * exact instance and must not re-walk its body once per call.
+   */
+  function sinksReachableInExport(exportedName, argumentTaints, kind, calleeLabel) {
+    const signature = `${exportedName}#${kind}#${argumentTaints.map(taint => taint ? `${taint.confidence}|${[...taint.sanitizedFor].sort().join('+')}` : '-').join(',')}`
+    if (sinkExportMemo.has(signature)) return sinkExportMemo.get(signature)
+
+    const fnNode = findExport(sourceCode.ast, exportedName)
+    if (!fnNode) return []
+
+    const bindings = new Map()
+    fnNode.params.forEach((param, index) => {
+      bindParamFromTaint(param, argumentTaints[index] ?? null, bindings)
+    })
+
+    // A fresh top-level memo/dedup scope for this export's own walk — the
+    // same reason reachableSinksOf sets one up for a same-file entry call.
+    const previousMemo = sinkScanMemo
+    sinkScanMemo = new Map()
+    const seen = new Set()
+    let result
+    try {
+      result = sinksReachableInBody(fnNode, bindings, kind, null, calleeLabel).filter(found => {
+        if (seen.has(found.sinkNode)) return false
+        seen.add(found.sinkNode)
+        return true
+      })
+    } finally {
+      sinkScanMemo = previousMemo
+    }
+
+    sinkExportMemo.set(signature, result)
+    return result
+  }
+
+  /**
+   * Walk fnNode's body for calls matching a registered sink of `kind`,
+   * resolving each match's argument taint under `bindings`. A call that is
+   * not itself a matching sink but resolves to another local or cross-file
+   * function is followed transitively via reachableSinksOf — the same
+   * function this one is called from, so the cycle guards above apply
+   * uniformly regardless of how deep the chain goes.
+   *
+   * Does not descend into a nested function expression: its calls are
+   * evaluated on their own terms wherever *they* are called, the same
+   * boundary collectReturns already draws for the return-value direction.
+   */
+  function sinksReachableInBody(fnNode, bindings, kind, calleeNode, calleeLabel) {
+    const previousBindings = bindingScope
+    bindingScope = bindings
+    const found = []
+    try {
+      walk(fnNode.body)
+    } finally {
+      bindingScope = previousBindings
+    }
+    return found
+
+    function walk(node) {
+      if (!node || typeof node.type !== 'string') return
+      if (isFunctionNode(node) && node !== fnNode) return
+
+      if (node.type === 'CallExpression') {
+        const sink = sinkAt(node)
+        if (sink?.requires === kind) {
+          const argument = node.arguments[sink.argument]
+          const rawTaint = argument && taintOf(argument)
+          // A same-file sink whose argument taint doesn't actually depend on
+          // the call's bindings (a closure over an outer tainted variable,
+          // not the parameter) is already found by this file's own direct
+          // AST traversal — reporting it again here would double-report the
+          // exact same call. Re-resolve with no binding context active; if
+          // that alone finds a flow at least as confident as the bound one,
+          // this walk contributes nothing new. A *lower*-confidence ambient
+          // source (one this file's own traversal would report, if at all,
+          // at a different confidence) must not swallow a genuinely more
+          // confident bound flow — that would silence the exact finding
+          // this mechanism exists to surface.
+          if (
+            rawTaint && !rawTaint.sanitizedFor.has(kind) && !rawTaint.sanitizedFor.has('*') &&
+            !resolvesTheSameWithoutBindings(argument, kind, rawTaint.confidence)
+          ) {
+            const label = calleeLabel ?? getCalleeLabel(calleeNode)
+            const taint = hop(rawTaint, { node: calleeNode, kind: 'methodName', label, penalty: PENALTY.methodName })
+            if (taint) found.push({ sink, taint, sinkLabel: describeSinkCallee(node.callee), sinkNode: node })
+          }
+        } else {
+          found.push(...reachableSinksOf(node, kind))
+        }
+      }
+
+      for (const key of Object.keys(node)) {
+        if (key === 'parent') continue
+        const value = node[key]
+        if (Array.isArray(value)) value.forEach(walk)
+        else if (value && typeof value === 'object' && typeof value.type === 'string') walk(value)
+      }
+    }
+  }
+
+  function describeSinkCallee(calleeNode) {
+    return `${sourceCode.getText(calleeNode)}()`
+  }
+
+  function resolvesTheSameWithoutBindings(node, kind, boundConfidence) {
+    const previousBindings = bindingScope
+    bindingScope = null
+    const ambientTaint = taintOf(node)
+    bindingScope = previousBindings
+    return (
+      Boolean(ambientTaint) && !ambientTaint.sanitizedFor.has(kind) && !ambientTaint.sanitizedFor.has('*') &&
+      ambientTaint.confidence >= boundConfidence
+    )
   }
 
   /**

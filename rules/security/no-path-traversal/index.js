@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 // A tainted path segment navigates out of the intended directory
 // (`../../etc/passwd`) or addresses files the caller should never touch —
@@ -38,11 +38,13 @@ module.exports = {
 
     return {
       CallExpression(node) {
-        const sink = analysis.sinkAt(node)
-        if (sink?.requires !== 'path') return
         // Shared 'path' kind with no-firebase-path-injection — this rule
         // owns the filesystem sinks, that one owns its own, so the same
         // call is never reported twice under two different messages.
+        reportReachableSinks(context, analysis, node, 'path', 'pathTraversal', 'pathTraversalQualified', sink => !sink.id.startsWith('firebase.'))
+
+        const sink = analysis.sinkAt(node)
+        if (sink?.requires !== 'path') return
         if (sink.id.startsWith('firebase.')) return
 
         const target = node.arguments[sink.argument]

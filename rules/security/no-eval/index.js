@@ -1,7 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 // ESLint core's no-eval, no-implied-eval and no-new-func (all enabled in the
 // shared config) cover eval, new Function and string-bodied timers. This rule
@@ -47,6 +47,8 @@ module.exports = {
 
     return {
       CallExpression(node) {
+        reportReachableSinks(context, analysis, node, 'code', 'codeInjection', 'codeInjectionQualified')
+
         const sink = analysis.sinkAt(node)
         if (sink?.requires !== 'code') return
 

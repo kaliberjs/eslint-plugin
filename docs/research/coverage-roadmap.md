@@ -185,6 +185,90 @@ regressions — the interesting leads sizing found don't reach a registered
 sink yet (Tier 2 territory), so no new findings fired in this specific
 project, as expected.
 
+### Tier 3 item 4: reachable sinks through a called function — shipped
+
+Interprocedural-lite (Phase 0/1 above) only tracks taint flowing *out* of
+a call through its return value. It stayed blind to Kaliber's own most
+common architectural shape: a route handler delegates to a same-file or
+cross-file domain/data-layer function, and the actual sink is *inside*
+that function's body, reached with the return value never used —
+`getUserSelection({ userId: req.params.userId })` where `getUserSelection`
+itself calls `db.ref(...)`. No taint-based rule could see this: the call
+site has no sink, and the callee's sink call, resolved on its own without
+the call-site's argument bindings, resolves its own parameter as
+untainted.
+
+`reachableSinksOf(node, kind)` closes this: given a call to a resolvable
+local or cross-file function, it walks the callee's body (transitively,
+through further same-file or cross-file calls, one function at a time)
+looking for a registered sink of `kind` whose argument taint traces back
+to the call's own arguments. Reuses the same same-file/cross-file
+resolution, param binding, and cycle-guard machinery as return-value
+summarization — including the same documented cross-file
+object-destructured-param miss (only a whole-object taint crosses the
+file boundary, never the AST node, so `getUserSelection({ userId })`
+called cross-file still isn't caught; only the same-file case is). Wired
+into all 8 rules that consult the sink registry from a `CallExpression`
+(no-sql-injection, no-command-injection, no-eval, no-dom-xss-sink,
+no-client-side-open-redirect, no-open-redirect, no-path-traversal,
+no-firebase-path-injection) via a shared `reportReachableSinks` helper in
+finding.js — no-dangerously-set-inner-html doesn't use the sink registry
+at all (JSX-attribute matching), so it's not part of this mechanism.
+
+A real double-report bug surfaced during development: a same-file
+function whose sink closes over an outer free variable rather than its
+own parameter (`function inner() { db.query('SELECT ' + req.query.id) }`,
+called as `inner()`) was already found by ESLint's own direct traversal
+into `inner`'s body — no call-site binding needed — and got reported a
+second time by the new mechanism walking in from the call site. Fixed by
+re-resolving the sink's argument taint with no binding context active
+before reporting, and skipping the finding if that alone already finds
+it — the mechanism only reports what genuinely depends on the call's
+arguments.
+
+A second, unrelated, real bug found and fixed along the way (not
+specific to this feature but exposed by testing it against a fixture
+with a cross-file taint hop): `hop()` deferred resolving a step's `label`
+to report time, using `sourceCode.getText(hop.node)` against whichever
+file was currently being *reported on* — wrong when `hop.node` belonged
+to a different file in the chain. Fixed by resolving the label eagerly,
+inside the correct file's own closure.
+
+An adversarial pass and a false-positive pass, run independently against
+each other, converged on the same two real defects before this shipped:
+
+- **Duplicate reports.** A diamond call graph — two functions sharing one
+  helper that contains the sink — reported the same sink call once per
+  path to it. Ordinary code (`insertOrder` and `writeAudit` both calling
+  a shared `record`) got reported twice on the same line, same-file and
+  cross-file alike. Fixed by tagging each finding with its sink AST node
+  and deduping on that identity once per top-level walk (same-file) or
+  once per cached cross-file analysis instance (cross-file, since that
+  instance — and its export-level memo — outlives any single call site).
+- **Exponential runtime with zero sinks in the file.** Without memoizing
+  a function body's walk per (function, argument-taint signature),
+  re-walking a shared function once per path to it makes cost
+  `fanout^depth`. A 26-function same-file service layer with no
+  db/fs/exec/DOM call anywhere took over twenty seconds; an 18-module
+  cross-file import chain took over ten. Fixed by memoizing each walk:
+  `sinkScanMemo` for one top-level same-file call (reset after, since a
+  different entry call can bind the same function differently), and a
+  persistent `sinkExportMemo` per cross-file analysis instance (never
+  reset, because `analyze()` already caches that instance by SourceCode
+  and reuses it across every call site that reaches the same module).
+  Both confirmed down to milliseconds after the fix, both now guarded by
+  a regression test with a wall-clock budget.
+
+A third bug, smaller but real, surfaced by the same passes: the
+double-report suppression above (the same-file case, a callee whose sink
+depends on a closure rather than a parameter) asked only "is there
+ambient taint" when re-resolving with no binding context, never "would
+that ambient taint actually be reported." A low-confidence ambient
+source at the same sink argument (`process.argv`, sitting below the
+default floor) silently swallowed a genuinely higher-confidence bound
+flow reaching the exact same sink. Fixed by only suppressing when the
+ambient resolution is at least as confident as the bound one.
+
 Remaining Tier 3: string/value analysis, non-JS processors.
 
 ## Dogfood measurement — rabobank-jobs

@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 // Client-side variant: browser sources (location.*, document.URL) navigating
 // the page or its router. Same weakness as security-no-open-redirect,
@@ -35,6 +35,8 @@ module.exports = {
 
     return {
       CallExpression(node) {
+        reportReachableSinks(context, analysis, node, 'url', 'clientOpenRedirect', 'clientOpenRedirectQualified')
+
         const sink = analysis.sinkAt(node)
         if (sink?.requires !== 'url') return
 

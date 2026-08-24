@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 // Firebase Realtime Database and Firestore address data through a
 // `/`-separated hierarchy, the same shape as a filesystem path. A tainted
@@ -47,10 +47,12 @@ module.exports = {
 
     return {
       CallExpression(node) {
-        const sink = analysis.sinkAt(node)
-        if (sink?.requires !== 'path') return
         // Shared with no-path-traversal's filesystem sinks — only report
         // the ones this rule actually owns.
+        reportReachableSinks(context, analysis, node, 'path', 'firebasePathInjection', 'firebasePathInjectionQualified', sink => sink.id.startsWith('firebase.'))
+
+        const sink = analysis.sinkAt(node)
+        if (sink?.requires !== 'path') return
         if (!sink.id.startsWith('firebase.')) return
 
         const target = node.arguments[sink.argument]

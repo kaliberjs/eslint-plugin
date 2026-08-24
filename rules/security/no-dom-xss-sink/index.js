@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 module.exports = {
   meta: {
@@ -41,6 +41,8 @@ module.exports = {
       },
 
       CallExpression(node) {
+        reportReachableSinks(context, analysis, node, 'html', 'domXss', 'domXssQualified')
+
         const sink = analysis.sinkAt(node)
         if (sink?.requires !== 'html' || sink.argument === undefined) return
 

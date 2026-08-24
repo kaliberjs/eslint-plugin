@@ -47,6 +47,7 @@ const { browser } = require('globals')
  */
 
 const handler = code => `function handler(req, res) { ${code} }`
+const FIXTURES = `${__dirname}/../../../machinery/security/fixtures/interprocedural/src`
 
 test('security-no-sql-injection', merge(
   {
@@ -700,6 +701,375 @@ test('security-no-sql-injection', merge(
       handler(`db.query(\`SELECT * FROM u WHERE id = \${mysql.escape(req.query.id)}\`)`),
     ],
     invalid: [
+    ],
+  },
+
+  // ===========================================================================
+  // Adversarial pass on "reachable sinks through a called function"
+  // (reachableSinksOf / reportReachableSinks).
+  //
+  // Every case below delegates: the handler calls a helper, and the sink lives
+  // inside the helper's body. The vulnerability is identical in all of them —
+  // `req.query.id` reaches `db.query`. Only the *spelling of the callee* or of
+  // the parameter binding changes. `valid` here means MISSED, never safe.
+  //
+  // Cross-file cases carry `filename` so module resolution has a real
+  // directory to work from; the fixtures live in
+  // machinery/security/fixtures/interprocedural/src.
+  // ===========================================================================
+  {
+    valid: [
+      // --- callee resolution: shapes localFunctionFor / localMethodFor reject
+
+      // Aliasing the callee through a plain const. localFunctionFor only
+      // accepts a FunctionName definition or a Variable whose init is a
+      // function node; `const q = queryUser` has an Identifier init, so the
+      // chain stops. Ordinary code — `const query = queryUser` is how a
+      // shorter local name gets made.
+      `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       const q = queryUser
+       function handler(req) { q(req.query.id) }`,
+
+      // Sibling method through `this`. The single most common delegate shape
+      // in class-structured server code (Nest controllers, service classes):
+      // the callee is a MemberExpression whose object is ThisExpression, which
+      // localMethodFor rejects before it looks at anything else.
+      `class Service {
+         queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+         handle(req) { this.queryUser(req.query.id) }
+       }`,
+
+      // Class instance method. `repo` resolves to a NewExpression, not an
+      // ObjectExpression, so localMethodFor bails — even though the class is
+      // declared in this same file and needs no type inference to resolve.
+      `class Repo { queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) } }
+       const repo = new Repo()
+       function handler(req) { repo.queryUser(req.query.id) }`,
+
+      // Class *static* method: `Repo.queryUser` resolves to a ClassDeclaration
+      // binding directly. No receiver typing needed at all.
+      `class Repo { static queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) } }
+       function handler(req) { Repo.queryUser(req.query.id) }`,
+
+      // Constructor as the delegate. reachableSinksOf returns [] for anything
+      // that is not a CallExpression, and a NewExpression never reaches it.
+      `class Repo { constructor(id) { db.query('SELECT * FROM u WHERE id = ' + id) } }
+       function handler(req) { new Repo(req.query.id) }`,
+
+      // IIFE: the callee *is* the function node, no resolution required.
+      `function handler(req) { (function (id) { db.query('SELECT * FROM u WHERE id = ' + id) })(req.query.id) }`,
+      `function handler(req) { ((id) => { db.query('SELECT * FROM u WHERE id = ' + id) })(req.query.id) }`,
+
+      // Immediately-invoked returned closure.
+      `function make() { return (id) => { db.query('SELECT * FROM u WHERE id = ' + id) } }
+       function handler(req) { make()(req.query.id) }`,
+
+      // .call / .apply / .bind — the callee is a MemberExpression on a
+      // function, so neither resolver matches.
+      `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { queryUser.call(null, req.query.id) }`,
+      `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { queryUser.apply(null, [req.query.id]) }`,
+      `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       const q = queryUser.bind(null)
+       function handler(req) { q(req.query.id) }`,
+
+      // A method destructured off a same-file object literal. localMethodFor
+      // handles `repo.queryUser(x)` but the binding is gone once it is pulled
+      // out, and localFunctionFor won't follow a destructuring definition.
+      `const repo = { queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) } }
+       const { queryUser } = repo
+       function handler(req) { queryUser(req.query.id) }`,
+
+      // The same object literal wrapped in Object.freeze / Object.assign —
+      // both extremely common in module-object style code, both make the
+      // variable's init a CallExpression rather than an ObjectExpression.
+      `const repo = Object.freeze({ queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) } })
+       function handler(req) { repo.queryUser(req.query.id) }`,
+      `const repo = Object.assign({}, { queryUser: (id) => { db.query('SELECT * FROM u WHERE id = ' + id) } })
+       function handler(req) { repo.queryUser(req.query.id) }`,
+
+      // A method attached after the object is created.
+      `const repo = {}
+       repo.queryUser = (id) => { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { repo.queryUser(req.query.id) }`,
+
+      // A function held in an array — dispatch tables.
+      `const fns = [(id) => { db.query('SELECT * FROM u WHERE id = ' + id) }]
+       function handler(req) { fns[0](req.query.id) }`,
+
+      // Callee picked by a conditional or a logical fallback: both branches
+      // are resolvable functions containing the sink, but the callee is not
+      // an Identifier.
+      `function a(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function b(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { (req.query.x ? a : b)(req.query.id) }`,
+
+      // --- parameter binding: shapes bindParam declines to bind
+
+      // An object-pattern parameter fed a tainted object that is not an object
+      // *literal*. bindParam's ObjectPattern branch requires an ObjectExpression
+      // argument, so every property in the pattern stays unbound. Note that the
+      // equivalent with a plain identifier parameter IS detected (see the
+      // invalid block below) — so this is a precision loss caused purely by
+      // destructuring syntax, in the same file, and distinct from the
+      // documented *cross-file* destructuring miss.
+      `function queryUser({ id }) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { queryUser(req.query) }`,
+
+      // A default *inside* a destructuring pattern. The property's value is an
+      // AssignmentPattern, not an Identifier, so bindParam skips it — even
+      // though a top-level defaulted parameter (`function f(id = '')`) is
+      // bound correctly, and even though the call site passes a literal object
+      // bindParam can read exactly.
+      `function queryUser({ id = '' }) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { queryUser({ id: req.query.id }) }`,
+
+      // An array-destructured parameter.
+      `function queryUser([id]) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { queryUser([req.query.id]) }`,
+
+      // A rest parameter, and a spread argument at the call site. Both are
+      // named in bindParam's doc comment as unbound; recorded here because
+      // they are the delegate-shaped consequence.
+      `function queryUser(...args) { db.query('SELECT * FROM u WHERE id = ' + args[0]) }
+       function handler(req) { queryUser(req.query.id) }`,
+      `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+       function handler(req) { queryUser(...[req.query.id]) }`,
+
+      // The whole request object handed to the helper. `req` on its own
+      // carries no taint (sources are path-qualified: `req.query`, `req.body`),
+      // so nothing binds. `service.handle(req)` is a very ordinary shape.
+      // Inherited from the source registry, surfaced by delegation.
+      `function queryUser(r) { db.query('SELECT * FROM u WHERE id = ' + r.query.id) }
+       function handler(req) { queryUser(req) }`,
+
+      // --- cross-file callee shapes
+
+      // A barrel file. `export { queryUser } from './sinkHelpers'` matches
+      // findExport's specifier branch, which then looks for a *local* binding
+      // that does not exist — the re-export is never followed to the next file.
+      // Barrel/index modules are the default way this codebase's domain layers
+      // are imported.
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { queryUser } from './sinkHelperBarrel'
+               function handler(req) { queryUser(req.query.id) }`,
+      },
+
+      // An exported object literal, called as a method. localMethodFor is
+      // same-file only, and the cross-file path requires an Identifier callee.
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { repo } from './sinkHelperShapes'
+               function handler(req) { repo.queryUser(req.query.id) }`,
+      },
+
+      // An exported class.
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { Repo } from './sinkHelperShapes'
+               const repo = new Repo()
+               function handler(req) { repo.queryUser(req.query.id) }`,
+      },
+
+      // An imported callee aliased to a local const — the cross-file twin of
+      // the same-file aliasing miss above.
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { queryUser } from './sinkHelpers'
+               const q = queryUser
+               function handler(req) { q(req.query.id) }`,
+      },
+
+      // Rest parameter and spread argument, across a file boundary.
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { queryUserRest } from './sinkHelperShapes'
+               function handler(req) { queryUserRest(req.query.id) }`,
+      },
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { queryUser } from './sinkHelpers'
+               function handler(req) { queryUser(...[req.query.id]) }`,
+      },
+
+      // A default export. Named in resolveCrossFileCall's doc as out of scope
+      // for Phase 1; recorded here because a default-exported data-layer
+      // function is a very common delegate.
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import queryUser from './sinkHelperShapes'
+               function handler(req) { queryUser(req.query.id) }`,
+      },
+
+      // A namespace import, and its CJS equivalent. Same Phase 1 exclusion.
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `import * as helpers from './sinkHelpers'
+               function handler(req) { helpers.queryUser(req.query.id) }`,
+      },
+      {
+        filename: `${FIXTURES}/caller.js`,
+        code: `const helpers = require('./cjsHelpers')
+               function handler(req) { helpers.queryUser(req.query.id) }`,
+      },
+    ],
+    invalid: [
+      // --- the shapes that DO resolve. Regression tests: these must keep
+      //     firing, they are what the capability was built for.
+
+      {
+        code: `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Was a recorded miss; now detected. The double-report suppression
+        // used to ask only "is there ambient taint" when re-resolving with
+        // no binding context, never "would that ambient taint actually be
+        // reported". `process.argv` sits at 0.45, below the default 0.5
+        // floor, so the direct traversal reports nothing on its own — but
+        // that used to suppress the genuine, higher-confidence
+        // req.query.id -> db.query flow along with it. Fixed by only
+        // suppressing when the ambient confidence is >= the bound one.
+        code: `function queryUser(id) { db.query('SELECT ' + id + process.argv[2]) }
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Same fix, ambient source hoisted to a module-level const.
+        code: `const argv = process.argv[2]
+               function queryUser(id) { db.query('SELECT ' + id + argv) }
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Arrow and function-expression callees.
+        code: `const queryUser = (id) => { db.query('SELECT * FROM u WHERE id = ' + id) }
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Object-literal method, including through a computed member and an
+        // optional call — all three resolve.
+        code: `const repo = { queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) } }
+               function handler(req) { repo['queryUser'](req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        code: `const repo = { queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) } }
+               function handler(req) { repo?.queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        code: `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+               function handler(req) { queryUser?.(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // The helper is declared after the call site (hoisting).
+        code: `function handler(req) { queryUser(req.query.id) }
+               function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // A plain identifier parameter fed the whole tainted object, then
+        // destructured inside the body. Contrast with the object-pattern
+        // parameter in the valid block — same flow, different syntax.
+        code: `function queryUser(opts) { const { id } = opts; db.query('SELECT * FROM u WHERE id = ' + id) }
+               function handler(req) { queryUser(req.query) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // A defaulted top-level parameter binds like a plain one.
+        code: `function queryUser(id = 'x') { db.query('SELECT * FROM u WHERE id = ' + id) }
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Object-pattern parameter, object *literal* argument: bindParam's one
+        // provable destructuring case, including a rename.
+        code: `function queryUser({ id: userId }) { db.query('SELECT * FROM u WHERE id = ' + userId) }
+               function handler(req) { queryUser({ id: req.query.id }) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Three same-file hops, each renaming the parameter.
+        code: `function c(z) { db.query('SELECT ' + z) }
+               function b(y) { c(y) }
+               function a(x) { b(x) }
+               function handler(req) { a(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // The delegate is reached from inside a callback, and awaited.
+        code: `async function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+               const handler = async (req) => { await queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        code: `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+               function handler(req) { Promise.resolve().then(() => queryUser(req.query.id)) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // The sink sits behind control flow inside the helper.
+        code: `function queryUser(id) { try { if (id) { db.query('SELECT * FROM u WHERE id = ' + id) } } catch (e) {} }
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Argument laundered through +=, concat and ?? before the call.
+        code: `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+               function handler(req) { let s = 'a'; s += req.query.id; queryUser(s ?? 'x') }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Two object-literal methods, one calling the other.
+        code: `const repo = {
+                 inner(z) { db.query('SELECT ' + z) },
+                 outer(y) { repo.inner(y) },
+               }
+               function handler(req) { repo.outer(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // The caller is a class method; only the *callee* needs to resolve.
+        code: `function queryUser(id) { db.query('SELECT * FROM u WHERE id = ' + id) }
+               class Controller { handle(req) { queryUser(req.query.id) } }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Cross-file: named export, locally renamed import.
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { queryUser as qu } from './sinkHelpers'
+               function handler(req) { qu(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Cross-file: the export hands the taint to a file-local helper that
+        // holds the sink.
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { wrapsQueryUser } from './sinkHelpers'
+               function handler(req) { wrapsQueryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Cross-file: a whole tainted object crossing the boundary, with the
+        // property read inside the callee.
+        filename: `${FIXTURES}/caller.js`,
+        code: `import { queryUser } from './sinkHelpers'
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
+      {
+        // Cross-file CJS: module.exports = { queryUser }.
+        filename: `${FIXTURES}/caller.js`,
+        code: `const { queryUser } = require('./sinkHelpers')
+               function handler(req) { queryUser(req.query.id) }`,
+        errors: [{ messageId: 'sqlInjectionQualified' }],
+      },
     ],
   },
 ))

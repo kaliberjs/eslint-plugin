@@ -1,7 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
 
 // A redirect target built from request input sends the victim to an
 // attacker-chosen origin — most damaging right after login, where the
@@ -38,6 +38,8 @@ module.exports = {
 
     return {
       CallExpression(node) {
+        reportReachableSinks(context, analysis, node, 'url', 'openRedirect', 'openRedirectQualified')
+
         const callee = node.callee
 
         // res.setHeader('Location', untrusted) — the header name only has to
