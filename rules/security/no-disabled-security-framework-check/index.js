@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -42,9 +44,11 @@ module.exports = {
           const options = node.arguments.find(arg => arg.type === 'ObjectExpression')
           if (!options) return
           for (const property of options.properties) {
-            if (property.type !== 'Property' || property.computed) continue
-            if (HELMET_DISABLE_FLAGS.has(property.key?.name) && property.value?.type === 'Literal' && property.value.value === false) {
-              emit(context, property, `helmet's ${property.key.name} protection`)
+            if (property.type !== 'Property') continue
+            const key = getStaticPropertyName(property)
+            const value = getStaticValue(property.value, context.sourceCode.getScope(property.value))
+            if (HELMET_DISABLE_FLAGS.has(key) && value?.value === false) {
+              emit(context, property, `helmet's ${key} protection`)
             }
           }
           return
@@ -55,7 +59,7 @@ module.exports = {
           const options = node.arguments.find(arg => arg.type === 'ObjectExpression')
           if (!options) return
           const prefs = options.properties.find(
-            property => property.type === 'Property' && !property.computed && property.key?.name === 'webPreferences'
+            property => property.type === 'Property' && getStaticPropertyName(property) === 'webPreferences'
           )
           checkWebPreferences(prefs?.value)
         }
@@ -69,9 +73,11 @@ module.exports = {
     function checkWebPreferences(value) {
       if (!value || value.type !== 'ObjectExpression') return
       for (const property of value.properties) {
-        if (property.type !== 'Property' || property.computed) continue
-        const rule = ELECTRON_DANGEROUS[property.key?.name]
-        if (rule && property.value?.type === 'Literal' && property.value.value !== rule.expected) {
+        if (property.type !== 'Property') continue
+        const rule = ELECTRON_DANGEROUS[getStaticPropertyName(property)]
+        if (!rule) continue
+        const propertyValue = getStaticValue(property.value, context.sourceCode.getScope(property.value))
+        if (propertyValue && propertyValue.value !== rule.expected) {
           emit(context, property, rule.problem)
         }
       }
