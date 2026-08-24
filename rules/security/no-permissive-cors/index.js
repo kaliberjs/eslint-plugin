@@ -1,4 +1,5 @@
-const { getPropertyName } = require('@eslint-community/eslint-utils')
+const { getPropertyName, getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -54,11 +55,11 @@ module.exports = {
         if (header === 'access-control-allow-origin') {
           if (reflectsRequestOrigin(node.arguments[1])) {
             report(context, { node, messageId: 'reflectedOrigin', severity: 'medium', confidence: 0.9 })
-          } else if (isWildcard(node.arguments[1])) {
+          } else if (isWildcard(context, node.arguments[1])) {
             wildcardOrigin = node
           }
         }
-        if (header === 'access-control-allow-credentials' && isTruthyLiteral(node.arguments[1])) {
+        if (header === 'access-control-allow-credentials' && isTruthyLiteral(context, node.arguments[1])) {
           allowCredentials = node
         }
       },
@@ -72,12 +73,13 @@ module.exports = {
 
     function checkCorsOptions(options) {
       for (const property of options.properties) {
-        if (property.type !== 'Property' || property.computed || property.key?.name !== 'origin') continue
+        if (property.type !== 'Property' || getStaticPropertyName(property) !== 'origin') continue
 
         const value = property.value
+        const staticValue = getStaticValue(value, context.sourceCode.getScope(value))
 
         // origin: true — full reflection.
-        if (value?.type === 'Literal' && value.value === true) {
+        if (staticValue?.value === true) {
           report(context, { node: property, messageId: 'reflectedOrigin', severity: 'medium', confidence: 1 })
         }
 
@@ -130,10 +132,12 @@ function headerName(context, argument) {
   return String(argument.value).toLowerCase()
 }
 
-function isWildcard(argument) {
-  return argument?.type === 'Literal' && argument.value === '*'
+function isWildcard(context, argument) {
+  const value = argument && getStaticValue(argument, context.sourceCode.getScope(argument))
+  return value?.value === '*'
 }
 
-function isTruthyLiteral(argument) {
-  return argument?.type === 'Literal' && (argument.value === true || argument.value === 'true')
+function isTruthyLiteral(context, argument) {
+  const value = argument && getStaticValue(argument, context.sourceCode.getScope(argument))
+  return value?.value === true || value?.value === 'true'
 }

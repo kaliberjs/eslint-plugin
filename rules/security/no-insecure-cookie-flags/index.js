@@ -1,3 +1,5 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -41,7 +43,7 @@ module.exports = {
         if (!isSessionCookie(cookieName)) return
 
         const options = findOptionsObject(node.arguments.slice(2))
-        const problems = collectProblems(options)
+        const problems = collectProblems(options, context)
         if (!problems.length) return
 
         report(context, {
@@ -66,25 +68,25 @@ function findOptionsObject(args) {
   return args.find(arg => arg.type === 'ObjectExpression') ?? null
 }
 
-function collectProblems(options) {
+function collectProblems(options, context) {
   // No options object at all: express defaults secure to false.
   if (!options) return ['without an options object — it will default to secure: false']
 
   const get = key => options.properties.find(
-    property => property.type === 'Property' && !property.computed && property.key?.name === key
+    property => property.type === 'Property' && getStaticPropertyName(property) === key
   )
+  const valueOf = property => property && getStaticValue(property.value, context.sourceCode.getScope(property.value))
 
   const problems = []
-  const secure = get('secure')
-  const httpOnly = get('httpOnly')
-  const sameSite = get('sameSite')
+  const secure = valueOf(get('secure'))
+  const httpOnly = valueOf(get('httpOnly'))
+  const sameSite = valueOf(get('sameSite'))
 
-  if (secure?.value?.type === 'Literal' && secure.value.value === false) problems.push('with secure: false')
-  if (httpOnly?.value?.type === 'Literal' && httpOnly.value.value === false) problems.push('with httpOnly: false')
+  if (secure?.value === false) problems.push('with secure: false')
+  if (httpOnly?.value === false) problems.push('with httpOnly: false')
   if (
-    sameSite?.value?.type === 'Literal'
-    && String(sameSite.value.value).toLowerCase() === 'none'
-    && !(secure?.value?.type === 'Literal' && secure.value.value === true)
+    sameSite && String(sameSite.value).toLowerCase() === 'none'
+    && secure?.value !== true
   ) problems.push("with sameSite: 'none' but no secure: true")
 
   return problems

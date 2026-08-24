@@ -1,3 +1,4 @@
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -33,31 +34,40 @@ module.exports = {
   create(context) {
     return {
       Literal(node) {
-        const value = node.value
-        if (typeof value !== 'string') return
-        const match = /^http:\/\//i.exec(value)
-          || (/^ws:\/\//i.test(value) ? { 1: 'ws' } : null)
-        if (!match) return
-        if (SAFE_HOSTS.test(value)) return
+        if (typeof node.value === 'string') checkUrl(context, node, node.value)
+      },
 
-        const parent = node.parent
-
-        // Passed as an argument: fetch('http://…'), axios.get(...),
-        // new WebSocket('ws://…') — constructor calls included.
-        if ((parent?.type === 'CallExpression' || parent?.type === 'NewExpression') && parent.arguments.includes(node)) {
-          const name = getCalleeName(parent.callee)
-          if (REQUEST_APIS.has(name ?? '')) return reportCleartext(context, node, match[1])
-          if (name === 'WebSocket') return reportCleartext(context, node, match[1])
-        }
-
-        // Assigned into an option shape: { url: 'http://…' }, { baseURL }.
-        if (parent?.type === 'Property') {
-          const key = String(parent.key?.name ?? parent.key?.value ?? '')
-          if (/^(url|uri|baseurl|endpoint|href|src|host)$/i.test(key)) return reportCleartext(context, node, match[1])
-        }
+      // A no-substitution template folds to its cooked string — the same
+      // finding with different syntax, and not an unusual way to write a
+      // URL that happens to have no interpolation.
+      TemplateLiteral(node) {
+        if (!node.expressions.length) checkUrl(context, node, node.quasis[0].value.cooked)
       },
     }
   },
+}
+
+function checkUrl(context, node, value) {
+  const match = /^http:\/\//i.exec(value)
+    || (/^ws:\/\//i.test(value) ? { 1: 'ws' } : null)
+  if (!match) return
+  if (SAFE_HOSTS.test(value)) return
+
+  const parent = node.parent
+
+  // Passed as an argument: fetch('http://…'), axios.get(...),
+  // new WebSocket('ws://…') — constructor calls included.
+  if ((parent?.type === 'CallExpression' || parent?.type === 'NewExpression') && parent.arguments.includes(node)) {
+    const name = getCalleeName(parent.callee)
+    if (REQUEST_APIS.has(name ?? '')) return reportCleartext(context, node, match[1])
+    if (name === 'WebSocket') return reportCleartext(context, node, match[1])
+  }
+
+  // Assigned into an option shape: { url: 'http://…' }, { baseURL }.
+  if (parent?.type === 'Property' && parent.value === node) {
+    const key = String(getStaticPropertyName(parent) ?? '')
+    if (/^(url|uri|baseurl|endpoint|href|src|host)$/i.test(key)) return reportCleartext(context, node, match[1])
+  }
 }
 
 function getCalleeName(callee) {

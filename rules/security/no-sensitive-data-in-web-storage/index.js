@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -36,8 +37,9 @@ module.exports = {
         if (!root) return
 
         const key = node.arguments[0]
-        if (key?.type === 'Literal' && typeof key.value === 'string' && CREDENTIAL_KEY.test(key.value)) {
-          emit(context, key, String(key.value), root)
+        const staticKey = key && getStaticValue(key, context.sourceCode.getScope(key))
+        if (typeof staticKey?.value === 'string' && CREDENTIAL_KEY.test(staticKey.value)) {
+          emit(context, key, staticKey.value, root)
         }
       },
 
