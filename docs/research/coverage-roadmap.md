@@ -127,5 +127,53 @@ The minimal high-leverage version is done:
 
 This resolves the dogfood blocker: the alliander CMS family and the asito
 config-script family are now one settings block per project instead of
-per-line disables. Remaining Tier 3: flow sensitivity, interprocedural-lite,
-string/value analysis, non-JS processors.
+per-line disables.
+
+### Tier 3 item 2: flow sensitivity — shipped
+
+The allowlist-guard proof (`if (!TABLES.includes(t)) return`) landed, and
+was later generalized to a second guard shape: path-containment
+(`if (!resolved.startsWith(base)) return`), needed once path.resolve's own
+propagation gap was fixed and its "resolve-then-check" remediation had to
+be provable rather than accidentally quiet. Remaining Tier 3:
+interprocedural-lite, string/value analysis, non-JS processors.
+
+## Dogfood measurement — rabobank-jobs
+
+Third real kaliber project, all 38 rules at warn (`configs.security`), run
+externally against the checkout (no dependency added, nothing committed
+there) via this repo's own ESLint 10 pointed at rabobank-jobs' source.
+
+| project | first-party files | security findings | time | triage |
+|---|---|---|---|---|
+| rabobank-jobs | 686 | 14 → 5 after fixes | 2.4s | see below |
+
+Zero crashes. Two NEW false-positive classes not seen in the asito/
+alliander runs, both now fixed:
+
+- `no-target-blank-without-noopener`: `rel="noreferrer"` implies
+  `noopener` per the HTML spec, but the check only matched the literal
+  substring `noopener`. 4 of 4 target="_blank" anchors in the project
+  used `noreferrer` alone.
+- `no-timing-unsafe-secret-comparison`: `hash !== ''` flagged a URL
+  fragment (SPA routing), because `hash` is in the secret-name regex.
+  Fixed structurally — skip existence checks (comparison against
+  undefined/null/empty-string) rather than narrowing the regex, since an
+  existence check leaks no timing information about a secret regardless
+  of the identifier's name.
+
+One instance of the already-documented dynamic-but-trusted-HTML family,
+same shape as the asito/alliander runs but a new sanitizer: `@kaliber/
+safe-json-stringify` (escapes `<`, `>`, `/`, U+2028/U+2029 — verified
+against its source — exactly the JSON-in-script-tag shape used for
+structured data and analytics dataLayer pushes). Registered as the first
+built-in `root.helper` sanitizer; this also required generalizing
+no-dangerously-set-inner-html's constant check to look inside template
+literals per-interpolation, since the real usage is a sanitizer call
+interpolated into an otherwise-static template, not a bare call.
+
+Residual 5 findings are all genuine dynamic-but-*unverified*-HTML: a raw
+SVG icon prop, CMS rich text, search-highlight markup, font-face CSS, and
+one unsanitized tracking-script interpolation. None resolved by a
+sanitizer registration — each needs a human decision about the actual
+trust boundary, which is the rule doing its job.
