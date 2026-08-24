@@ -35,21 +35,31 @@ module.exports = {
   create(context) {
     return {
       Literal(node) {
-        if (typeof node.value !== 'string') return
+        if (typeof node.value === 'string') checkString(context, node, node.value)
+      },
 
-        for (const { name, re } of KEY_PATTERNS) {
-          if (!re.test(node.value)) continue
-
-          report(context, {
-            node,
-            messageId: 'apiKeyPattern',
-            data: { kind: name },
-            severity: 'medium',
-            confidence: 1,
-          })
-          return
-        }
+      // A no-substitution template folds to its cooked string. PEM blocks
+      // in particular are routinely written this way — backticks are the
+      // natural way to get literal newlines without escaping them.
+      TemplateLiteral(node) {
+        if (node.expressions.length) return
+        checkString(context, node, node.quasis[0].value.cooked)
       },
     }
   },
+}
+
+function checkString(context, node, value) {
+  for (const { name, re } of KEY_PATTERNS) {
+    if (!re.test(value)) continue
+
+    report(context, {
+      node,
+      messageId: 'apiKeyPattern',
+      data: { kind: name },
+      severity: 'medium',
+      confidence: 1,
+    })
+    return
+  }
 }

@@ -1,3 +1,4 @@
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -40,8 +41,7 @@ module.exports = {
   create(context) {
     return {
       Property(node) {
-        if (node.computed) return
-        const key = String(node.key?.name ?? '')
+        const key = String(getStaticPropertyName(node) ?? '')
         if (!CREDENTIAL_KEYS.has(key)) return
         if (!isCredentialLiteral(node.value)) return
 

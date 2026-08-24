@@ -1,3 +1,4 @@
+const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -30,17 +31,17 @@ module.exports = {
         if (!name) return
 
         // createCipheriv(alg, key, iv): the key is argument 1.
-        if ((name === 'createCipheriv' || name === 'createDecipheriv') && isKeyLike(node.arguments[1])) {
+        if ((name === 'createCipheriv' || name === 'createDecipheriv') && isKeyLike(node.arguments[1], context)) {
           return emit(context, node.arguments[1], `${name}()`)
         }
 
         // createHmac(alg, key): key is argument 1. createSecretKey is the
         // correct literal-free path... but createSecretKey('literal') is
         // equally hardcoded, so it is checked too.
-        if (name === 'createHmac' && isKeyLike(node.arguments[1])) {
+        if (name === 'createHmac' && isKeyLike(node.arguments[1], context)) {
           return emit(context, node.arguments[1], 'createHmac()')
         }
-        if (name === 'createSecretKey' && node.arguments[0]?.type === 'Literal') {
+        if (name === 'createSecretKey' && isKeyLike(node.arguments[0], context)) {
           return emit(context, node.arguments[0], 'createSecretKey()')
         }
       },
@@ -55,16 +56,18 @@ function getCalleeName(callee) {
 }
 
 /**
- * String literals and hex/base64 literals are keys in source. Buffer.from of
- * a literal is the same thing wearing a coat; matching through to the inner
- * literal keeps the rule honest about the common spelling.
+ * String literals and hex/base64 literals are keys in source, including
+ * one written as a const alias — folded through getStaticValue rather than
+ * requiring an inline Literal node, so `const KEY = '...'; createHmac(a,
+ * KEY)` is the same finding as the inline form. Buffer.from of a literal is
+ * the same thing wearing a coat; matching through to the inner literal
+ * keeps the rule honest about the common spelling.
  */
-function isKeyLike(node) {
+function isKeyLike(node, context) {
   if (!node) return false
 
-  if (node.type === 'Literal') {
-    return typeof node.value === 'string' || typeof node.value === 'number'
-  }
+  const staticValue = getStaticValue(node, context.sourceCode.getScope(node))
+  if (staticValue) return typeof staticValue.value === 'string' || typeof staticValue.value === 'number'
 
   if (
     node.type === 'CallExpression'
