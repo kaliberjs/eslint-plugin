@@ -85,3 +85,30 @@ In leverage order:
 Adversarial pass over everything post-SQL before release. Measured FP rates
 against real kaliber projects before declaring any tier done. Useful findings ÷
 false-positive burden remains the only metric that matters.
+
+## Dogfood measurement — 2026-08-24
+
+First evidence pass, two real kaliber projects, all 24 rules at warn:
+
+| project | first-party files | security findings | triage |
+|---|---|---|---|
+| asito-werkenbij | 327 | 6 | 6 FP: icon sprites (`__html: icon`) and config-built inline scripts (`JSON.stringify(config.x)` interpolation) |
+| alliander | 360 | 62 | ~1 FP (innerHTML save/restore idiom), rest of src hits all one family: CMS rich text rendered via dangerouslySetInnerHTML (`quote`, `title`, `i18n(...)`) |
+
+Zero crashes. Zero true vulnerabilities found (also expected: these are
+maintained sites). Every finding lands in ONE documented family: dynamic-but-
+trusted HTML. The noise profile is therefore not spread across rules — it is
+concentrated exactly where the roadmap said sanitizer modelling would pay.
+
+Key discovery: consumers cannot currently register a trusted-HTML source
+(e.g. the `i18n()` helper) as a sanitizer, because registry.validate()
+requires a receiver constraint on method-rooted sanitizers — and bare
+helper calls like `i18n('x')` have none. That validation rule exists to
+stop wrongly-trusted escapers, which is correct, but it blocks the exact
+configuration the dogfood run shows teams need. Resolution belongs to
+Tier 3 item 1 (sanitizer modelling): an explicit opt-in shape for
+user-registered helpers, distinct from built-in escapers.
+
+Interim guidance for CMS-heavy projects until then: disable
+security-no-dangerously-set-inner-html per project, or line-disable with a
+comment at trusted render sites. Both keep the other 23 rules active.
