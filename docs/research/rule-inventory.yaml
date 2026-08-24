@@ -940,3 +940,1221 @@ rules:
       Pure configuration detection, so cheap and precise. Prevalence is the limiter: XML is
       declining in JS app code. Bundle with the other "insecure library option" rules rather than
       building bespoke machinery.
+
+  # =============================================================================================
+  # FAMILY: authentication-credentials
+  # =============================================================================================
+
+  - id: no-hardcoded-credentials
+    family: authentication-credentials
+    title: Do not pass hardcoded passwords or connection secrets to authentication APIs
+    description: >
+      A literal password, database password, or connection-string secret in source is committed
+      to history, shipped to every developer and CI job, and cannot be rotated without a deploy.
+      Detected positionally: a string literal in a parameter or property known to be a credential.
+    owasp_top10_2021: A07:2021-Identification and Authentication Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-259]
+    cwe_parents: [CWE-798, CWE-1391, CWE-1390, CWE-287, CWE-284]
+    capec: [CAPEC-70, CAPEC-191]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "credential-named properties with literal values: password, passwd, pwd, secret, apiSecret, clientSecret, privateKey, connectionString, auth.pass"
+      - "mysql/pg/mongodb createConnection/createPool/MongoClient options with a literal password"
+      - "nodemailer transport auth.pass"
+      - "basic-auth / http Authorization header built from literals"
+      - "express-session / cookie-session secret option"
+      - "jwt sign/verify secret argument (see no-weak-jwt-secret)"
+    sanitizers:
+      - "reading from process.env, a secret manager client, or a mounted secret file"
+    known_false_positives:
+      - Test fixtures, docker-compose-style local dev defaults, and example code
+      - Placeholder values (`'changeme'`, `'xxx'`, `''`) that are never used in production
+      - Public test credentials for sandbox APIs
+      - Sample values inside documentation code blocks that ESLint happens to lint
+    known_false_negatives:
+      - Secret assembled by concatenation or base64 at rest
+      - Secret in a JSON/YAML config file, which ESLint does not lint
+      - Secret in a committed `.env` file
+      - Credential passed via a variable initialised elsewhere in the module
+    prior_art:
+      - "SonarJS S2068 — 'Credentials should not be hard-coded' (CWE-798, CWE-259)"
+      - "SonarJS S6437 — 'Credentials should not be hard-coded' (CWE-798, CWE-259)"
+      - "CodeQL js/empty-password-in-configuration-file"
+      - "CodeQL js/hardcoded-data-interpreted-as-code (adjacent)"
+      - "Semgrep javascript/express/security/audit/express-session-hardcoded-secret.yaml (id: express-session-hardcoded-secret)"
+      - "Semgrep javascript/lang/security/audit/hardcoded-hmac-key.yaml (id: hardcoded-hmac-key)"
+    references:
+      - https://cwe.mitre.org/data/definitions/259.html
+      - https://cwe.mitre.org/data/definitions/798.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+      - https://capec.mitre.org/data/definitions/70.html
+    notes: >
+      Positional detection (which parameter/property is this literal in) is the whole trick, and
+      it is why this scores far better than generic entropy scanning. Deliberately split from
+      no-hardcoded-api-key: this one is precise because the sink names the credential; that one is
+      a heuristic on the literal itself. Ship this, defer that.
+
+  - id: no-hardcoded-api-key
+    family: authentication-credentials
+    title: Do not embed provider API keys or tokens as string literals
+    description: >
+      Provider keys with recognisable prefixes and shapes (`sk_live_`, `ghp_`, `AKIA`, `xoxb-`,
+      Google `AIza`, Stripe, SendGrid, private-key PEM blocks) are detectable from the literal
+      alone, independent of where they are used.
+    owasp_top10_2021: A07:2021-Identification and Authentication Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-798]
+    cwe_parents: [CWE-1391, CWE-1390, CWE-287, CWE-284]
+    capec: [CAPEC-191, CAPEC-70]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "any string literal matching a known provider key pattern"
+      - "-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY----- blocks in source"
+      - "Authorization: Bearer <literal> header construction"
+    sanitizers:
+      - environment variables or a secrets client
+      - "publishable/anon keys that are designed to be public (Stripe pk_, Supabase anon, Sanity public dataset tokens) — must be an explicit allowlist"
+    known_false_positives:
+      - Publishable keys that are meant to be in client bundles
+      - Revoked or example keys in tests and documentation
+      - High-entropy strings that are not keys — hashes, UUIDs, base64 fixtures, minified data, CSS-in-JS class hashes, snapshot files
+      - Public keys (as opposed to private keys) in PEM form
+    known_false_negatives:
+      - Keys without a recognisable prefix (the majority of in-house tokens)
+      - Keys split across concatenated literals or assembled at runtime
+      - Keys in non-JS files
+    prior_art:
+      - "SonarJS S6418 — 'Secrets should not be hard-coded' (CWE-798)"
+      - "CodeQL js/build-artifact-leak (adjacent: secrets reaching build output)"
+      - "CodeQL js/clear-text-storage-of-sensitive-data"
+    references:
+      - https://cwe.mitre.org/data/definitions/798.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    notes: >
+      Honest assessment: generic entropy-based secret detection is the single largest false-positive
+      generator in this inventory, and it duplicates tools that do it better with git history and
+      provider verification APIs (gitleaks, trufflehog, GitHub secret scanning). If we ship
+      anything here it should be *prefix-pattern only*, no entropy heuristic, with an allowlist for
+      publishable keys. This is not a first-ten rule despite its impact score.
+
+  - id: no-weak-password-hashing
+    family: authentication-credentials
+    title: Do not hash passwords with fast general-purpose hashes
+    description: >
+      MD5, SHA-1, SHA-256 and HMAC variants are designed to be fast, which is exactly wrong for
+      password storage. Use bcrypt, scrypt, or Argon2id with a real work factor.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-916]
+    cwe_parents: [CWE-328, CWE-327, CWE-326, CWE-693]
+    capec: [CAPEC-55]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.createHash('md5'|'sha1'|'sha256') where the input is a password-named value"
+      - "crypto.createHmac(..., password)"
+      - "crypto.pbkdf2 / pbkdf2Sync with an iteration count below the OWASP-recommended floor"
+      - "bcrypt.hash / hashSync with a cost factor below 10"
+      - "argon2.hash with memoryCost/timeCost below the reference configuration"
+      - "scrypt with a low N parameter"
+    sanitizers:
+      - "bcrypt / scrypt / argon2id at recommended parameters (a fix, not a sanitizer)"
+    known_false_positives:
+      - Hashing a value that is named like a password but is not one (a password *hash* being re-hashed for a lookup key)
+      - Legacy-migration code that must reproduce an old hash to verify then upgrade
+      - Deriving a cache key or ETag from a value with `password` in the identifier
+    known_false_negatives:
+      - Password identified by a name the heuristic does not match (`p`, `credential`, `secret`)
+      - Custom hashing helper in another module
+      - Correct algorithm with parameters loaded from config at runtime
+    prior_art:
+      - "CodeQL js/insufficient-password-hash"
+      - "SonarJS S4790 — 'Weak hashing algorithms should not be used' (CWE-1240)"
+      - "SonarJS S5547 — 'Cipher algorithms should be robust' (CWE-327, CWE-326)"
+      - "Semgrep javascript/lang/security/audit/md5-used-as-password.yaml (id: md5-used-as-password)"
+      - "Semgrep javascript/argon2/security/unsafe-argon2-config.yaml (id: unsafe-argon2-config)"
+    references:
+      - https://cwe.mitre.org/data/definitions/916.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-insufficient-password-hash/
+      - https://capec.mitre.org/data/definitions/55.html
+    notes: >
+      The identifier heuristic ("is this argument a password") is the only soft part, and it is
+      soft in the direction of false negatives rather than false positives, which is the right
+      trade. Parameter-floor checks (bcrypt rounds, pbkdf2 iterations, argon2 memory) are pure
+      literal comparison and are the cheapest half of the rule. Strong first-wave candidate.
+
+  - id: no-unsalted-password-hash
+    family: authentication-credentials
+    title: Do not hash passwords without a per-record salt
+    description: >
+      A one-way hash without a salt is precomputable: identical passwords produce identical
+      digests and rainbow tables apply. A constant or global salt is the same weakness.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-759]
+    cwe_parents: [CWE-916, CWE-328, CWE-327, CWE-326, CWE-693]
+    capec: [CAPEC-55]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 3
+      ecosystem_prevalence: 2
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.createHash(...).update(password).digest() with no salt in the update chain"
+      - "crypto.pbkdf2 / scrypt with a literal or module-constant salt (CWE-760 shape)"
+    sanitizers:
+      - "crypto.randomBytes-derived per-record salt"
+      - "bcrypt/argon2, which salt internally"
+    known_false_positives:
+      - Deliberate deterministic hashing for blind-index lookup (a real pattern, needs an escape hatch)
+      - HMAC with a server-side pepper, which is a different and acceptable design
+    known_false_negatives:
+      - Salt concatenated in a helper function
+      - Salt read from config that happens to be constant across records
+    prior_art:
+      - "CodeQL js/insufficient-password-hash (covers the unsalted case within the same query)"
+    references:
+      - https://cwe.mitre.org/data/definitions/759.html
+      - https://cwe.mitre.org/data/definitions/760.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+    notes: >
+      Mostly subsumed by no-weak-password-hashing in practice — if you are using bcrypt/argon2 the
+      salt question does not arise. Kept as a separate entry because CWE-759/760 are separate
+      weaknesses and because the constant-salt-with-pbkdf2 pattern is real and not caught by an
+      algorithm-name check.
+
+  - id: no-jwt-alg-none
+    family: authentication-credentials
+    title: Do not accept or produce JWTs with the "none" algorithm
+    description: >
+      `alg: none` means unsigned. A verifier that accepts it accepts any token the attacker
+      writes, so authentication is trivially bypassed. RFC 8725 requires that verifiers never
+      select the algorithm from the token header.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-347]
+    cwe_parents: [CWE-345, CWE-693]
+    capec: [CAPEC-475, CAPEC-463]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 2
+      confidence: 5
+      false_positive_risk: 1
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "jsonwebtoken: sign/verify with algorithm(s) including 'none'"
+      - "jose: SignJWT with alg 'none', jwtVerify with algorithms containing 'none'"
+      - "jwt-simple: encode/decode with 'none'"
+      - "any options object literal containing `algorithm: 'none'` or `algorithms: [... 'none' ...]`"
+    sanitizers:
+      - "an explicit `algorithms: ['RS256']`-style allowlist that excludes none"
+    known_false_positives:
+      - Security test suites that deliberately construct `alg: none` tokens to assert rejection
+    known_false_negatives:
+      - Algorithm list built from a variable or config
+      - Custom verification code that reads the header algorithm itself
+      - Libraries whose *default* accepts any algorithm (see no-jwt-algorithm-confusion)
+    prior_art:
+      - "Semgrep javascript/jsonwebtoken/security/jwt-none-alg.yaml (id: jwt-none-alg)"
+      - "Semgrep javascript/jose/security/jwt-none-alg.yaml"
+      - "SonarJS S5659 — 'JWT should be signed and verified with strong cipher algorithms' (CWE-347)"
+      - "CodeQL js/jwt-missing-verification"
+    references:
+      - https://cwe.mitre.org/data/definitions/347.html
+      - https://www.rfc-editor.org/rfc/rfc8725.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-jwt-missing-verification/
+    notes: >
+      Near-perfect fit for an ESLint rule: a literal in an options object, catastrophic impact,
+      essentially no false positives outside security tests. Prevalence is low precisely because
+      libraries have hardened — but the cost is one hour, so the ratio still puts it in the first
+      wave.
+
+  - id: no-jwt-algorithm-confusion
+    family: authentication-credentials
+    title: Always pin the accepted JWT algorithms when verifying
+    description: >
+      `jwt.verify(token, key)` without an `algorithms` allowlist lets the token's own header
+      choose. With an RSA public key as the secret, an attacker signs with HS256 using that
+      public key as the HMAC secret and the signature verifies — the RSA-to-HMAC confusion attack.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-347]
+    cwe_parents: [CWE-345, CWE-693]
+    capec: [CAPEC-475]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "jsonwebtoken: jwt.verify(token, key) with no options.algorithms"
+      - "jose: jwtVerify / compactVerify with no algorithms constraint"
+      - "express-jwt / koa-jwt / fastify-jwt middleware configured without an algorithms list"
+      - "passport-jwt JwtStrategy without algorithms"
+      - "jwks-rsa key providers wired into verify without pinning"
+    sanitizers:
+      - "options.algorithms set to an explicit literal array of asymmetric or symmetric algorithms, consistently with the key type"
+    known_false_positives:
+      - Wrapper helpers that add `algorithms` before delegating (needs one level of intra-file reasoning)
+      - Verification of a token the application itself just signed in the same process for testing
+    known_false_negatives:
+      - Options object spread from a config module
+      - A custom verifier implementing signature checks by hand
+      - Key type and algorithm mismatched even when algorithms *is* pinned
+    prior_art:
+      - "CodeQL js/jwt-missing-verification"
+      - "SonarJS S5659 — 'JWT should be signed and verified with strong cipher algorithms' (CWE-347)"
+      - "Semgrep javascript/jwt-simple/security/jwt-simple-noverify.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/347.html
+      - https://www.rfc-editor.org/rfc/rfc8725.html
+      - https://www.rfc-editor.org/rfc/rfc7519.html
+      - https://github.com/advisories/GHSA-hjrf-2m68-5959
+      - https://github.com/advisories/GHSA-qwph-4952-7xr6
+    notes: >
+      Two real advisories anchor this: GHSA-hjrf-2m68-5959 (CVE-2022-23541, jsonwebtoken key
+      retrieval allowing RSA-to-HMAC forgery) and GHSA-qwph-4952-7xr6 (CVE-2022-23540, insecure
+      default algorithm in jwt.verify). Requiring `algorithms` is a positive-obligation rule
+      ("this option must be present"), which is a shape we should get right once and reuse.
+
+  - id: no-jwt-decode-without-verify
+    family: authentication-credentials
+    title: Do not trust claims from a decoded-but-unverified JWT
+    description: >
+      `jwt.decode()` and `jwt_decode()` parse the payload without checking the signature. Using
+      the resulting claims for authentication or authorization means trusting attacker-authored
+      JSON.
+    owasp_top10_2021: A07:2021-Identification and Authentication Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-347]
+    cwe_parents: [CWE-345, CWE-693]
+    capec: [CAPEC-475]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "jsonwebtoken: jwt.decode(token)"
+      - "jwt-decode: jwtDecode(token)"
+      - "jose: decodeJwt / decodeProtectedHeader"
+      - "manual base64url payload parsing of a token string"
+    sanitizers:
+      - "jwt.verify / jwtVerify on the same token before the claims are used"
+    known_false_positives:
+      - Client-side code reading `exp` to decide when to refresh, which is a legitimate non-security use
+      - Logging or debugging a token's claims
+      - Reading the `kid` header to select a verification key, which is correct and necessary
+    known_false_negatives:
+      - Decode in one module, claim use in another
+      - Verification performed by middleware the rule cannot see
+    prior_art:
+      - "Semgrep javascript/jsonwebtoken/security/audit/jwt-decode-without-verify.yaml (id: jwt-decode-without-verify)"
+      - "Semgrep javascript/jwt-simple/security/jwt-simple-noverify.yaml"
+      - "CodeQL js/jwt-missing-verification"
+    references:
+      - https://cwe.mitre.org/data/definitions/347.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html
+      - https://www.rfc-editor.org/rfc/rfc8725.html
+    notes: >
+      The three legitimate uses (refresh timing, logging, kid selection) are frequent enough that
+      the rule needs either a same-file "was verify also called on this token" check or a
+      documented allowlist of claim names. Even so, cost is low and the failure mode when wrong is
+      total, so this belongs in the first wave alongside the other JWT rules.
+
+  - id: no-weak-jwt-secret
+    family: authentication-credentials
+    title: Do not sign JWTs with a hardcoded, short, or default secret
+    description: >
+      An HMAC-signed JWT is only as strong as its secret. A literal in source, a short string, or
+      a placeholder like `'secret'`/`'changeme'` means any attacker with the source (or a
+      dictionary) can mint valid tokens.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-321]
+    cwe_parents: [CWE-798, CWE-1391, CWE-1390, CWE-287, CWE-284]
+    capec: [CAPEC-70, CAPEC-191]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "jwt.sign(payload, '<literal>') / jwt.verify(token, '<literal>')"
+      - "jose: new TextEncoder().encode('<literal>') passed as the HMAC key"
+      - "express-jwt / passport-jwt secretOrKey with a literal"
+      - "express-session / cookie-session `secret` literal"
+    sanitizers:
+      - "reading the secret from process.env or a secrets client"
+      - "asymmetric keys loaded from a key file or KMS"
+    known_false_positives:
+      - Tests and fixtures, which use literal secrets by necessity
+      - Local development defaults guarded by a NODE_ENV check
+    known_false_negatives:
+      - Secret in a committed `.env` or JSON config
+      - Weak secret sourced from an environment variable with a weak default (`process.env.X || 'dev'`) — worth catching as a sub-case
+      - Secret assembled by concatenation
+    prior_art:
+      - "Semgrep javascript/jsonwebtoken/security/jwt-hardcode.yaml (id: hardcoded-jwt-secret)"
+      - "Semgrep javascript/jose/security/jwt-hardcode.yaml"
+      - "Semgrep javascript/passport-jwt/security/passport-hardcode.yaml"
+      - "Semgrep javascript/express/security/express-jwt-hardcoded-secret.yaml"
+      - "Semgrep javascript/express/security/audit/express-session-hardcoded-secret.yaml (id: express-session-hardcoded-secret)"
+      - "SonarJS S2068 — 'Credentials should not be hard-coded' (CWE-798, CWE-259)"
+      - "SonarJS S6418 — 'Secrets should not be hard-coded' (CWE-798)"
+    references:
+      - https://cwe.mitre.org/data/definitions/321.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+      - https://www.rfc-editor.org/rfc/rfc8725.html
+    notes: >
+      CWE-321 (hardcoded cryptographic key) is the correct specific weakness, not CWE-259
+      (hardcoded password) — a JWT signing secret is a key. The `process.env.SECRET || 'dev'`
+      fallback pattern deserves explicit support; it is common, looks safe, and ships the weak
+      default to production whenever the variable is unset.
+
+  - id: no-predictable-token
+    family: authentication-credentials
+    title: Do not generate security tokens from predictable sources
+    description: >
+      Session identifiers, password-reset tokens, invite codes, API keys and nonces built from
+      `Math.random()`, `Date.now()`, incrementing counters, or a UUID v1 timestamp are guessable,
+      which turns "know the token" into "compute the token".
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-340]
+    cwe_parents: [CWE-330, CWE-693]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "assignment to a token/secret/nonce/resetToken/sessionId/apiKey-named binding from Math.random(), Date.now(), performance.now() or a counter"
+      - "uuid v1 / v6 (timestamp+MAC based) used for a security identifier"
+      - "Math.random().toString(36).slice(2) — the canonical bad idiom"
+      - "crypto.pseudoRandomBytes"
+    sanitizers:
+      - "crypto.randomUUID(), crypto.randomBytes(n), crypto.getRandomValues(), nanoid (CSPRNG-backed)"
+    known_false_positives:
+      - Non-security identifiers named `token` (lexer/parser tokens, design tokens, DOM ids)
+      - Cache-busting or correlation ids where prediction is harmless
+      - Jitter and backoff randomisation
+    known_false_negatives:
+      - Token generated in a utility module and named neutrally
+      - Weak entropy sourced from a third-party id library
+    prior_art:
+      - "CodeQL js/insecure-randomness"
+      - "CodeQL js/biased-cryptographic-random"
+      - "SonarJS S2245 — 'Pseudorandom number generators (PRNGs) should not be used in security contexts' (CWE-326, CWE-330, CWE-338, CWE-1241)"
+      - "eslint-plugin-security detect-pseudoRandomBytes"
+      - "Semgrep javascript/lang/security/detect-pseudoRandomBytes.yaml (id: detect-pseudoRandomBytes)"
+    references:
+      - https://cwe.mitre.org/data/definitions/340.html
+      - https://cwe.mitre.org/data/definitions/330.html
+      - https://owasp.org/www-community/vulnerabilities/Insecure_Randomness
+      - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    notes: >
+      This is the *narrowed* form of no-insecure-random and the form actually worth shipping:
+      instead of flagging every `Math.random()`, flag the ones whose result flows into a
+      security-named binding or a known token sink. MITRE lists no CAPEC for CWE-340, hence the
+      empty list. Sonar deliberately classifies the broad version as a Security Hotspot rather
+      than a vulnerability — the same reasoning applies to us.
+
+  - id: no-insecure-cookie-flags
+    family: authentication-credentials
+    title: Set httpOnly, secure and sameSite on session and auth cookies
+    description: >
+      A session cookie without `httpOnly` is readable by injected script, without `secure` it
+      travels over plain HTTP, and without a `sameSite` restriction it rides along on
+      cross-site requests. All three are single properties in an options object.
+    owasp_top10_2021: A05:2021-Security Misconfiguration
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-1004, CWE-614, CWE-1275]
+    cwe_parents: [CWE-732, CWE-319, CWE-923, CWE-311, CWE-284, CWE-285, CWE-668, CWE-693]
+    capec: [CAPEC-62, CAPEC-102]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "res.cookie(name, value, options) with httpOnly/secure/sameSite absent or false"
+      - "express-session / cookie-session `cookie` options"
+      - "next/headers cookies().set options"
+      - "fastify reply.setCookie, koa ctx.cookies.set"
+      - "raw Set-Cookie header strings missing the attributes"
+    sanitizers:
+      - "httpOnly: true, secure: true, sameSite: 'lax' | 'strict'"
+      - "`__Host-`/`__Secure-` cookie name prefixes (which imply Secure)"
+    known_false_positives:
+      - Deliberately script-readable cookies (CSRF double-submit tokens, locale/theme preferences) which must not be httpOnly
+      - "`secure: false` in local development guarded by NODE_ENV"
+      - "`sameSite: 'none'` required for a legitimate cross-site embed or OAuth flow (correct when paired with Secure)"
+      - Cookies set by a proxy where the app's options are irrelevant
+    known_false_negatives:
+      - Options object spread from a config module
+      - Cookies set by framework internals or a session store
+      - Attributes set correctly but the cookie carrying a secret in cleartext (CWE-315)
+    prior_art:
+      - "SonarJS S2092 — 'Cookies should have the \"secure\" flag' (CWE-614, CWE-311, CWE-315)"
+      - "SonarJS S3330 — 'Cookies should have the \"HttpOnly\" flag' (CWE-1004)"
+      - "CodeQL js/clear-text-cookie"
+      - "CodeQL js/samesite-none-cookie"
+      - "CodeQL js/client-exposed-cookie"
+      - "Semgrep javascript/express/security/audit/express-cookie-settings.yaml (id: express-cookie-session-default-name)"
+    references:
+      - https://cwe.mitre.org/data/definitions/1004.html
+      - https://cwe.mitre.org/data/definitions/614.html
+      - https://cwe.mitre.org/data/definitions/1275.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+      - https://owasp.org/www-community/HttpOnly
+      - https://owasp.org/www-community/controls/SecureCookieAttribute
+      - https://codeql.github.com/codeql-query-help/javascript/js-samesite-none-cookie/
+    notes: >
+      Three CWEs in one rule is deliberate — they are the same option object and reporting them
+      separately triples the noise for one fix. The CSRF-token and preference-cookie exceptions
+      are common enough that the rule needs a cookie-name allowlist option, and should probably
+      only fire on cookies whose name matches a session/auth pattern by default.
+
+  - id: no-session-fixation
+    family: authentication-credentials
+    title: Regenerate the session identifier on authentication
+    description: >
+      If the session id issued before login is still valid after login, an attacker who planted
+      that id keeps an authenticated session. Frameworks expose `session.regenerate()` for this.
+    owasp_top10_2021: A07:2021-Identification and Authentication Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-384]
+    cwe_parents: [CWE-610, CWE-664]
+    capec: [CAPEC-21]
+    detectability: REQUIRES_RUNTIME_INFORMATION
+    scores:
+      security_impact: 4
+      static_detectability: 2
+      ecosystem_prevalence: 2
+      confidence: 2
+      false_positive_risk: 4
+      implementation_cost: 3
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "a handler that assigns req.session.user / req.session.userId without calling req.session.regenerate()"
+      - "passport req.logIn without session regeneration"
+    sanitizers:
+      - "req.session.regenerate() before assigning identity, or a framework that rotates by default"
+    known_false_positives:
+      - Stateless JWT-based auth, where there is no server session to fix
+      - Session store or framework that regenerates automatically
+      - Identity assigned in a service layer while regeneration happens in middleware
+    known_false_negatives:
+      - Any login flow spread across files, which is most of them
+      - Custom session implementations
+    prior_art:
+      - "SonarJS S5876 — 'A new session should be created during user authentication' (CWE-384)"
+      - "CodeQL js/session-fixation"
+    references:
+      - https://cwe.mitre.org/data/definitions/384.html
+      - https://owasp.org/www-community/attacks/Session_fixation
+      - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+    notes: >
+      "Did something else, somewhere else, already rotate the session" is not answerable from one
+      file, so this is a runtime-information rule that Sonar can attempt with whole-project
+      analysis and we largely cannot. Documented, not recommended.
+
+  - id: no-timing-unsafe-secret-comparison
+    family: authentication-credentials
+    title: Compare secrets with a constant-time function
+    description: >
+      `===` on strings short-circuits at the first differing byte, so comparing a token, HMAC
+      signature or API key with `===` leaks its prefix through response timing.
+      `crypto.timingSafeEqual` exists for this.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API2:2023 - Broken Authentication
+    cwe: [CWE-208]
+    cwe_parents: [CWE-203, CWE-200, CWE-668, CWE-664]
+    capec: [CAPEC-462]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 2
+      false_positive_risk: 4
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "=== / !== / == between a secret-named binding and another value"
+      - "String.prototype.localeCompare or .startsWith used for signature checks"
+      - "Array/Buffer equality via JSON.stringify on secret material"
+    sanitizers:
+      - crypto.timingSafeEqual
+      - "comparing HMACs of both values rather than the values"
+    known_false_positives:
+      - Comparing a secret against `undefined`/empty as a presence check
+      - Comparing non-secret values whose identifier merely contains `token` or `key`
+      - Local-network or CLI contexts where remote timing is not a threat
+      - Comparisons where the secret is already public (a session id echoed back)
+    known_false_negatives:
+      - Comparison inside a helper with generic parameter names
+      - Timing leaks through early `return` in a validation chain rather than through `===`
+    prior_art:
+      - "eslint-plugin-security detect-possible-timing-attacks"
+    references:
+      - https://cwe.mitre.org/data/definitions/208.html
+      - https://nodejs.org/api/crypto.html
+    notes: >
+      `detect-possible-timing-attacks` is one of the more widely disabled rules in
+      eslint-plugin-security, and its false-positive profile is the reason. Real but low-impact
+      in most web contexts, and the name-based heuristic is weak. Keep as opt-in at most.
+
+  # =============================================================================================
+  # FAMILY: cryptography
+  # =============================================================================================
+
+  - id: no-md5
+    family: cryptography
+    title: Do not use MD5 for any security purpose
+    description: >
+      MD5 is collision-broken and fast. Any use for signatures, integrity, password storage,
+      token derivation or deduplication-with-security-meaning is a finding.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-328]
+    cwe_parents: [CWE-326, CWE-327, CWE-693]
+    capec: [CAPEC-461, CAPEC-68]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 5
+      ecosystem_prevalence: 4
+      confidence: 4
+      false_positive_risk: 3
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.createHash('md5') / createHmac('md5', ...)"
+      - "crypto-js: CryptoJS.MD5"
+      - "md5 / md5-hex / blueimp-md5 package calls"
+      - "webpack/vite `hashFunction: 'md5'` in security-relevant contexts"
+    sanitizers:
+      - "SHA-256/SHA-512 for integrity, bcrypt/argon2 for passwords, HMAC-SHA256 for authentication"
+    known_false_positives:
+      - Non-security hashing — cache keys, ETags, content-addressed build artifacts, Gravatar URLs, test fixtures
+      - Interoperating with an external system that mandates MD5
+      - Reproducing a legacy digest during a migration
+    known_false_negatives:
+      - Algorithm name from a variable or config
+      - MD5 inside a dependency
+    prior_art:
+      - "CodeQL js/weak-cryptographic-algorithm"
+      - "SonarJS S4790 — 'Weak hashing algorithms should not be used' (CWE-1240)"
+      - "Semgrep javascript/lang/security/audit/md5-used-as-password.yaml (id: md5-used-as-password)"
+    references:
+      - https://cwe.mitre.org/data/definitions/328.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      - https://nodejs.org/api/crypto.html
+    notes: >
+      The honest tension: MD5-for-cache-keys is legitimate and common, so a blanket rule is noisy
+      and a context-aware rule is guessing. Best design is a warn-level rule with an explicit
+      `allowNonCryptographic` escape hatch and a suggestion to switch to SHA-256, plus an upgrade
+      to error when the digest flows into a comparison or a password sink.
+
+  - id: no-sha1-for-security
+    family: cryptography
+    title: Do not use SHA-1 where collision resistance matters
+    description: >
+      SHA-1 is collision-broken (SHAttered, 2017). Still acceptable inside HMAC for some legacy
+      protocols, not acceptable for signatures, certificates, integrity guarantees or password
+      derivation.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-328]
+    cwe_parents: [CWE-326, CWE-327, CWE-693]
+    capec: [CAPEC-461, CAPEC-68]
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 4
+      ecosystem_prevalence: 3
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.createHash('sha1')"
+      - "crypto.sign / verify with an RSA-SHA1 padding/digest pair"
+      - "createHmac('sha1', ...) used as a signature primitive"
+      - "crypto-js: CryptoJS.SHA1"
+    sanitizers:
+      - SHA-256 or better
+      - "HMAC-SHA1 for legacy interop only, documented (e.g. AWS SigV2, OAuth 1.0a)"
+    known_false_positives:
+      - Git object hashing and Git-compatible tooling
+      - OAuth 1.0a / legacy webhook signature verification where the peer mandates SHA-1
+      - Subresource-integrity or ETag computation
+      - Non-security fingerprinting
+    known_false_negatives:
+      - Digest name from a variable
+      - SHA-1 within a dependency's signing implementation
+    prior_art:
+      - "CodeQL js/weak-cryptographic-algorithm"
+      - "SonarJS S4790 — 'Weak hashing algorithms should not be used' (CWE-1240)"
+      - "SonarJS S5547 — 'Cipher algorithms should be robust' (CWE-327, CWE-326)"
+    references:
+      - https://cwe.mitre.org/data/definitions/328.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+    notes: >
+      "Where inappropriate" is the operative phrase and also the part static analysis cannot
+      decide. Legitimate SHA-1 uses are common enough that this should be warn-level with an
+      allowlist, or folded into no-md5 as a shared "weak digest" rule with per-algorithm severity.
+
+  - id: no-des-3des
+    family: cryptography
+    title: Do not use DES, 3DES, RC4 or other retired ciphers
+    description: >
+      DES has a 56-bit key, 3DES has a 64-bit block (Sweet32) and is deprecated by NIST, RC4 is
+      broken. Node still exposes them through `createCipheriv` algorithm strings.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-327]
+    cwe_parents: [CWE-693]
+    capec: [CAPEC-20, CAPEC-97, CAPEC-473]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 2
+      confidence: 5
+      false_positive_risk: 1
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.createCipheriv / createDecipheriv with 'des', 'des3', 'des-ede3-cbc', 'rc4', 'rc2', 'bf', 'cast5'"
+      - "crypto-js: CryptoJS.DES / TripleDES / RC4 / RabbitLegacy"
+      - "TLS cipher suite strings containing DES/RC4/NULL/EXPORT"
+    sanitizers:
+      - "AES-256-GCM or ChaCha20-Poly1305"
+    known_false_positives:
+      - Decrypt-only legacy migration paths
+      - Interop with a fixed external protocol
+    known_false_negatives:
+      - Algorithm string from config or a variable
+      - Cipher selected inside a dependency
+    prior_art:
+      - "CodeQL js/weak-cryptographic-algorithm"
+      - "SonarJS S5547 — 'Cipher algorithms should be robust' (CWE-327, CWE-326)"
+      - "SonarJS S4423 — weak TLS protocol versions"
+      - "Semgrep javascript/sequelize/security/audit/sequelize-weak-tls-version.yaml"
+    references:
+      - https://cwe.mitre.org/data/definitions/327.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      - https://nodejs.org/api/crypto.html
+    notes: >
+      Essentially zero false positives on a literal algorithm string, which is why confidence is 5
+      and fp_risk is 1. Prevalence is low in modern code — it is a "cheap to add, rarely fires,
+      never wrong" rule. Good bundle candidate with no-ecb-mode.
+
+  - id: no-ecb-mode
+    family: cryptography
+    title: Do not use ECB block cipher mode
+    description: >
+      ECB encrypts identical plaintext blocks to identical ciphertext blocks, leaking structure
+      and permitting block reordering. It is never the right answer for application data.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-327]
+    cwe_parents: [CWE-693]
+    capec: [CAPEC-97, CAPEC-20]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 2
+      confidence: 5
+      false_positive_risk: 1
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.createCipheriv('aes-128-ecb' | 'aes-192-ecb' | 'aes-256-ecb', ...)"
+      - "crypto.createCipher (deprecated; derives key and IV from a passphrase with MD5)"
+      - "crypto-js with { mode: CryptoJS.mode.ECB }"
+      - "any algorithm string ending in `-ecb`"
+    sanitizers:
+      - "authenticated modes: GCM, CCM, or ChaCha20-Poly1305; CBC with HMAC as a distant second"
+    known_false_positives:
+      - Single-block encryption of a fixed-size random value, where ECB is technically not weaker
+      - Interop with a legacy protocol that mandates ECB
+    known_false_negatives:
+      - Mode from a variable or config
+      - CBC used without an integrity check, which is a different weakness this rule does not cover
+    prior_art:
+      - "SonarJS S5542 — 'Encryption algorithms should be used with secure mode and padding scheme' (CWE-327, CWE-780)"
+      - "CodeQL js/weak-cryptographic-algorithm"
+    references:
+      - https://cwe.mitre.org/data/definitions/327.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      - https://nodejs.org/api/crypto.html
+    notes: >
+      A substring match on the algorithm literal. `crypto.createCipher` (no `iv`) belongs in this
+      rule too — it is deprecated precisely because its key derivation is MD5-based and its IV is
+      implicit.
+
+  - id: no-hardcoded-crypto-key
+    family: cryptography
+    title: Do not use a hardcoded key for encryption, signing or HMAC
+    description: >
+      A key literal in source (or a hex/base64 constant, or a private-key PEM block) is not a
+      secret. Every holder of the repository can decrypt and forge.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-321]
+    cwe_parents: [CWE-798, CWE-1391, CWE-1390, CWE-287, CWE-284]
+    capec: [CAPEC-191]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.createCipheriv / createDecipheriv key argument as a literal or Buffer.from('<literal>')"
+      - "crypto.createHmac key argument as a literal"
+      - "crypto.createSign/createVerify with an inline PEM private key"
+      - "crypto-js encrypt/decrypt with a literal passphrase"
+      - "-----BEGIN PRIVATE KEY----- appearing in a template literal"
+    sanitizers:
+      - "process.env, a KMS/secret-manager client, a key file read at startup"
+    known_false_positives:
+      - Tests and fixtures (the dominant case)
+      - Public keys, which are meant to be embedded
+      - Key material for a local-only encrypted cache
+      - Sample vectors in crypto test suites
+    known_false_negatives:
+      - Key derived from a hardcoded passphrase in a helper
+      - Key in a committed config file
+      - Key assembled from concatenated constants
+    prior_art:
+      - "SonarJS S6418 — 'Secrets should not be hard-coded' (CWE-798)"
+      - "SonarJS S2068 — 'Credentials should not be hard-coded' (CWE-798, CWE-259)"
+      - "Semgrep javascript/lang/security/audit/hardcoded-hmac-key.yaml (id: hardcoded-hmac-key)"
+      - "CodeQL js/insufficient-key-size (adjacent: key strength rather than key secrecy)"
+    references:
+      - https://cwe.mitre.org/data/definitions/321.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+    notes: >
+      Positional again — a literal in the key parameter of a known crypto API. That makes it
+      precise where generic secret scanning is not. The test-file exception should be handled by
+      config (ignore patterns), not by weakening the rule.
+
+  - id: no-static-iv
+    family: cryptography
+    title: Do not reuse a constant initialization vector or nonce
+    description: >
+      A constant IV with CBC makes the first block deterministic and leaks equality; a repeated
+      nonce with GCM or ChaCha20-Poly1305 is catastrophic — it leaks the authentication key and
+      allows forgery. `crypto.randomBytes` per message is the fix.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-329, CWE-1204]
+    cwe_parents: [CWE-1204, CWE-573, CWE-330, CWE-693]
+    capec: [CAPEC-20, CAPEC-97]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 4
+      ecosystem_prevalence: 2
+      confidence: 4
+      false_positive_risk: 2
+      implementation_cost: 2
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "createCipheriv(..., ..., '<literal>') or Buffer.from('<literal>') / Buffer.alloc(16) as the IV"
+      - "a module-scope IV constant reused across calls"
+      - "crypto-js with a literal `iv` option"
+      - "createCipher (no IV parameter at all)"
+    sanitizers:
+      - "crypto.randomBytes(ivLength) computed per invocation and transmitted alongside the ciphertext"
+      - "a monotonically increasing counter nonce with documented uniqueness (acceptable for GCM)"
+    known_false_positives:
+      - Decryption paths, where the IV legitimately comes from stored ciphertext
+      - Deterministic encryption for a searchable-encryption blind index (a real, deliberate design)
+      - Test vectors
+    known_false_negatives:
+      - IV read from config
+      - IV generated once at module load and reused for every message — same weakness, different shape, worth catching
+    prior_art:
+      - "Semgrep javascript/node-crypto/security/create-de-cipher-no-iv.yaml (id: create-de-cipher-no-iv)"
+      - "Semgrep javascript/node-crypto/security/gcm-no-tag-length.yaml (adjacent)"
+      - "Semgrep javascript/node-crypto/security/aead-no-final.yaml (adjacent)"
+      - "SonarJS S5542 — 'Encryption algorithms should be used with secure mode and padding scheme' (CWE-327, CWE-780)"
+    references:
+      - https://cwe.mitre.org/data/definitions/329.html
+      - https://cwe.mitre.org/data/definitions/1204.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      - https://nodejs.org/api/crypto.html
+    notes: >
+      Distinguishing encrypt from decrypt is essential — `createDecipheriv` with a stored IV is
+      correct and would otherwise be the rule's biggest false positive. CWE-329 is the CBC-specific
+      variant and CWE-1204 the general one, so both are listed with 1204 also appearing as 329's
+      parent.
+
+  - id: no-insecure-random
+    family: cryptography
+    title: Do not use Math.random() in a security-sensitive context
+    description: >
+      `Math.random()` is not a CSPRNG; V8's xorshift128+ state is recoverable from a handful of
+      outputs. `crypto.randomUUID`, `crypto.randomBytes` and `crypto.getRandomValues` exist.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-338]
+    cwe_parents: [CWE-330, CWE-693]
+    capec: []
+    detectability: PARTIALLY_DETECTABLE
+    scores:
+      security_impact: 4
+      static_detectability: 5
+      ecosystem_prevalence: 5
+      confidence: 2
+      false_positive_risk: 5
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - Math.random()
+      - crypto.pseudoRandomBytes
+      - "seeded PRNG libraries (seedrandom, chance with a fixed seed) used for security values"
+      - "Date.now() used as an entropy source"
+    sanitizers:
+      - crypto.randomUUID / crypto.randomBytes / crypto.getRandomValues / webcrypto
+    known_false_positives:
+      - "The overwhelming majority of real uses: animation jitter, sampling, shuffling a carousel, retry backoff, mock data, load-test fixtures, `key` generation for lists"
+      - Deliberately seeded randomness for reproducible tests
+      - Non-security ids for DOM elements or React keys
+    known_false_negatives:
+      - Weak randomness inside a dependency
+      - Entropy derived from process metadata rather than Math.random
+    prior_art:
+      - "CodeQL js/insecure-randomness"
+      - "SonarJS S2245 — 'Pseudorandom number generators (PRNGs) should not be used in security contexts' (CWE-326, CWE-330, CWE-338, CWE-1241)"
+      - "eslint-plugin-security detect-pseudoRandomBytes"
+      - "Semgrep javascript/lang/security/detect-pseudoRandomBytes.yaml (id: detect-pseudoRandomBytes)"
+    references:
+      - https://cwe.mitre.org/data/definitions/338.html
+      - https://owasp.org/www-community/vulnerabilities/Insecure_Randomness
+      - https://nodejs.org/api/crypto.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-insecure-randomness/
+    notes: >
+      Deliberately scored with confidence 2 and false_positive_risk 5, which is a disagreement
+      with the brief's proposed first ten. `Math.random()` appears in almost every codebase and is
+      almost always harmless; a blanket rule trains people to add eslint-disable comments, which
+      is worse than not shipping. Sonar classifies its equivalent as a Security Hotspot for the
+      same reason. Ship no-predictable-token instead — same weakness, gated on a security-named
+      sink, an order of magnitude more precise. MITRE lists no CAPEC for CWE-338.
+
+  - id: no-weak-key-size
+    family: cryptography
+    title: Do not generate asymmetric keys below the recommended size
+    description: >
+      RSA below 2048 bits and elliptic curves below ~224 bits are inadequate. Key length is a
+      numeric literal in the generation call.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: none
+    cwe: [CWE-326]
+    cwe_parents: [CWE-693]
+    capec: [CAPEC-112, CAPEC-192, CAPEC-20]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 5
+      ecosystem_prevalence: 2
+      confidence: 5
+      false_positive_risk: 1
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "crypto.generateKeyPair / generateKeyPairSync with modulusLength < 2048"
+      - "crypto.createDiffieHellman with a small prime length"
+      - "node-forge / node-rsa key generation with a small bit length"
+      - "named curves known to be weak or non-standard"
+    sanitizers:
+      - "RSA >= 2048 (3072 preferred), P-256/Ed25519"
+    known_false_positives:
+      - Test fixtures generating small keys for speed
+      - Interop with a constrained device
+    known_false_negatives:
+      - Key size from config or a variable
+      - Keys generated outside the codebase
+    prior_art:
+      - "CodeQL js/insufficient-key-size"
+      - "SonarJS S4426 — 'Cryptographic keys should be robust' (CWE-326)"
+    references:
+      - https://cwe.mitre.org/data/definitions/326.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
+      - https://nodejs.org/api/crypto.html
+    notes: >
+      A numeric literal comparison. Trivially correct, rarely fires. Bundle with no-des-3des and
+      no-ecb-mode as a single "weak crypto configuration" rule family sharing one registry table.
+
+  - id: no-disabled-tls-verification
+    family: cryptography
+    title: Do not disable TLS certificate or hostname verification
+    description: >
+      `rejectUnauthorized: false`, `strictSSL: false`, `checkServerIdentity: () => {}`, and an
+      `Agent` built with verification off turn TLS into unauthenticated encryption: any
+      network-position attacker can machine-in-the-middle the connection.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-295]
+    cwe_parents: [CWE-287, CWE-284]
+    capec: [CAPEC-459, CAPEC-475]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 5
+      false_positive_risk: 2
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "https.request / https.Agent / tls.connect with rejectUnauthorized: false"
+      - "axios httpsAgent: new https.Agent({ rejectUnauthorized: false })"
+      - "node-fetch / undici with a dispatcher disabling verification (connect.rejectUnauthorized)"
+      - "request / requestretry with strictSSL: false"
+      - "checkServerIdentity overridden to a no-op"
+      - "sequelize/pg/mysql2 ssl: { rejectUnauthorized: false }"
+      - "puppeteer --ignore-certificate-errors, Electron certificate-error handler returning true"
+    sanitizers:
+      - "supplying the correct CA via `ca:` instead of disabling verification"
+      - "rejectUnauthorized: true (the default)"
+    known_false_positives:
+      - Talking to a device or internal service with a self-signed certificate where pinning the CA is genuinely impractical
+      - Local development against a self-signed proxy, guarded by NODE_ENV
+      - Test harnesses using a throwaway certificate
+    known_false_negatives:
+      - Options object spread or built from config
+      - Verification disabled process-wide via the environment variable (see no-node-tls-reject-unauthorized)
+      - Custom agent from a dependency
+    prior_art:
+      - "CodeQL js/disabling-certificate-validation"
+      - "SonarJS S4830 — 'Server certificates should be verified during SSL/TLS connections' (CWE-295)"
+      - "SonarJS S5527 — 'Server hostnames should be verified during SSL/TLS connections' (CWE-297)"
+      - "Semgrep javascript/sequelize/security/audit/sequelize-tls-disabled-cert-validation.yaml (id: sequelize-tls-disabled-cert-validation)"
+      - "Semgrep javascript/grpc/security/grpc-nodejs-insecure-connection.yaml (id: grpc-nodejs-insecure-connection)"
+    references:
+      - https://cwe.mitre.org/data/definitions/295.html
+      - https://cwe.mitre.org/data/definitions/297.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+      - https://nodejs.org/api/tls.html
+      - https://codeql.github.com/codeql-query-help/javascript/js-disabling-certificate-validation/
+    notes: >
+      One of the best rules available to an ESLint plugin: a boolean literal in an options object,
+      catastrophic impact, unambiguous intent, and a strong tendency to be added "temporarily" and
+      never removed. Belongs in the first ten and is absent from the brief's proposed list — that
+      is the main disagreement worth acting on.
+
+  - id: no-node-tls-reject-unauthorized
+    family: cryptography
+    title: Never set NODE_TLS_REJECT_UNAUTHORIZED to 0
+    description: >
+      Setting this environment variable to `'0'` disables certificate verification for every TLS
+      connection the process makes, including ones made by dependencies. Node itself emits a
+      warning that this makes TLS connections insecure.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-295]
+    cwe_parents: [CWE-287, CWE-284]
+    capec: [CAPEC-459, CAPEC-475]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 5
+      static_detectability: 5
+      ecosystem_prevalence: 3
+      confidence: 5
+      false_positive_risk: 1
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'"
+      - "process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0"
+      - "Object.assign(process.env, { NODE_TLS_REJECT_UNAUTHORIZED: '0' })"
+      - "the same assignment inside a dotenv default or a config module"
+    sanitizers: []
+    known_false_positives:
+      - Test setup files and integration harnesses against a local self-signed server
+      - One-off scripts that are never deployed
+    known_false_negatives:
+      - The variable set in a Dockerfile, CI config, shell profile or process manager, none of which ESLint sees
+      - Value assigned from a variable rather than a literal
+    prior_art:
+      - "CodeQL js/disabling-certificate-validation (covers the environment-variable form)"
+      - "SonarJS S4830 — 'Server certificates should be verified during SSL/TLS connections' (CWE-295)"
+    references:
+      - https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue
+      - https://cwe.mitre.org/data/definitions/295.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+    notes: >
+      The single highest-confidence entry in the inventory: one exact assignment, process-wide
+      blast radius, no legitimate production use. Should ship as an error with no autofix (deleting
+      the line may break the developer's workflow; the correct fix is a CA, and that is a human
+      decision). Note the honest limitation — most real instances of this live in shell and CI
+      config, which a linter cannot see.
+
+  - id: no-plain-http-url
+    family: cryptography
+    title: Do not make requests to hardcoded http:// endpoints
+    description: >
+      Cleartext HTTP exposes credentials, tokens and response bodies to any network observer and
+      permits response tampering. The same applies to `ws://` and to package or script downloads
+      over HTTP.
+    owasp_top10_2021: A02:2021-Cryptographic Failures
+    owasp_api_top10_2023: API8:2023 - Security Misconfiguration
+    cwe: [CWE-319]
+    cwe_parents: [CWE-311, CWE-693]
+    capec: [CAPEC-102, CAPEC-117, CAPEC-65]
+    detectability: STATICALLY_DETECTABLE
+    scores:
+      security_impact: 3
+      static_detectability: 5
+      ecosystem_prevalence: 4
+      confidence: 3
+      false_positive_risk: 4
+      implementation_cost: 1
+    priority_score: 0.0
+    requires_taint: false
+    sources: []
+    sinks:
+      - "fetch / axios / got / undici / node-fetch with an `http://` literal"
+      - "new WebSocket('ws://...')"
+      - "http.get / http.request with a non-localhost host"
+      - "script/img/iframe src built from an http:// literal"
+      - "npm/yarn registry or install-script URLs over http"
+    sanitizers:
+      - "https:// / wss://"
+      - "protocol-relative or environment-driven base URLs"
+    known_false_positives:
+      - "localhost, 127.0.0.1, ::1, *.local, and container hostnames — the dominant case by far"
+      - XML namespace URIs and schema identifiers, which are identifiers and not fetched
+      - Documentation links and comments
+      - Well-known non-fetched URLs (`http://www.w3.org/2000/svg`)
+    known_false_negatives:
+      - URL assembled from a protocol variable
+      - Base URL from configuration
+      - Mixed content introduced by a dependency
+    prior_art:
+      - "CodeQL js/insecure-download"
+      - "CodeQL js/insecure-dependency"
+      - "SonarJS S5332 — 'Clear-text protocols should not be used' (CWE-200, CWE-319)"
+      - "SonarJS S5730 — 'Content Security Policy should block mixed-content' (CWE-319, CWE-311, CWE-693)"
+      - "Semgrep javascript/lang/security/detect-insecure-websocket.yaml (id: detect-insecure-websocket)"
+      - "Semgrep typescript/react/security/react-insecure-request.yaml (id: react-insecure-request)"
+    references:
+      - https://cwe.mitre.org/data/definitions/319.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html
+    notes: >
+      Cheap and mostly right, but the localhost and namespace-URI exceptions are mandatory, not
+      optional — without them this rule is unusable. The `http://www.w3.org/2000/svg` false
+      positive alone will fire in every SVG-containing component. Ship with a built-in exemption
+      list plus a configurable one.
