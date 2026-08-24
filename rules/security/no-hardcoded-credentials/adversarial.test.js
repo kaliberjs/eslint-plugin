@@ -23,5 +23,21 @@ test('security-no-hardcoded-credentials', merge(
     ],
   },
 
-  { valid: [], invalid: [] },
+  {
+    // --- express-basic-auth's users map ---------------------------------
+    // Recorded misses: the callee is matched by bare identifier name
+    // (`basicAuth` / `expressBasicAuth`, the two spellings observed across
+    // every surveyed project), the same trade-off every method/receiver-
+    // name-matched sink in this plugin already accepts.
+    valid: [
+      // A renamed import. `const auth = require('express-basic-auth')`
+      // does not match either recognised spelling.
+      "const auth = require('express-basic-auth'); auth({ users: { admin: 'supersecret' } })",
+      // The users object is assembled elsewhere and spread in — no
+      // variable tracing, the same limitation as the wider credentials
+      // family and every taint-based rule in this plugin.
+      "const staticUsers = { admin: 'supersecret' }; basicAuth({ users: { ...staticUsers } })",
+    ],
+    invalid: [],
+  },
 ))
