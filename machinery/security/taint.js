@@ -1246,10 +1246,25 @@ function createAnalysis(sourceCode, options, filename) {
       return null
     }
 
+    // The label is resolved to a plain string *now*, using this analysis
+    // instance's own sourceCode, rather than left for describePath to
+    // compute later from `step.node` with whatever sourceCode happens to
+    // be reporting. That deferral was fine as long as a taint value never
+    // left the file it was built in — cross-file resolution broke it
+    // silently: a hop built while summarizing an imported helper carries a
+    // node that belongs to the *target* file's AST, and the rule reporting
+    // it uses the *caller's* sourceCode. Calling sourceCode.getText() on a
+    // foreign node doesn't throw, it just slices the wrong file's text at
+    // that node's range — a real, silent, wrong "Flow:" in the message,
+    // confirmed by taking `x + '-suffix'` inside a cross-file helper and
+    // watching the reported flow describe a random substring of the
+    // *importing* file's import statement instead.
+    const label = step.label ?? shortText(step.node)
+
     return {
       ...taint,
       confidence: Math.max(0, taint.confidence - step.penalty),
-      path: [...taint.path, step],
+      path: [...taint.path, { ...step, label }],
     }
   }
 

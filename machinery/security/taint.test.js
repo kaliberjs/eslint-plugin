@@ -183,7 +183,7 @@ test('the flow path records every hop, for the diagnostic and for auditing the n
 
   assert.deepStrictEqual(
     taint.path.map(hop => `${hop.kind}:${hop.label}`),
-    ['source:req.query', 'read:q', 'member:id', 'read:id', 'template:null']
+    ['source:req.query', 'read:q', 'member:id', 'read:id', 'template:`SELECT * FROM u WHERE id = ${id}`']
   )
 
   // Every penalty is recorded on the hop that incurred it, so "why is this
