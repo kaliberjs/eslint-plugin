@@ -4,6 +4,11 @@ const DEFAULTS = {
   callDepth: 0,
   maxPathInMessage: 6,
   registry: { sources: [], sinks: [], sanitizers: [] },
+  // Base directory root-slash imports (`/machinery/x`) resolve against.
+  // null means: guess from the nearest ancestor package.json's `src`
+  // directory (see taint.js#findDefaultSourceRoot). Set this explicitly
+  // for a project laid out differently.
+  sourceRoot: null,
 }
 
 /**

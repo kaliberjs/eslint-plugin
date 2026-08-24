@@ -466,6 +466,32 @@ describe('same-file helper summaries — interprocedural-lite', () => {
     assert.strictEqual(found.length, 1)
   })
 
+  test('calling the same helper twice with different taint resolves each call independently', () => {
+    // Regression: taintOf cached a helper body's return-expression nodes by
+    // node identity alone, with no regard for which call's parameter
+    // bindings were active when it was resolved. Whichever call ran first
+    // won the cache for every later call to the same helper — silently
+    // clearing a real vulnerability if the untainted call happened to run
+    // first, in either source order.
+    const taintedFirst = taintAtSinks(`
+      const clean = x => x.trim()
+      function handler(req){
+        db.query(\`SELECT \${clean(req.query.t)}\`)
+        db.query(\`SELECT \${clean(config.table)}\`)
+      }
+    `).map(taint => Boolean(taint))
+    assert.deepStrictEqual(taintedFirst, [true])
+
+    const untaintedFirst = taintAtSinks(`
+      const clean = x => x.trim()
+      function handler(req){
+        db.query(\`SELECT \${clean(config.table)}\`)
+        db.query(\`SELECT \${clean(req.query.t)}\`)
+      }
+    `).map(taint => Boolean(taint))
+    assert.deepStrictEqual(untaintedFirst, [true])
+  })
+
   test('nested helpers compose', () => {
     const found = taintAtSinks(`
       const inner = x => x.trim()

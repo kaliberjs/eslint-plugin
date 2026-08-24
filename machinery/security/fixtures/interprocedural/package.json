@@ -1,0 +1,5 @@
+{
+  "name": "interprocedural-fixture",
+  "private": true,
+  "description": "Marks the project root for source-root detection in taint.test.js's cross-file tests. Not a real package."
+}

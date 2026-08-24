@@ -39,7 +39,7 @@ module.exports = {
     // root.helper) is trusted even though it is not constant. The shared
     // analysis is cached per SourceCode, so this costs nothing extra.
     const options = settings(context)
-    const analysis = analyze(context.sourceCode, options)
+    const analysis = analyze(context.sourceCode, options, context.filename)
 
     return {
       JSXAttribute(node) {

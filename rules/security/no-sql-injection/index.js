@@ -32,7 +32,7 @@ module.exports = {
 
   create(context) {
     const options = settings(context)
-    const analysis = analyze(context.sourceCode, options)
+    const analysis = analyze(context.sourceCode, options, context.filename)
 
     return {
       CallExpression(node) {

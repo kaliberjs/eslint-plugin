@@ -1,3 +1,6 @@
+const fs = require('fs')
+const path = require('path')
+const { Linter } = require('eslint')
 const { getStaticValue, getPropertyName, findVariable } = require('@eslint-community/eslint-utils')
 const { isFunctionNode } = require('../ast')
 const registry = require('./registry')
@@ -48,6 +51,20 @@ const PENALTY = {
 
 const cache = new WeakMap()
 
+// --- Cross-file resolution (interprocedural-lite, Phase 1) ------------------
+//
+// Process-lifetime, keyed by absolute path — deliberately not the sourceCode
+// WeakMap above, because there is no sourceCode for a file nobody asked to
+// lint. A single `npm run lint` invocation is a fresh process, so this never
+// needs to see an edit; a persistent daemon (watch mode, an editor extension)
+// would need real invalidation, which this does not have.
+// ponytail: process-lifetime cache, unbounded. Add an eviction policy if a
+// daemon use case ever makes that observably wrong.
+const crossFileSourceCache = new Map()
+const sourceRootCache = new Map()
+const crossFileInProgress = new Set()
+const crossFileLinter = new Linter()
+
 module.exports = { analyze, PENALTY }
 
 /**
@@ -58,20 +75,24 @@ module.exports = { analyze, PENALTY }
  * so every edit and every --fix pass is a natural cache miss. There is
  * deliberately no TTL, no size cap and no invalidate() — anything writable
  * there would be a bug writable there.
+ *
+ * `filename` is not part of the cache key — a SourceCode already corresponds
+ * to exactly one file's content — but is needed to resolve *this file's*
+ * relative and root-slash imports when a rule reaches a cross-file call.
  */
-function analyze(sourceCode, options) {
+function analyze(sourceCode, options, filename) {
   const cached = cache.get(sourceCode)
   if (cached) {
     cached.stats.cacheHits++
     return cached
   }
 
-  const analysis = createAnalysis(sourceCode, options)
+  const analysis = createAnalysis(sourceCode, options, filename)
   cache.set(sourceCode, analysis)
   return analysis
 }
 
-function createAnalysis(sourceCode, options) {
+function createAnalysis(sourceCode, options, filename) {
   const known = registry.merge(options.registry)
   const stats = { resolved: 0, cacheHits: 0, bailouts: {} }
 
@@ -81,7 +102,7 @@ function createAnalysis(sourceCode, options) {
   let bindingScope = null
   const references = indexReferences(sourceCode)
 
-  return { taintOf, sinkAt, sourceAt, referenceFor, sanitizedAt, stats }
+  return { taintOf, sinkAt, sourceAt, referenceFor, sanitizedAt, stats, summarizeExport }
 
   function referenceFor(identifier) {
     return references.get(identifier) ?? null
@@ -90,14 +111,25 @@ function createAnalysis(sourceCode, options) {
   /** @returns {TaintValue | null} null means untainted *or* unknown, deliberately indistinguishable. */
   function taintOf(node) {
     if (!node) return null
-    if (taintCache.has(node)) return taintCache.get(node)
+
+    // A node inside an active helper summary resolves differently depending
+    // on *which call* is being summarized — the same `x.trim()` inside
+    // `const clean = x => x.trim()` is tainted for one call site and not
+    // for another. Caching by node identity alone, with no regard for which
+    // bindingScope was active, made whichever call resolved first win for
+    // every later call to the same helper — a real false negative when the
+    // untainted call happens to run first. So: no cache read or write while
+    // a bindingScope is in effect; resolution is naturally re-run per call.
+    const cacheable = !bindingScope
+
+    if (cacheable && taintCache.has(node)) return taintCache.get(node)
     if (inProgress.has(node)) return null
 
     inProgress.add(node)
     const result = resolve(node)
     inProgress.delete(node)
 
-    taintCache.set(node, result)
+    if (cacheable) taintCache.set(node, result)
     stats.resolved++
     return result
   }
@@ -728,8 +760,7 @@ function createAnalysis(sourceCode, options) {
     // Same-file helper functions get a computed summary instead of a wall:
     // their return statements are evaluated with parameters bound to the
     // actual call arguments, so `function pick(x) { return x.trim() }`
-    // propagates taint exactly rather than being an unknown call. Cross-file
-    // helpers remain walls (documented).
+    // propagates taint exactly rather than being an unknown call.
     const localFunction = localFunctionFor(node.callee)
     if (localFunction) return summarizeCall(localFunction, node)
 
@@ -739,6 +770,15 @@ function createAnalysis(sourceCode, options) {
     // literal, not a class instance or a parameter of unknown shape.
     const localMethod = localMethodFor(node.callee)
     if (localMethod) return summarizeCall(localMethod, node)
+
+    // Cross-file, one hop: a named import resolved to a relative or
+    // root-slash specifier gets the same summary treatment, evaluated by
+    // that file's own analysis instance. Returns null (not a distinct
+    // sentinel) when the callee isn't an eligible import-bound call at
+    // all, so this falls through to the generic wall below exactly like
+    // every other non-match here.
+    const crossFile = resolveCrossFileCall(node)
+    if (crossFile) return crossFile.taint
 
     // An unknown function call breaks the chain. It is a wall, not a penalty:
     // reporting through arbitrary unknown functions is the single largest
@@ -827,6 +867,97 @@ function createAnalysis(sourceCode, options) {
   }
 
   /**
+   * `import { clean } from './stringHelpers'; clean(tainted)` — one hop
+   * across a file boundary. Reads and parses the target file itself
+   * (cached by path, process-lifetime) rather than depending on ESLint
+   * having already linted it, so this works regardless of lint order or a
+   * partial/single-file run.
+   *
+   * Scope, deliberately: relative (`./`, `../`) and root-slash (`/x`, the
+   * Kaliber convention) specifiers only. A bare specifier (an npm package)
+   * never resolves here — a dependency should never be trusted just
+   * because it was importable, that is what registry entries are for.
+   * Default and namespace imports stay unmatched too: this only proves
+   * anything for a *named* export, where "the export called X" is
+   * unambiguous.
+   *
+   * Returns null — not a distinct sentinel — when the callee isn't an
+   * eligible import-bound call at all, so resolveCall's fallthrough to the
+   * generic unknown-call wall is unchanged for everything else.
+   */
+  function resolveCrossFileCall(node) {
+    if (node.callee.type !== 'Identifier' || !filename) return null
+
+    const variable = referenceFor(node.callee)?.resolved
+    const info = crossFileImportInfo(variable?.defs[0])
+    if (!info) return null
+
+    const targetPath = resolveModulePath(info.specifier, filename, options.sourceRoot)
+    if (!targetPath) return null
+    const importedName = info.importedName
+
+    // A→B→A mutual recursion across files: the same guard taintOf already
+    // uses for a single file's AST nodes, keyed here by path+export because
+    // there is no shared node identity across two analysis instances.
+    const cycleKey = `${targetPath}::${importedName}`
+    if (crossFileInProgress.has(cycleKey)) return { taint: null }
+
+    const targetSourceCode = readCrossFileSourceCode(targetPath)
+    if (!targetSourceCode) return null
+
+    crossFileInProgress.add(cycleKey)
+    try {
+      const targetAnalysis = analyze(targetSourceCode, options, targetPath)
+      const argumentTaints = node.arguments.map(argument => taintOf(argument))
+      const taint = targetAnalysis.summarizeExport(importedName, argumentTaints, {
+        node: node.callee,
+        label: getCalleeLabel(node.callee),
+      })
+      return { taint }
+    } finally {
+      crossFileInProgress.delete(cycleKey)
+    }
+  }
+
+  /**
+   * Two binding shapes name both a module specifier and the *original*
+   * exported name in one place: `import { X } from '...'`, and
+   * `const { X } = require('...')` (also renamed locally, in either form —
+   * the original name is what findExport needs, not the local one). A
+   * namespace-style require (`const ns = require('...'); ns.method()`) is
+   * a member callee, not an Identifier one, so it never reaches here — a
+   * deliberate, narrower exclusion than the destructured forms, matching
+   * this feature's one-hop-of-certainty bar rather than guessing through
+   * an extra layer of indirection.
+   */
+  function crossFileImportInfo(definition) {
+    if (definition?.type === 'ImportBinding') {
+      const imported = definition.node.imported
+      const importedName = imported?.type === 'Identifier' ? imported.name : (imported?.value ?? null)
+      if (!importedName) return null
+      return { specifier: String(definition.parent.source.value), importedName }
+    }
+
+    if (definition?.type === 'Variable') {
+      const init = definition.node.init
+      const isRequireCall = init?.type === 'CallExpression'
+        && init.callee?.type === 'Identifier' && init.callee.name === 'require'
+        && init.arguments[0]?.type === 'Literal'
+      if (!isRequireCall) return null
+
+      const property = definition.name.parent
+      if (property?.type !== 'Property') return null
+      const importedName = property.key?.type === 'Identifier' ? property.key.name
+        : property.key?.type === 'Literal' ? String(property.key.value) : null
+      if (!importedName) return null
+
+      return { specifier: String(init.arguments[0].value), importedName }
+    }
+
+    return null
+  }
+
+  /**
    * Evaluate the helper's return expressions with its parameters bound to the
    * call's arguments. Returns the combined taint of everything the helper can
    * give back — including values it pulls from registered sources itself,
@@ -841,6 +972,22 @@ function createAnalysis(sourceCode, options) {
       bindParam(param, callNode.arguments[index] ?? null, bindings)
     })
 
+    return summarizeWithBindings(fnNode, bindings, {
+      node: callNode.callee,
+      label: getCalleeLabel(callNode.callee),
+    })
+  }
+
+  /**
+   * The part of summarizeCall that both the same-file and cross-file paths
+   * share: evaluate a function's return expressions with a given parameter
+   * binding in effect. What differs between them is only how the bindings
+   * get built — see bindParam (same file: the argument is an AST node this
+   * analysis can taintOf) and bindParamFromTaint (cross file: the argument
+   * was already resolved by the *caller's* analysis instance, so only its
+   * taint value crosses the file boundary, never the node).
+   */
+  function summarizeWithBindings(fnNode, bindings, { node, label }) {
     // An expression-bodied arrow has no return statement: its whole body is
     // the return value.
     const returns = []
@@ -855,15 +1002,29 @@ function createAnalysis(sourceCode, options) {
     try {
       const combined = combine(returns.map(returnArgument => taintOf(returnArgument)))
       if (!combined) return null
-      return hop(combined, {
-        node: callNode.callee,
-        kind: 'methodName',
-        label: getCalleeLabel(callNode.callee),
-        penalty: PENALTY.methodName,
-      })
+      return hop(combined, { node, kind: 'methodName', label, penalty: PENALTY.methodName })
     } finally {
       bindingScope = previousBindings
     }
+  }
+
+  /**
+   * The export a cross-file call resolved to, summarized against taint
+   * values the *caller's* analysis already computed for the call's
+   * arguments — this analysis instance never sees the caller's AST at all,
+   * only these precomputed values, which is what makes it safe to run
+   * against a file nobody asked to lint.
+   */
+  function summarizeExport(exportedName, argumentTaints, labelInfo) {
+    const fnNode = findExport(sourceCode.ast, exportedName)
+    if (!fnNode) return null
+
+    const bindings = new Map()
+    fnNode.params.forEach((param, index) => {
+      bindParamFromTaint(param, argumentTaints[index] ?? null, bindings)
+    })
+
+    return summarizeWithBindings(fnNode, bindings, labelInfo)
   }
 
   /**
@@ -903,6 +1064,27 @@ function createAnalysis(sourceCode, options) {
         )
         bindings.set(property.value.name, matched ? taintOf(matched.value) : null)
       }
+    }
+  }
+
+  /**
+   * bindParam's cross-file sibling: the argument is a taint *value* the
+   * caller already computed, not a node this analysis could taintOf itself.
+   * Destructuring can't be matched precisely without the caller's argument
+   * shape, which does not cross the file boundary — so it stays unbound
+   * here even in the one case bindParam can prove (a literal argument).
+   * Narrower than the same-file case on purpose: guessing which property a
+   * whole-object taint value belongs to is exactly the false-positive risk
+   * bindParam was written to avoid.
+   */
+  function bindParamFromTaint(param, taintValue, bindings) {
+    if (param.type === 'Identifier') {
+      bindings.set(param.name, taintValue)
+      return
+    }
+
+    if (param.type === 'AssignmentPattern' && param.left.type === 'Identifier') {
+      bindings.set(param.left.name, taintValue)
     }
   }
 
@@ -1200,4 +1382,202 @@ function indexReferences(sourceCode) {
       index.set(reference.identifier, reference)
 
   return index
+}
+
+// --- Cross-file module resolution -------------------------------------------
+//
+// Everything below is plain data lookup with no dependency on a specific
+// analysis instance, so it lives at module scope rather than inside
+// createAnalysis.
+
+/**
+ * A specifier to an absolute file path, or null if it is out of scope
+ * (a bare package specifier — never chase into node_modules) or does not
+ * exist on disk under any of the extensions this project uses.
+ */
+function resolveModulePath(specifier, fromFile, configuredSourceRoot) {
+  let base
+  if (specifier.startsWith('.')) {
+    base = path.resolve(path.dirname(fromFile), specifier)
+  } else if (specifier.startsWith('/')) {
+    const root = configuredSourceRoot || findDefaultSourceRoot(fromFile)
+    if (!root) return null
+    base = path.join(root, specifier)
+  } else {
+    return null
+  }
+
+  return resolveExistingFile(base)
+}
+
+function resolveExistingFile(base) {
+  for (const candidate of [base, `${base}.js`, `${base}.jsx`, path.join(base, 'index.js'), path.join(base, 'index.jsx')]) {
+    try {
+      if (fs.statSync(candidate).isFile()) return candidate
+    } catch {
+      // Does not exist, or a permission error — either way, not this candidate.
+    }
+  }
+  return null
+}
+
+/**
+ * Root-slash imports (`/machinery/x`) are a Kaliber convention resolved by
+ * `@kaliber/build`'s own webpack config, which this plugin has no access
+ * to. Absent an explicit `settings['@kaliber/security'].sourceRoot`, the
+ * nearest ancestor package.json's `src` directory is the same guess
+ * `@kaliber/build` projects satisfy by convention. Wrong for a differently
+ * laid out project, in which case root-slash imports fall back to a wall —
+ * the same outcome as before this feature existed.
+ */
+function findDefaultSourceRoot(fromFile) {
+  const startDir = path.dirname(fromFile)
+  if (sourceRootCache.has(startDir)) return sourceRootCache.get(startDir)
+
+  let current = startDir
+  let found = null
+  while (true) {
+    if (fs.existsSync(path.join(current, 'package.json'))) {
+      found = path.join(current, 'src')
+      break
+    }
+    const parent = path.dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+
+  sourceRootCache.set(startDir, found)
+  return found
+}
+
+/**
+ * Parse a file nobody asked to lint into a real SourceCode, the same shape
+ * every rule already gets from ESLint, so the exact same scope-aware
+ * resolution machinery (getPropertyName, findVariable, sourceCode.getScope)
+ * works on it unmodified. Cached by path — see the module-level comment
+ * above crossFileSourceCache for the invalidation tradeoff.
+ */
+function readCrossFileSourceCode(absolutePath) {
+  if (crossFileSourceCache.has(absolutePath)) return crossFileSourceCache.get(absolutePath)
+
+  let result = null
+  try {
+    const code = fs.readFileSync(absolutePath, 'utf8')
+    let captured = null
+    crossFileLinter.verify(code, {
+      languageOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        parserOptions: { ecmaFeatures: { jsx: true } },
+      },
+      plugins: {
+        capture: { rules: { capture: { create(context) { captured = context.sourceCode; return {} } } } },
+      },
+      rules: { 'capture/capture': 'error' },
+    }, absolutePath)
+    result = captured
+  } catch {
+    result = null
+  }
+
+  crossFileSourceCache.set(absolutePath, result)
+  return result
+}
+
+/**
+ * Find a top-level function/arrow declaration by name, unqualified by how
+ * it is exported — the shared last step once an export statement has been
+ * matched down to "the binding named X".
+ */
+function findTopLevelBinding(program, name) {
+  for (const statement of program.body) {
+    if (statement.type === 'FunctionDeclaration' && statement.id?.name === name) return statement
+
+    if (statement.type === 'VariableDeclaration') {
+      for (const declarator of statement.declarations) {
+        if (declarator.id.type !== 'Identifier' || declarator.id.name !== name) continue
+        const init = declarator.init
+        if (init?.type === 'ArrowFunctionExpression' || init?.type === 'FunctionExpression') return init
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Resolve an exported name to its function node. Four shapes, all
+ * name-matching only — `export { local as exported }` and
+ * `module.exports = { exported: local }` renames are a documented miss,
+ * not guessed at, the same bar as everywhere else in this feature:
+ *
+ *   export function X() {}
+ *   export const X = () => {} / function () {}
+ *   export { X }
+ *   module.exports = { X }  /  exports.X = ...  /  module.exports.X = ...
+ */
+function findExport(program, exportedName) {
+  for (const statement of program.body) {
+    if (statement.type === 'ExportNamedDeclaration') {
+      if (statement.declaration) {
+        const declaration = statement.declaration
+        if (declaration.type === 'FunctionDeclaration' && declaration.id?.name === exportedName) return declaration
+        if (declaration.type === 'VariableDeclaration') {
+          for (const declarator of declaration.declarations) {
+            if (declarator.id.type !== 'Identifier' || declarator.id.name !== exportedName) continue
+            const init = declarator.init
+            if (init?.type === 'ArrowFunctionExpression' || init?.type === 'FunctionExpression') return init
+          }
+        }
+        continue
+      }
+
+      const specifier = statement.specifiers.find(candidate =>
+        candidate.exported.name === exportedName && candidate.local.name === exportedName
+      )
+      if (specifier) return findTopLevelBinding(program, exportedName)
+    }
+
+    if (statement.type === 'ExpressionStatement' && statement.expression.type === 'AssignmentExpression') {
+      const found = findCommonJsExport(statement.expression, program, exportedName)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+function findCommonJsExport(assignment, program, exportedName) {
+  const { left, right } = assignment
+
+  // exports.X = ... / module.exports.X = ...
+  if (left.type === 'MemberExpression' && !left.computed && isExportsTarget(left.object) && left.property?.name === exportedName) {
+    if (right.type === 'ArrowFunctionExpression' || right.type === 'FunctionExpression') return right
+    if (right.type === 'Identifier') return findTopLevelBinding(program, right.name)
+    return null
+  }
+
+  // module.exports = { X } / module.exports = { X: function () {} }
+  if (isModuleExports(left) && right.type === 'ObjectExpression') {
+    for (const property of right.properties) {
+      if (property.type !== 'Property') continue
+      const keyName = property.key.type === 'Identifier' ? property.key.name
+        : property.key.type === 'Literal' ? String(property.key.value) : null
+      if (keyName !== exportedName) continue
+
+      if (property.shorthand) return findTopLevelBinding(program, exportedName)
+      if (property.value.type === 'ArrowFunctionExpression' || property.value.type === 'FunctionExpression') return property.value
+      if (property.value.type === 'Identifier' && property.value.name === exportedName) return findTopLevelBinding(program, exportedName)
+    }
+  }
+
+  return null
+}
+
+function isExportsTarget(node) {
+  return (node.type === 'Identifier' && node.name === 'exports') || isModuleExports(node)
+}
+
+function isModuleExports(node) {
+  return node.type === 'MemberExpression' && !node.computed
+    && node.object.type === 'Identifier' && node.object.name === 'module'
+    && node.property.type === 'Identifier' && node.property.name === 'exports'
 }

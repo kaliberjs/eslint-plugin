@@ -135,8 +135,57 @@ The allowlist-guard proof (`if (!TABLES.includes(t)) return`) landed, and
 was later generalized to a second guard shape: path-containment
 (`if (!resolved.startsWith(base)) return`), needed once path.resolve's own
 propagation gap was fixed and its "resolve-then-check" remediation had to
-be provable rather than accidentally quiet. Remaining Tier 3:
-interprocedural-lite, string/value analysis, non-JS processors.
+be provable rather than accidentally quiet.
+
+### Tier 3 item 3: interprocedural-lite — Phase 0 and Phase 1 shipped
+
+Phase 0 (same-file, cheap): member-callee helpers (`const utils = { clean:
+x => x.trim() }; utils.clean(tainted)`, previously a wall — only bare
+Identifier calls got summarized) and destructured/defaulted parameters
+(`function pick({ id }) { return id }` previously never bound; now binds
+each field to the *matching property's* taint when the call site passes an
+object literal, not the whole argument's taint, since that would have been
+a new false-positive source).
+
+Phase 1 (cross file, one hop): a named import from a relative (`./x`) or
+root-slash (`/machinery/x`, the Kaliber convention — resolved against the
+nearest ancestor package.json's `src`, or an explicit
+`settings['@kaliber/security'].sourceRoot`) specifier gets the same
+summary treatment, by reading and parsing the target file directly rather
+than depending on ESLint's own lint order across files — this works
+regardless of lint order or a partial/single-file run. `require()`
+destructuring is supported alongside `import`; a bare package specifier
+never resolves (no chasing into node_modules — that is what registry
+entries are for); a rename at the export boundary (`export { x as y }`,
+`module.exports = { y: x }`) is a documented miss, not guessed at.
+Multi-hop composition (file A's helper calls an import from file B) falls
+out of the same mechanism for free, bounded by the existing `maxHops` and
+a new cross-file cycle guard (A→B→A mutual recursion, keyed by
+path+export since there is no shared node identity across two analysis
+instances).
+
+Fixing this surfaced a real, pre-existing correctness bug in the
+already-shipped same-file mechanism: taint was cached by AST node identity
+alone, with no regard for *which call's* parameter bindings were active
+when a helper's return expression was resolved — so calling the same
+helper twice with different taint in one file let whichever call ran
+first silently decide the result for both, a false negative when the
+untainted call happened to run first. Fixed by not caching while a
+bindingScope is active; both same-file and cross-file summarization share
+the fix since cross-file reuses the identical mechanism.
+
+Sized against rabobank-jobs before building Phase 1: 352 relative-import
+calls, only 18 with an already-tainted argument, most of those the
+type-coercion family (`ensureInt`/`ensureFloat`/etc., already-registered-
+sanitizer-equivalent) that resolve to confirmed-safe rather than a new
+finding — and 1432 root-slash-import calls, ~4x more than relative,
+which is why Phase 1 covers both from the start rather than relative-only
+as first scoped. Re-run after shipping: same 5 findings, same ~2.2s, zero
+regressions — the interesting leads sizing found don't reach a registered
+sink yet (Tier 2 territory), so no new findings fired in this specific
+project, as expected.
+
+Remaining Tier 3: string/value analysis, non-JS processors.
 
 ## Dogfood measurement — rabobank-jobs
 
