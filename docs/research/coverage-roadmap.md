@@ -325,6 +325,48 @@ readme rather than silently accepted.
 
 Remaining Tier 3: string/value analysis, non-JS processors.
 
+### Kaliber-stack gap survey — closed out
+
+The full stack-survey list (SAML, GROQ, express-basic-auth,
+Elasticsearch, xml2js) is now resolved, three different ways:
+
+- **GROQ** — shipped (`no-groq-injection`, above).
+- **express-basic-auth** — shipped: `no-hardcoded-credentials` extended
+  for the `basicAuth({ users: { <name>: '<literal>' } })` shape, where the
+  credential sits under an arbitrary username key no fixed-key-name check
+  could ever see. Verified against real production config files across
+  three client projects with confirmed hardcoded values.
+- **Elasticsearch** — shipped (`no-elasticsearch-injection`): `query_string`
+  / `simple_query_string` (Lucene syntax injection) and `script` /
+  `script_score.script` (Painless script injection), matched as DSL keys
+  directly rather than a call's sink argument, since the DSL is a JSON
+  tree with no fixed argument position. The dominant real pattern (a
+  shared escaping helper that never writes the DSL keys in consumer
+  source) stays quiet by construction.
+- **SAML** — no rule built. `@kaliber/saml-authentication`, the one
+  library backing all 10 SAML-consuming projects, exposes no
+  misconfigurable option at all — the real vulnerability found (an XML
+  Signature Wrapping authentication bypass, confirmed with a working
+  offline proof-of-concept) lives entirely inside the library's own
+  verification logic, invisible to every one of the 10 identical,
+  correctly-written call sites. Filed as KAL-476, not an ESLint rule: a
+  library-internal fix there fixes it for all 10 projects at once, which
+  a per-project lint warning structurally cannot do.
+- **xml2js** — no rule built, and not because no pattern was found: xml2js
+  parses XML via `sax`, a pure-JS parser with no filesystem or network
+  access anywhere in its entity-handling code, and xml2js's own parser
+  wrapper passes through only three hardcoded, unrelated options
+  (`trim`, `normalize`, `xmlns`) to the underlying `sax.parser()` call —
+  every other option, including anything DTD- or entity-related, is
+  discarded. Classic XXE (external entity file read or SSRF) is not a
+  capability this parser has, through any configuration; `no-xxe`'s own
+  readme already claimed this, and this closes it out as verified rather
+  than assumed. See `no-xxe`'s readme for the full evidence.
+
+Two of five items shipped no rule at all — a reminder that "investigate
+before building" sometimes means finding there is nothing safe or useful
+to build, and that is itself the deliverable.
+
 ## Dogfood measurement — rabobank-jobs
 
 Third real kaliber project, all 38 rules at warn (`configs.security`), run
