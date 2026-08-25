@@ -75,6 +75,7 @@ const plugin = {
     'security-no-client-side-open-redirect': require('./rules/security/no-client-side-open-redirect'),
     'security-no-ssrf': require('./rules/security/no-ssrf'),
     'security-no-weak-key-size': require('./rules/security/no-weak-key-size'),
+    'security-no-zip-slip': require('./rules/security/no-zip-slip'),
   },
 
   configs: {
@@ -139,6 +140,7 @@ const plugin = {
         '@kaliber/security-no-client-side-open-redirect': 'warn',
         '@kaliber/security-no-ssrf': 'warn',
         '@kaliber/security-no-weak-key-size': 'warn',
+        '@kaliber/security-no-zip-slip': 'warn',
       },
     },
   },

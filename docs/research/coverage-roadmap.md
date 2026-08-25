@@ -504,3 +504,286 @@ SVG icon prop, CMS rich text, search-highlight markup, font-face CSS, and
 one unsanitized tracking-script interpolation. None resolved by a
 sanitizer registration — each needs a human decision about the actual
 trust boundary, which is the rule doing its job.
+
+### A10 SSRF: `no-ssrf` — shipped 2026-08-25
+
+Takes A10:2021 from zero rules to one, and closes the first of the four
+`REQUIRES_INTERPROCEDURAL_ANALYSIS` candidates `owasp-coverage.md` flagged
+as "worth a fresh look" now that the taint layer exists.
+
+Unblocked by one engine capability added for it: `sinkAt` previously
+matched two callee shapes — method+receiver, and an `Identifier` resolved
+through `root.module` to a real import binding. Native `fetch` is neither.
+It is never imported, so there was literally no way to register the single
+most important SSRF sink in a Node 18+ or browser codebase. `sinkAt` now
+also matches `root: { global: '<name>' }` through the same shadowing-safe
+`isGlobalNamed` check the browser sources use for `location`/`document`, so
+a project's own `const fetch = require('./our-fetch')` does not match while
+the platform global does.
+
+The rest was registry data plus a thin rule, as the revised
+implementation_cost of 2 in the inventory predicted. Eleven `ssrf.*` sink
+entries (fetch and its polyfill packages, axios, got, node http/https,
+undici), reusing the existing `url` kind rather than minting one for
+CWE-918 — the deciding argument being sanitizer scope, not taxonomy: every
+sanitizer that makes a URL safe to redirect to (an allowlisted host,
+`encodeURIComponent` on a segment of a fixed-base URL) makes it safe to
+request, so a separate kind would have needed those entries duplicated, and
+a forgotten duplicate fails open. The `ssrf.` id prefix keeps the two
+open-redirect rules and this one from reporting each other's sinks, exactly
+as `firebase.` does inside the `path` kind — both redirect rules gained the
+inverse filter in the same change.
+
+`reportReachableSinks` carried its weight immediately: the canonical SSRF
+shape is a route handler delegating to a `fetchRemote(url)` data-layer
+helper, which is precisely what Tier 3 item 4 was built for, and it
+resolved end to end with no further engine work.
+
+One shared-layer extension, in the guard layer rather than the sink layer:
+a membership check now also proves the flow safe when the checked
+expression is a *host* read of the guarded value —
+`ALLOWED.includes(new URL(input).hostname)`, `.host`, `.origin`. This is
+the OWASP-recommended SSRF remediation and the documented false-positive
+class for the whole rule (link preview, webhook delivery, feed readers), so
+failing to recognise it would have meant reporting the fix. Guarded against
+the unsound spellings: two-argument `new URL(input, base).hostname` does
+not clear (the base can be overridden by a `//` or scheme-carrying input),
+nor does a check on a different expression. Recorded imprecision: guards
+clear taint for every kind at once, so a host-allowlisted URL string
+interpolated into SQL is a false negative — not observed in any surveyed
+codebase, and cheaper than the alternative.
+
+Explicitly out of scope for this pass, documented in the rule readme rather
+than half-implemented: `puppeteer`/`playwright` `page.goto`, image and
+document processors, and `http-proxy-middleware`'s `target`. All three are
+config-object properties rather than call arguments — the matcher shape
+`no-elasticsearch-injection` uses — and lower value against the "we mainly
+use native fetch" signal from the codebase owner.
+
+**Adversarial and false-positive passes, and what they changed.** Both ran
+against the first implementation; between them they moved four things.
+
+The adversarial pass found a real soundness bug in the host-allowlist guard
+above, introduced by that same change: `hostCheckTarget` accepted *any*
+member read named `host`/`hostname`/`origin` and cleared the whole object,
+so `if (!ALLOWED.includes(q.host)) return` silenced `fetch(q.url)` — and,
+because guards clear every kind at once, `db.query('… ' + q.name)` three
+lines later. Fixed by requiring the object to be provably a parsed URL: an
+inline one-argument `new URL(x)`, or an identifier whose single definition
+initialises it from one. That keeps every spelling developers actually
+write while making a membership test on a request property prove something
+about that property alone.
+
+It also found that every `ssrf.*` registry entry listed `default` in its
+`name` pattern while `matchesModuleSink` never produced it — an
+`ImportDefaultSpecifier` has no `imported` node, so the matcher fell back to
+the *local* name and `import fetch from 'node-fetch'` matched only by
+coincidence. One line; `import f from 'node-fetch'` and `import ax from
+'axios'` now match.
+
+The false-positive pass returned two ship blockers, both fixed rule-locally
+rather than in the shared layer:
+
+- A fixed origin with a tainted path or query segment
+  (`fetch(\`${process.env.API_URL}/items/${req.params.id}\`)`) was reported
+  — the most common non-literal request in any codebase, and *precisely
+  what the rule's own message recommends*. `authorityIsFixed` now walks the
+  template or `+` chain and reports only when input can still reach the
+  authority. Deliberately not moved into the shared `url` kind: an
+  unescaped segment on a fixed origin is still a path-traversal and
+  open-redirect concern, and those rules should keep seeing it.
+- Member-rooted sinks matched a receiver *name* with no binding check, so
+  `this.http.get(path)` (Angular HttpClient, Nest HttpService) and injected
+  or doubled clients reported at full confidence. The rule now requires a
+  plain identifier receiver — a module namespace always is one. The
+  residual (a project-local module bound to the bare name `http`/`axios`/
+  `got`) is accepted at the same bar `sql.query` and `shell.shelljs.exec`
+  already ship at, with `registry.disable` as the per-project lever.
+
+Plus one narrowing of its own class: browser sources never reach these
+sinks. `fetch(location.origin + '/api/ping')` is not SSRF — no server makes
+that request — and reporting it printed "the server requests that URL"
+about a file with no server in it.
+
+Both passes then ran again against the fixed rule, and the second round
+found three more things — two false-positive families closed
+(`new URL(literal-prefixed path, base)`, and relative references like
+`fetch('/api/items/' + id)`, neither of which has an authority an attacker
+can reach) and one more soundness hole in `authorityIsFixed` itself, worth
+recording because it is the exact failure mode a lexical check invites:
+
+```js
+const proto = req.secure ? 'https:' : 'http:'
+fetch(`${proto}//${req.query.host}/x`)      // was unreported
+```
+
+Any untainted interpolation set "a base has been seen", after which the
+first literal `/` closed the authority — so the `//` of a scheme split
+across a hole was read as the *end* of an authority that had never begun,
+and a plain host injection read as fixed. Choosing the scheme from
+`req.secure` or `x-forwarded-proto` is ordinary behind a proxy. Fixed: a
+leading `//` in static text opens an authority rather than closing one.
+The inline `${scheme}://${host}/x` spelling was already defended.
+
+Left open and documented rather than fixed: a path that arrives behind an
+identifier or a parameter (`` fetch(`${BASE}${path}`) `` in a project fetch
+wrapper) still reports. The honest narrowing needs the callee's parameter
+bound to the caller's argument, which reportReachableSinks does not hand to
+a rule; and the shape is genuinely ambiguous — `api('@evil.com/x')`
+re-hosts it — so the workaround (write the `/` in the template) is also the
+better code. That trade is the whole reason the check lives in the rule
+rather than the shared layer, where it would have had to be decided once
+for every kind.
+
+### A02 crypto: `no-weak-key-size` — shipped 2026-08-25
+
+The inventory's highest-scoring candidate (150.0) and its cheapest: a
+numeric comparison at a call site, no taint, no engine work, no shared-layer
+change. `node:crypto` only — `generateKeyPair`/`generateKeyPairSync`
+(`modulusLength < 2048` for `rsa`/`rsa-pss`/`dsa`, `namedCurve` below 224
+bits for `ec`) and `createDiffieHellman` with a numeric prime length. The
+`ed25519`/`x25519`/`ed448`/`x448` types have no size parameter and are never
+matched.
+
+Two decisions worth recording.
+
+**Curve size is read from the name, not from an allowlist.** Every curve in
+OpenSSL's list carries its field size as the only three-digit run in its
+name, so `secp112r1` → 112 and `P-521` → 521 with one regex. The obvious
+alternative — an allowlist of P-256/P-384/P-521 and flag everything else as
+"non-standard" — would report `secp256k1` and `brainpoolP256r1`, which are
+256-bit curves and not the weakness CWE-326 describes. A rule that fires on
+the entire Bitcoin/Ethereum ecosystem for a taxonomy preference is how a
+`false_positive_risk: 1` rule stops being one. A curve name with no readable
+size is left alone rather than guessed at.
+
+**Third-party generation deferred, not half-implemented.** node-forge
+(`forge.pki.rsa.generateKeyPair({ bits })`, plus a positional
+`(bits, e, cb)` form), node-rsa (`new NodeRSA({ b: 512 })`, a constructor
+with a one-letter option key) and WebCrypto's `subtle.generateKey` each need
+their own callee *and* argument shape. Same call no-ssrf made for
+puppeteer/playwright: documented as a gap in the rule readme. Neither
+library is in this codebase.
+
+The adversarial pass found two misses, both in the callee matcher rather
+than the comparison, both fixed: a renamed destructure or named import
+(`const { generateKeyPairSync: gen } = require('crypto')`) matched on the
+*local* name and so did not match at all — the binding is already resolved
+for the provenance check, so reading the imported name off it is free; and
+a computed member callee (`crypto['generateKeyPairSync']`) was dropped.
+Accepted misses, asserted in the corpus so a future change has to notice
+them: an options object behind a variable, a same-file helper wrapping the
+call, and a size from config. That is the established posture for every
+matcher-shaped rule here (no-des-3des, no-md5, no-jwt-algorithm-confusion) —
+the taint engine exists for flows, and a key size is not a flow.
+
+The false-positive pass returned nothing to fix, which was the expectation
+for a rule of this shape. The corpus it produced is still the useful
+artifact: `createPublicKey`/`createPrivateKey` (import, not generation),
+`getDiffieHellman('modp14')` and `createDiffieHellman(existingPrime, gen)`
+(loading a group, not generating one), symmetric key material
+(`generateKeySync('aes', { length: 256 })`, `scryptSync(pw, salt, 32)` — 32
+bytes of AES key is not a 32-bit modulus), and `generateKeyPair` on a KMS
+client, a wallet library or a test double. The last family is the reason the
+rule requires node:crypto provenance in the first place, mirroring
+no-jwt-algorithm-confusion's `isFromJwtModule`.
+
+One thing the rule deliberately does not do: detect test fixtures. A 512-bit
+key generated for test speed reports exactly like any other, and the readme
+says so. "Is this file a test" is not statically knowable, and a security
+rule that guesses at intent loses trust in both directions.
+
+### A01 access control: `no-zip-slip` — shipped 2026-08-25
+
+Picked out of turn. Its priority score (40.0) is a long way below the
+candidates at the top of the list, and it was chosen on a different
+criterion: a stack-relevance sweep of the 60 `@kaliber/build` projects on
+disk found real archive extraction in `landal-jobs` and `landal-jobs-sanity6`
+(`scripts/download-location-info.js` stream-parses a remote ZIP with
+`unzipper.Parse()`; `scripts/download-geoip-database.js` — present in
+thirteen projects — runs `tar.x` over a downloaded tarball). None of the
+top-scoring candidates had a single real call site in the fleet. A rule that
+fires on code we actually write beats a rule that scores well in a
+spreadsheet.
+
+Neither of those call sites is vulnerable, which shaped the rule more than
+anything else. The landal script matches one known entry by name
+(`entry.path === csvFilename`) and drains the rest — it never uses an
+entry's own name as a filesystem destination. The geoip scripts pass
+`onentry` to collect names and let node-tar do the extracting. A first-day
+false positive on either would have destroyed the reason the rule was picked,
+so both shapes are in `false-positive.test.js` and the rule was run against
+the real files (and every other archive-handling file in the fleet: 14 files,
+13 projects, zero findings).
+
+**The library-call sinks in the inventory entry turned out to be wrong, and
+were dropped.** The entry lists `adm-zip extractAllTo / extractEntryTo` and
+`tar.x / tar.extract without a filter` as sinks. Checking the actual
+installed packages says otherwise: `adm-zip@0.5.18`/`@0.6.0` run every entry
+name through `canonical()` + `sanitize()` before writing; `tar@7.5.22`
+strips absolute paths and refuses `..` entries unless `preservePaths` says
+otherwise; `unzipper@0.12.5`'s `Extract` and `Open.*.extract` both do an
+explicit `path.relative` containment check under a comment naming zip slip.
+Flagging a bare `tar.x({ cwd })` would have made the rule wrong about the
+library used in thirteen of our own projects. Two more libraries turned out
+the same way on checking: yauzl runs `validateFileName()` on every entry
+before emitting it (rejects `..`, absolute paths and backslashes, since
+2.7.0), and node-stream-zip throws `Malicious entry` at central-directory
+read time (since 1.4.0). So the sink set is (a) code that joins an entry's
+own name onto a destination itself, and (b) the two options that switch a
+built-in check off: `preservePaths: true` (tar) and
+`skipEntryNameValidation: true` (node-stream-zip).
+
+The inventory's sanitizer note ("libraries that containment-check by default
+(modern `tar` does; document the version)") is the part that survived, and
+the version story is messier than the note implies. The 2021 advisory chain
+(CVE-2021-32803/32804/37701/37712/37713) closes at 4.4.18 / 5.0.10 / 6.1.9 —
+but node-tar shipped a further run of containment bypasses in 2025–2026,
+last fixed in 7.5.11 and 7.5.16. The readme states it as: bare `tar.x` is
+the correct way to extract and is not reported, *and* "we use tar's default"
+is necessary rather than sufficient — which version is installed is
+`npm audit`'s question, not a linter's (A06 is out of scope by design).
+
+One tar detail worth recording because the original spec had it the other
+way round: **`onentry` is not a check.** node-tar calls it with entries that
+already passed `filter`, and it cannot refuse anything (it was deprecated in
+7.4 in favour of the equally non-blocking `onReadEntry`). So a `filter`
+silences `preservePaths: true` and an `onentry` does not — asserted both
+ways in `test.js`.
+
+Entry provenance is what keeps this cheap and quiet. An identifier counts as
+an archive entry only if it is the parameter of an `'entry'` handler, of an
+`onentry`/`onEntry`/`onReadEntry` option, or of an iteration over
+`directory.files` / `zip.getEntries()` — that last one gated on an archive
+library being imported in the file, because `.files` is otherwise far too
+common. Without that gate every `path.join(dir, file.name)` in the codebase
+would be a finding, which is `no-path-traversal`'s territory anyway.
+
+The containment check is recognised generously and on purpose: a
+`startsWith`, a `path.relative`, a `path.basename`, or a call whose name
+says it validates, anywhere in an enclosing function, silences the report —
+as does a `filter` on a tar call. The rule does not verify that
+the check is correct, exactly as no-jwt-algorithm-confusion does not verify
+an `algorithms` list. The asymmetry is the argument: firing at a developer
+who visibly checked is how a rule gets disabled, and a disabled rule misses
+the far more common case where nobody checked at all. The known consequence
+— `if (entry.path.startsWith('__MACOSX')) return` silences a genuinely
+vulnerable handler — is asserted in the adversarial corpus.
+
+The rule still reports hand-rolled extraction in yauzl and node-stream-zip,
+whose entry names are already validated by the time the handler sees them.
+That is defence in depth, not an inconsistency, and the readme argues it: a
+library extraction call has no user code to fix, while a hand-rolled
+`path.join(dest, entry.fileName)` is safe only by virtue of a default the
+author did not write and can switch off three different ways — and neither
+library validates symlink *targets* at all.
+
+Not attempted, and documented as gaps rather than half-implemented: symlink
+and hardlink entries whose target escapes (a check on the name cannot see
+it — this is the live unpatched bug class in extract-zip and decompress
+today), a guard that is present but wrong (the sibling-prefix
+`indexOf(dest) === 0`, which is exactly what unzipper shipped until 0.12.5
+and what decompress still ships), extraction inside a dependency, zip bombs
+(CWE-409, a different weakness the inventory puts out of scope), and
+hand-rolled writes over `decompress`'s resolved `files` array, which arrives
+as a bare identifier with nothing to match on.
