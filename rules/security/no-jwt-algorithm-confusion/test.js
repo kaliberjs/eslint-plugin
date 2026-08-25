@@ -11,6 +11,9 @@ test('security-no-jwt-algorithm-confusion', merge(
       // choice the author made — flagged only when absent entirely? no:
       // empty object lacks algorithms and IS flagged below).
       "jwtVerify(token, key, { algorithms: ['ES256'] })",
+      // Both keys present: algorithms (the one that actually works) is
+      // what matters, so the stray singular key is not itself a finding.
+      "jwt.verify(token, key, { algorithm: 'RS256', algorithms: ['RS256'] })",
     ],
     invalid: [
       {
@@ -47,6 +50,16 @@ test('security-no-jwt-algorithm-confusion', merge(
         // An empty options object is the same omission with extra steps.
         code: 'jwt.verify(token, key, {})',
         errors: [{ messageId: 'missingAlgorithms' }],
+      },
+      {
+        // `algorithm` (singular) is sign()'s option, silently ignored by
+        // verify() — the exact real-world typo this message exists to name.
+        code: "jwt.verify(token, key, { ignoreExpiration: true, algorithm: ['RS256'] })",
+        errors: [{ messageId: 'singularAlgorithmTypo' }],
+      },
+      {
+        code: "jwt.verify(token, key, { algorithm: 'RS256' })",
+        errors: [{ messageId: 'singularAlgorithmTypo' }],
       },
     ],
   },

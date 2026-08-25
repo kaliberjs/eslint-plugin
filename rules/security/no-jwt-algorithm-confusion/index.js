@@ -32,6 +32,11 @@ module.exports = {
         'The token header then chooses the verification algorithm, which enables algorithm-confusion forgery.',
         'Pass options with an explicit list, for example { algorithms: [\'RS256\'] }, consistent with the key type.',
       ].join(' '),
+      singularAlgorithmTypo: [
+        '{{ callee }} has an \'algorithm\' option, but jsonwebtoken only recognizes the plural \'algorithms\' (an array) for verify().',
+        '\'algorithm\' is silently ignored, so this call has no algorithm restriction in practice — the token header then chooses the verification algorithm, which enables algorithm-confusion forgery.',
+        'Did you mean { algorithms: [...] }?',
+      ].join(' '),
     },
     // No fix: the correct algorithm list depends on the keys in use.
     schema: [],
@@ -64,9 +69,10 @@ module.exports = {
         const options = findOptionsObject(node.arguments)
 
         if (!options || !hasAlgorithms(options)) {
+          const isSingularTypo = options && hasSingularAlgorithm(options)
           report(context, {
             node,
-            messageId: 'missingAlgorithms',
+            messageId: isSingularTypo ? 'singularAlgorithmTypo' : 'missingAlgorithms',
             data: { callee: context.sourceCode.getText(callee) },
             severity: 'high',
             confidence: 0.6,
@@ -114,5 +120,17 @@ function hasAlgorithms(options) {
     property => property.type === 'Property'
       && getStaticPropertyName(property) === 'algorithms'
       && !(property.value.type === 'Literal' && property.value.value === false)
+  )
+}
+
+/**
+ * `algorithm` (singular) is `sign()`'s option name, not `verify()`'s —
+ * jsonwebtoken's verify() silently ignores it. A call that has this but
+ * not `algorithms` is reachable *because* of that exact typo, not because
+ * no restriction was ever attempted, and deserves a sharper message.
+ */
+function hasSingularAlgorithm(options) {
+  return options.properties.some(
+    property => property.type === 'Property' && getStaticPropertyName(property) === 'algorithm'
   )
 }

@@ -32,6 +32,32 @@ never select the algorithm from the token.
 jwt.verify(token, key, { algorithms: ['RS256'] })   // consistent with the key type
 ```
 
+## A sharper message for one specific real-world mistake
+
+`jsonwebtoken`'s `verify()` only recognizes the plural `algorithms` (an
+array) — `algorithm` (singular) is `sign()`'s option name, and `verify()`
+silently ignores it. Confirmed against a real call site that had clear
+intent to restrict the algorithm and didn't, because of exactly this typo:
+
+```js
+jwt.verify(token, key, { algorithm: ['RS256'] })   // flagged as singularAlgorithmTypo, not missingAlgorithms
+```
+
+Named separately from the generic `missingAlgorithms` message because the
+mistake is more specific and more actionable than "no allowlist was ever
+attempted" — the developer already wrote the restriction, it just never
+takes effect. Both keys present together (`{ algorithm: 'RS256', algorithms: ['RS256'] }`)
+is not flagged: `algorithms` is what actually works, so the stray key
+alone is not a finding.
+
+Whether a given instance of this typo is exploitable still depends on the
+library version and the key material in use — `jsonwebtoken` 9.x infers a
+safe algorithm allowlist from the actual key type when `algorithms` is
+absent, which can mean the missing restriction happens to be moot in
+practice. The rule reports either way, at the same medium confidence,
+because that inference is not something a linter can see, and the
+explicit restriction should not depend on it holding.
+
 ## Why medium confidence
 
 The rule cannot see the key type: if the key really is symmetric and the
