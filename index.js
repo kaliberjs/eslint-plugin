@@ -73,6 +73,7 @@ const plugin = {
     'security-no-elasticsearch-injection': require('./rules/security/no-elasticsearch-injection'),
     'security-no-open-redirect': require('./rules/security/no-open-redirect'),
     'security-no-client-side-open-redirect': require('./rules/security/no-client-side-open-redirect'),
+    'security-no-ssrf': require('./rules/security/no-ssrf'),
   },
 
   configs: {
@@ -135,6 +136,7 @@ const plugin = {
         '@kaliber/security-no-elasticsearch-injection': 'warn',
         '@kaliber/security-no-open-redirect': 'warn',
         '@kaliber/security-no-client-side-open-redirect': 'warn',
+        '@kaliber/security-no-ssrf': 'warn',
       },
     },
   },

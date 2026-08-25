@@ -85,8 +85,8 @@ function report(context, { node, messageId, data = {}, severity, confidence, pat
  * rule out a same-name, different-thing collision.
  */
 function reportReachableSinks(context, analysis, node, kind, messageId, qualifiedMessageId, filter) {
-  for (const { sink, taint, sinkLabel, sinkNode } of analysis.reachableSinksOf(node, kind)) {
-    if (filter && !filter(sink, taint, sinkNode)) continue
+  for (const { sink, taint, sinkLabel, sinkNode, callArguments } of analysis.reachableSinksOf(node, kind)) {
+    if (filter && !filter(sink, taint, sinkNode, callArguments)) continue
 
     const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
 

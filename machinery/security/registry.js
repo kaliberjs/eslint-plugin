@@ -435,6 +435,124 @@ const sinks = [
     owasp: 'A01:2021',
     note: 'Client router navigation with an external absolute URL leaves the application.',
   },
+
+  // --- SSRF: outbound request targets. Deliberately reusing the 'url' kind
+  // rather than minting one for CWE-918. Both families are "a URL the
+  // application acts on", and — the part that actually decides it — every
+  // sanitizer that makes a URL safe for one makes it safe for the other:
+  // an allowlisted host, or encodeURIComponent on a segment of a
+  // fixed-base URL. A separate kind would have needed those same entries
+  // duplicated, and every duplicated sanitizer is a chance to forget one,
+  // which fails open. The `ssrf.` id prefix is what keeps the redirect
+  // rules and this one from reporting each other's sinks, exactly as
+  // `firebase.` does inside the 'path' kind.
+  {
+    id: 'ssrf.fetch',
+    root: { global: 'fetch' },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: 'Native fetch, Node 18+ and every browser — never imported, so this is the one sink family that needs the global-rooted shape. Argument 0 is the URL in both the one- and two-argument form; the options object is argument 1 and carries no target. A locally declared `fetch` (a test double, a project wrapper) does not match, by the same shadowing check the browser sources use.\n\nfetch(new Request(...)) reports nothing, and correctly so: a Request object is not a string this analysis ever taints.',
+  },
+  {
+    id: 'ssrf.fetch.member',
+    root: { method: /^fetch$/, receiver: /^(window|globalThis|self)$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: 'window.fetch(url) — the same sink through its global object. The receiver constraint is what separates it from groq.fetch (a Sanity client) and from any other object with a fetch() method.',
+  },
+  {
+    id: 'ssrf.node-fetch',
+    root: { module: /^(node-fetch|cross-fetch|isomorphic-fetch|node:https?)$/, name: /^(default|fetch)$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: "The polyfill packages, still the majority of CommonJS codebases. Known gap: `const fetch = require('node-fetch')` binds the whole module rather than a named export, which the module-rooted matcher does not resolve — the `import fetch from 'node-fetch'` form does match.",
+  },
+  {
+    id: 'ssrf.axios',
+    root: { module: /^axios$/, name: /^(default|axios|get|post|put|patch|delete|head|options|request)$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: 'axios(url) and the destructured method forms. axios(configObject) reports nothing — an object literal is not a taintable string — so the config-object spelling is a known miss rather than a false positive.',
+  },
+  {
+    id: 'ssrf.axios.member',
+    root: { method: /^(get|post|put|patch|delete|head|options|request)$/, receiver: /^axios$/i },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: "axios.get(url, config). The receiver is pinned to `axios` and nothing else on purpose: `api.get(path)`, `client.get(id)` and `cache.get(key)` are ubiquitous and overwhelmingly not HTTP calls to an attacker-chosen host. A named axios instance (`const api = axios.create()`) is therefore a known miss — register it per project via settings['@kaliber/security'].registry.sinks.",
+  },
+  {
+    id: 'ssrf.got',
+    root: { module: /^got$/, name: /^(default|got|get|post|put|patch|delete|head|stream)$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+  },
+  {
+    id: 'ssrf.got.member',
+    root: { method: /^(get|post|put|patch|delete|head|stream)$/, receiver: /^got$/i },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: 'got.get(url). Same narrow-receiver reasoning as axios.',
+  },
+  {
+    id: 'ssrf.node.http',
+    root: { module: /^(http|https|node:http|node:https)$/, name: /^(get|request)$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: 'http.get/request accept a URL string or a URL object as argument 0. The options-object form ({ host, path }) is not covered — an object literal carries no taint here — and is recorded as a known miss.',
+  },
+  {
+    id: 'ssrf.node.http.member',
+    root: { method: /^(get|request)$/, receiver: /^(http|https)$/i },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+    note: 'Same sinks reached through a namespace binding, `const http = require("http")`.',
+  },
+  {
+    id: 'ssrf.undici',
+    root: { module: /^undici$/, name: /^(request|stream|fetch|upgrade|connect)$/ },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+  },
+  {
+    id: 'ssrf.undici.member',
+    root: { method: /^(request|stream|fetch|upgrade|connect)$/, receiver: /^undici$/i },
+    argument: 0,
+    requires: 'url',
+    severity: 'high',
+    cwe: 'CWE-918',
+    owasp: 'A10:2021',
+  },
 ]
 
 const sanitizers = [

@@ -38,7 +38,10 @@ module.exports = {
 
     return {
       CallExpression(node) {
-        reportReachableSinks(context, analysis, node, 'url', 'openRedirect', 'openRedirectQualified')
+        // Shared 'url' kind with security-no-ssrf — that rule owns the
+        // outbound-request sinks (fetch, axios, http.get), this one owns
+        // navigation, so the same call is never reported twice.
+        reportReachableSinks(context, analysis, node, 'url', 'openRedirect', 'openRedirectQualified', isNavigationSink)
 
         const callee = node.callee
 
@@ -52,7 +55,7 @@ module.exports = {
         }
 
         const sink = analysis.sinkAt(node)
-        if (sink?.requires !== 'url') return
+        if (sink?.requires !== 'url' || !isNavigationSink(sink)) return
 
         emit(context, analysis, node.arguments[sink.argument], describeSink(context.sourceCode, callee))
       },
@@ -77,6 +80,10 @@ function emit(context, analysis, value, label) {
     confidence: taint.confidence,
     path: [...taint.path, { node: value, kind: 'sink', label, penalty: 0 }],
   })
+}
+
+function isNavigationSink(sink) {
+  return !sink.id.startsWith('ssrf.')
 }
 
 function describeSink(sourceCode, callee) {

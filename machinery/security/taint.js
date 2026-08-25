@@ -49,6 +49,10 @@ const PENALTY = {
   multiWrite: 0.08,
 }
 
+// URL properties that identify *where a request goes*. A membership check
+// against one of these proves the origin of the value it was read from.
+const URL_HOST_PROPERTIES = ['hostname', 'host', 'origin']
+
 const cache = new WeakMap()
 
 // --- Cross-file resolution (interprocedural-lite, Phase 1) ------------------
@@ -408,8 +412,15 @@ function createAnalysis(sourceCode, options, filename) {
       ) ?? null
     }
 
+    // Global-rooted sinks bind to a bare call of a platform global, never
+    // imported: `fetch(url)`. isGlobalNamed is the same shadowing check
+    // sources use for `location`/`document` — a local `fetch` (test double,
+    // wrapper) must not match.
     if (node.callee.type === 'Identifier')
-      return known.sinks.find(sink => sink.root.module && matchesModuleSink(node.callee, sink.root)) ?? null
+      return known.sinks.find(sink =>
+        (sink.root.module && matchesModuleSink(node.callee, sink.root)) ||
+        (sink.root.global && isGlobalNamed(node.callee, sink.root.global))
+      ) ?? null
 
     // Method-rooted sinks require a receiver. A bare `query(sql)` or
     // `exec(cmd)` is far more likely to be something else entirely, and a
@@ -442,6 +453,14 @@ function createAnalysis(sourceCode, options, filename) {
 
     if (definition.type === 'ImportBinding') {
       if (!matchesPattern(root.module, definition.parent.source.value)) return false
+
+      // A default import has no `imported` node, and falling back to the
+      // *local* name meant `import fetch from 'node-fetch'` matched only by
+      // the coincidence of what the developer called it — `import f from
+      // 'node-fetch'` was invisible. The export's real name is `default`,
+      // which is what registry entries already write in their `name`
+      // pattern; supplying it here is what makes those entries true.
+      if (definition.node.type === 'ImportDefaultSpecifier') return root.name.test('default')
 
       const imported = definition.node.imported
       const importedName = imported?.type === 'Identifier' ? imported.name : imported?.value
@@ -735,9 +754,69 @@ function createAnalysis(sourceCode, options, filename) {
     // Text comparison rather than structural: the guarded expression has to be
     // the *same* expression that was checked, and anything subtler than
     // textual identity is not something we should be claiming to prove.
-    if (sourceCode.getText(candidate) !== sourceCode.getText(unwrap(guarded))) return false
+    const guardedText = sourceCode.getText(unwrap(guarded))
+    const proven = sourceCode.getText(candidate) === guardedText || hostCheckTarget(unwrap(candidate)) === guardedText
+    if (!proven) return false
 
     return isPrimitiveCollection(test.callee.object)
+  }
+
+  /**
+   * The other half of a membership check: the allowlist may hold *hosts*
+   * rather than whole values, which is what the SSRF and open-redirect
+   * remediations actually recommend — `ALLOWED_HOSTS.includes(new
+   * URL(input).hostname)`, and then request or redirect to `input`.
+   *
+   * The object read from must be *provably a parsed URL*, and that
+   * restriction is load-bearing rather than defensive. Accepting any
+   * `x.host` made a check on one property clear the whole object, and with
+   * it every sibling: `if (!ALLOWED.includes(q.host)) return` would have
+   * silenced `fetch(q.url)` — and, since guards clear every kind at once,
+   * `db.query('… ' + q.name)` in the same function. A membership test on a
+   * request property proves something about that property alone.
+   *
+   * Known imprecision, recorded rather than modelled: this proves the host
+   * of the value, not the whole value, while a proven guard clears taint
+   * for every kind at once. A host-allowlisted URL string interpolated into
+   * SQL is therefore a false negative. Reporting the documented fix for the
+   * two rules that most need one costs considerably more than that.
+   *
+   * @returns text of the expression whose host was proven, or null.
+   */
+  function hostCheckTarget(candidate) {
+    if (candidate.type !== 'MemberExpression') return null
+
+    const property = getPropertyName(candidate, scopeOf(candidate))
+    if (!URL_HOST_PROPERTIES.includes(property)) return null
+
+    const object = unwrap(candidate.object)
+
+    // `new URL(input).hostname` proves input's host only when input is the
+    // whole URL. Given a base argument the host may come from the base
+    // instead, and `new URL('//evil.com', base).hostname` is evil.com.
+    if (isUrlConstruction(object))
+      return object.arguments.length === 1 ? sourceCode.getText(object.arguments[0]) : null
+
+    // `const target = new URL(input)` … `ALLOWED.includes(target.hostname)`
+    // — the same proof one binding removed, which is how it is written.
+    return isUrlBinding(object) ? sourceCode.getText(object) : null
+  }
+
+  function isUrlConstruction(node) {
+    return node.type === 'NewExpression' && isGlobalConstructorNamed(node.callee, /^URL$/)
+  }
+
+  /** An identifier whose only definition initialises it from `new URL(...)`. */
+  function isUrlBinding(node) {
+    if (node.type !== 'Identifier') return false
+
+    const variable = referenceFor(node)?.resolved
+    if (variable?.defs.length !== 1) return false
+
+    const [definition] = variable.defs
+    if (definition.type !== 'Variable' || !definition.node.init) return false
+
+    return isUrlConstruction(unwrap(definition.node.init))
   }
 
   /**
@@ -1151,20 +1230,46 @@ function createAnalysis(sourceCode, options, filename) {
 
   function reachableSinksOfWithin(node, kind) {
     const localFunction = localFunctionFor(node.callee)
-    if (localFunction) {
-      const bindings = new Map()
-      localFunction.params.forEach((param, index) => bindParam(param, node.arguments[index] ?? null, bindings))
-      return sinksReachableInLocalBody(localFunction, bindings, kind, node.callee)
-    }
+    if (localFunction) return reachableSinksOfLocal(localFunction, node, kind)
 
     const localMethod = localMethodFor(node.callee)
-    if (localMethod) {
-      const bindings = new Map()
-      localMethod.params.forEach((param, index) => bindParam(param, node.arguments[index] ?? null, bindings))
-      return sinksReachableInLocalBody(localMethod, bindings, kind, node.callee)
-    }
+    if (localMethod) return reachableSinksOfLocal(localMethod, node, kind)
 
     return reachableSinksOfCrossFile(node, kind)
+  }
+
+  /**
+   * Same-file only: attaches the concrete call-site argument nodes
+   * (`callArguments`, param name -> argument node) to the result *after*
+   * the memoized walk returns, never into the memo itself.
+   * `sinkScanMemo` is keyed by `bindingSignature` — confidence and
+   * sanitized-kinds only — so `api(\`/x/${id}\`)` and `api(\`${id}\`)` share
+   * one memo entry despite needing opposite verdicts once a rule inspects
+   * the actual expression. Attaching the node to the *shared* memoized
+   * array would leak one call site's argument onto every other call site
+   * with the same taint shape. `.map` copies; nothing here mutates the
+   * memoized value. Only the outermost (innermost-frame) attachment wins,
+   * matching how a rule can only usefully substitute one hop of indirection
+   * before falling back to today's taint-quality-only behaviour.
+   */
+  function reachableSinksOfLocal(fnNode, node, kind) {
+    const bindings = new Map()
+    const callArguments = new Map()
+    fnNode.params.forEach((param, index) => {
+      const argument = node.arguments[index] ?? null
+      bindParam(param, argument, bindings)
+      const name = paramIdentifierName(param)
+      if (name) callArguments.set(name, argument)
+    })
+
+    return sinksReachableInLocalBody(fnNode, bindings, kind, node.callee)
+      .map(found => found.callArguments ? found : { ...found, callArguments })
+  }
+
+  function paramIdentifierName(param) {
+    if (param.type === 'Identifier') return param.name
+    if (param.type === 'AssignmentPattern' && param.left.type === 'Identifier') return param.left.name
+    return null
   }
 
   /**

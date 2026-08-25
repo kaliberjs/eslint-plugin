@@ -35,10 +35,13 @@ module.exports = {
 
     return {
       CallExpression(node) {
-        reportReachableSinks(context, analysis, node, 'url', 'clientOpenRedirect', 'clientOpenRedirectQualified')
+        // Shared 'url' kind with security-no-ssrf, which owns the
+        // outbound-request sinks (fetch, axios, http.get). Navigation only
+        // here, so a call is never reported under two messages.
+        reportReachableSinks(context, analysis, node, 'url', 'clientOpenRedirect', 'clientOpenRedirectQualified', isNavigationSink)
 
         const sink = analysis.sinkAt(node)
-        if (sink?.requires !== 'url') return
+        if (sink?.requires !== 'url' || !isNavigationSink(sink)) return
 
         reportTaint(context, analysis, node.arguments[sink.argument], sink)
       },
@@ -73,6 +76,10 @@ function reportTaint(context, analysis, value, sink) {
     confidence: taint.confidence,
     path: [...taint.path, { node: value, kind: 'sink', label, penalty: 0 }],
   })
+}
+
+function isNavigationSink(sink) {
+  return !sink.id.startsWith('ssrf.')
 }
 
 /** The assignment target or call callee — what the flow reaches. */

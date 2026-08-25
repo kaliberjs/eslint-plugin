@@ -396,6 +396,60 @@ describe('consumer sanitizer registration', () => {
   })
 })
 
+describe('sink matching — global-rooted call sinks', () => {
+  // fetch(url) is a bare call of a platform global, never imported — the
+  // module-rooted shape (used for child_process.exec etc.) cannot match it,
+  // since there is no import/require binding to trace. This is the shape
+  // no-ssrf needs for native fetch.
+  const config = {
+    ...DEFAULTS,
+    registry: {
+      ...DEFAULTS.registry,
+      sinks: [
+        ...DEFAULTS.registry.sinks,
+        { id: 'spike.fetch', root: { global: 'fetch' }, argument: 0, requires: 'url', severity: 'high' },
+      ],
+    },
+  }
+
+  function sinkMatches(code) {
+    let matched = false
+    linter.verify(code, {
+      plugins: {
+        probe: {
+          rules: {
+            collect: {
+              create(context) {
+                const analysis = analyze(context.sourceCode, config)
+                return {
+                  CallExpression(node) {
+                    if (analysis.sinkAt(node)?.id === 'spike.fetch') matched = true
+                  },
+                }
+              },
+            },
+          },
+        },
+      },
+      languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: globals.node },
+      rules: { 'probe/collect': 'error' },
+    })
+    return matched
+  }
+
+  test('a bare call of the global fetch matches', () => {
+    assert.strictEqual(sinkMatches('function handler(req) { fetch(req.query.url) }'), true)
+  })
+
+  test('a locally shadowed fetch (test double, wrapper) does not match', () => {
+    assert.strictEqual(sinkMatches('function fetch(url) { return realFetch(url) } fetch(x)'), false)
+  })
+
+  test('a fetch imported from a module is not treated as the global (module-rooted, separate shape)', () => {
+    assert.strictEqual(sinkMatches("const fetch = require('node-fetch'); fetch(x)"), false)
+  })
+})
+
 describe('allowlist guards — flow sensitivity', () => {
   const handler = body => `const TABLES = ['users', 'orders']\nfunction handler(req){ ${body} }`
 
