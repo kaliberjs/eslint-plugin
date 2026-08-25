@@ -98,6 +98,12 @@ function createAnalysis(sourceCode, options, filename) {
 
   const taintCache = new Map()
   const inProgress = new Set()
+  // collectReturns's result depends only on the function node — never on a
+  // particular call's bindings — so it is safe to compute once per
+  // function and reuse for every call site, the same shape of fix
+  // reachableSinksOf's memo needed: a widely-shared helper's body was
+  // getting re-walked once per call site with no caching at all.
+  const returnsCache = new Map()
   // Active helper-summary parameter bindings, or null in normal resolution.
   let bindingScope = null
   const references = indexReferences(sourceCode)
@@ -1054,13 +1060,17 @@ function createAnalysis(sourceCode, options, filename) {
    * taint value crosses the file boundary, never the node).
    */
   function summarizeWithBindings(fnNode, bindings, { node, label }) {
-    // An expression-bodied arrow has no return statement: its whole body is
-    // the return value.
-    const returns = []
-    if (fnNode.type === 'ArrowFunctionExpression' && fnNode.body.type !== 'BlockStatement') {
-      returns.push(fnNode.body)
-    } else {
-      collectReturns(fnNode.body, fnNode, returns)
+    let returns = returnsCache.get(fnNode)
+    if (!returns) {
+      // An expression-bodied arrow has no return statement: its whole body
+      // is the return value.
+      returns = []
+      if (fnNode.type === 'ArrowFunctionExpression' && fnNode.body.type !== 'BlockStatement') {
+        returns.push(fnNode.body)
+      } else {
+        collectReturns(fnNode.body, returns)
+      }
+      returnsCache.set(fnNode, returns)
     }
 
     const previousBindings = bindingScope
@@ -1398,11 +1408,20 @@ function createAnalysis(sourceCode, options, filename) {
     }
   }
 
-  /** Return arguments whose nearest enclosing function is this one. */
-  function collectReturns(node, ownerFn, out) {
+  /**
+   * Return arguments belonging directly to the function whose body is
+   * `node` (always `fnNode.body` at the one call site). Never descends
+   * into a nested function (below), so every ReturnStatement this walk
+   * reaches is already known to belong to that function, not some inner
+   * one — no per-return parent-chain walk needed to confirm it. That walk
+   * used to run here anyway (an `enclosingFunctionOf(node) === ownerFn`
+   * check, since removed along with the parameter) and dominated a real
+   * production profile: ~60% of total samples linting a real bundle file.
+   */
+  function collectReturns(node, out) {
     if (!node || typeof node.type !== 'string') return
 
-    if (node.type === 'ReturnStatement' && enclosingFunctionOf(node) === ownerFn) {
+    if (node.type === 'ReturnStatement') {
       out.push(node.argument)
       return
     }
@@ -1415,15 +1434,9 @@ function createAnalysis(sourceCode, options, filename) {
     for (const key of Object.keys(node)) {
       if (key === 'parent') continue
       const value = node[key]
-      if (Array.isArray(value)) value.forEach(child => collectReturns(child, ownerFn, out))
-      else if (value && typeof value === 'object' && typeof value.type === 'string') collectReturns(value, ownerFn, out)
+      if (Array.isArray(value)) value.forEach(child => collectReturns(child, out))
+      else if (value && typeof value === 'object' && typeof value.type === 'string') collectReturns(value, out)
     }
-  }
-
-  function enclosingFunctionOf(node) {
-    let current = node.parent
-    while (current && !isFunctionNode(current)) current = current.parent
-    return current
   }
 
   function getCalleeLabel(callee) {

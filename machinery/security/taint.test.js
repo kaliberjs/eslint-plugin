@@ -598,4 +598,25 @@ describe('same-file helper summaries — interprocedural-lite', () => {
     `)
     assert.strictEqual(found.length, 0)
   })
+
+  test('a widely-shared helper called from thousands of independent sites summarizes quickly', () => {
+    // collectReturns (finding a function's own return statements, to
+    // resolve what a call to it hands back) used to run fresh on every
+    // call to that function, with no caching at all — its result depends
+    // only on the function node, never on a call's bindings, so this was
+    // pure repeat work. Dogfooding against a real minified bundle (tens
+    // of thousands of call sites, many sharing a handful of helpers)
+    // measured this as the dominant cost before fixing it.
+    const calls = Array.from({ length: 3000 }, (_, i) => `db.query(\`SELECT * FROM \${pick(req.query.t${i})}\`)`).join('\n')
+    const start = Date.now()
+    const found = taintAtSinks(`
+      function pick(x) { return x.trim() }
+      function handler(req) {
+        ${calls}
+      }
+    `)
+    const elapsed = Date.now() - start
+    assert.strictEqual(found.length, 3000)
+    assert.ok(elapsed < 2000, `expected under 2s, took ${elapsed}ms`)
+  })
 })

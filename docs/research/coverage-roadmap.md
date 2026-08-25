@@ -409,6 +409,62 @@ because it is a genuine improvement for legitimate application code too
 — a shared helper called from many places in ordinary first-party source
 is exactly the shape it fixes.
 
+### Profiling follow-up: collectReturns, and a real remaining cost left alone on purpose
+
+Requested speed work, using the `/v8-perf-v2` profiling methodology
+(profile → price → apply → verify against the noise floor) against the
+same real bundle file from the sweep above.
+
+**Two real fixes, both behavior-preserving, both test-covered:**
+
+- A CPU profile of a moderate real file (1.45 MB, part of the same
+  bundle) showed `collectReturns` — the function that finds a helper's
+  own return statements, to resolve what calling it hands back — at
+  ~60% of all samples. It carried a per-return-statement
+  `enclosingFunctionOf(node) === ownerFn` check that walked the AST
+  parent chain to confirm ownership. That check is a tautology:
+  `collectReturns`'s only call site already never descends into a
+  nested function, so every return statement it finds already belongs
+  to `ownerFn` by construction. Removed the check (and the now-dead
+  `enclosingFunctionOf`) — measured effect on its own: small, a reminder
+  that a profile's self-time bucket can include an inlined callee whose
+  removal doesn't move the needle alone.
+- The real fix, found chasing why removing that check barely helped:
+  `collectReturns` ran fresh on *every* call to a given function, with
+  no caching at all — its result depends only on the function node,
+  never on a call's bindings, so a widely-shared helper's body was
+  re-scanned once per call site. The same shape of bug already fixed
+  for `reachableSinksOf`'s memo above, in the sibling mechanism nobody
+  had applied it to. Added a `Map<fnNode, returnNodes[]>` cache. Measured
+  on the same 1.45 MB file: **~16–17.6s → ~4.9s, about 3.3×** — full
+  security config, not an isolated microbenchmark. Full test suite green
+  throughout (0 regressions), plus a new regression test (3000
+  independent call sites sharing one helper, previously the exact shape
+  this bug hit).
+
+**Re-profiled after both fixes: genuinely flat, and left there on
+purpose.** The new top self-time entry was `getStaticValue`
+(`@eslint-community/eslint-utils`) at ~14% — spread across roughly 25
+independent matcher-style rules, each with its own legitimate reason to
+fold a static value on a node it visits, no single redundant call site
+to fix. Per the skill's own stopping rule (a flat profile under 30% in
+its largest bucket means the *work*, not the technique, would need to
+change), this is where the profiling stopped.
+
+**A real remaining cost, found and deliberately not chased:** the same
+26 MB bundle from the sweep above still runs slowly — traced to
+`diffMatchPatch` (a vendored diff-algorithm library, likely from a
+rich-text editor's change tracking) called repeatedly with *genuinely
+different* argument taint each time. This is not a caching bug: the memo
+is keyed by confidence-and-sanitized-kind signature specifically so that
+different taint shapes resolve independently, and here they legitimately
+differ call to call, so the memo correctly does not share the work.
+Fixing this further would mean a coarser, riskier caching strategy or an
+explicit complexity cap with a real false-negative cost — for a pattern
+that only shows up in bundled/vendored code a linter should never be
+pointed at in the first place (see the scoping note above). Priced and
+declined, not overlooked.
+
 ## Dogfood measurement — rabobank-jobs
 
 Third real kaliber project, all 38 rules at warn (`configs.security`), run
