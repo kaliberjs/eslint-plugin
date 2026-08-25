@@ -106,18 +106,34 @@ function createAnalysis(sourceCode, options, filename) {
   // but scoped to this analysis instance since node identity only means
   // anything within one file.
   const sinkScanInProgress = new Set()
-  // Memo for one top-level reachableSinksOf walk: without it, a call graph
-  // where two functions each call a shared third one re-walks that shared
-  // function once per path to it, and a chain of such fan-outs is
-  // exponential in its depth — an ordinary service-layer file with no sink
-  // in it at all, just a dozen small functions each calling two others,
-  // took over twenty seconds to lint. Keyed by function node + a signature
-  // of the bound parameter taints, so `f(x)` and `f('literal')` still
-  // resolve independently and no true positive is lost — only identical
-  // work within the same walk is shared. Reset after each top-level call:
-  // a call graph is walked once per rule visiting its entry call site, and
-  // two different entry calls can bind the same function differently.
-  let sinkScanMemo = null
+  // Memo for reachableSinksOf's same-file walk, keyed by function node +
+  // a signature of the bound parameter taints (bindingSignature already
+  // disambiguates `f(x)` from `f('literal')` — see below — so this is safe
+  // to keep for the whole analysis instance, not just one top-level call).
+  // Without it, a call graph where two functions each call a shared third
+  // one re-walks that shared function once per path to it, exponential in
+  // fan-out depth — an ordinary service-layer file with a dozen small
+  // functions each calling two others took over twenty seconds to lint
+  // even scoped to one top-level call. Scoping it to one call was not
+  // enough: a real minified bundle visits the same widely-shared helper
+  // from tens of thousands of independent call sites, one top-level
+  // `reachableSinksOf` entry each — resetting the memo between them meant
+  // every single one re-walked that helper's body from scratch. Persistent
+  // per analysis instance instead, the same lifetime `sinkExportMemo`
+  // already uses for the cross-file case, and for the same reason: this
+  // whole instance is already cached by SourceCode (see `analyze`), so a
+  // helper imported and called from many places was never going to need
+  // re-walking within one lint pass anyway. The message-path imprecision
+  // this trades away — two callers of the same helper with
+  // confidence-and-sanitized-kind-identical but differently-sourced taint
+  // share the first caller's reported flow path — was already an
+  // accepted cost of scoping by signature rather than full taint identity;
+  // this only widens how often it can happen, not what kind of cost it is.
+  const sinkScanMemo = new Map()
+  // Tracks whether reachableSinksOf is already inside a walk, so only the
+  // outermost call applies the per-call-site sink dedup below — a separate
+  // concern from the memo above, which now outlives any single call.
+  let sinkScanDepth = 0
   // sinksReachableInExport's persistent twin: analyze() caches this whole
   // analysis instance by SourceCode, so unlike the same-file memo above,
   // this one is never reset — it lives as long as this file's analysis
@@ -1103,14 +1119,14 @@ function createAnalysis(sourceCode, options, filename) {
   function reachableSinksOf(node, kind) {
     if (node.type !== 'CallExpression') return []
 
-    // Only the outermost call sets up the memo and dedupes; a call reached
-    // while a walk is already in progress just contributes into it. Without
-    // this split, the same shared function reached by two different paths
-    // (the ordinary shape of two callers sharing a helper) would be walked
-    // twice and reported twice — see sinksReachableInBody's sink match.
-    if (sinkScanMemo) return reachableSinksOfWithin(node, kind)
+    // Only the outermost call dedupes; a call reached while a walk is
+    // already in progress just contributes into it. Without this split,
+    // the same shared function reached by two different paths (the
+    // ordinary shape of two callers sharing a helper) would be reported
+    // twice — see sinksReachableInBody's sink match.
+    if (sinkScanDepth > 0) return reachableSinksOfWithin(node, kind)
 
-    sinkScanMemo = new Map()
+    sinkScanDepth++
     try {
       const seen = new Set()
       return reachableSinksOfWithin(node, kind).filter(found => {
@@ -1119,7 +1135,7 @@ function createAnalysis(sourceCode, options, filename) {
         return true
       })
     } finally {
-      sinkScanMemo = null
+      sinkScanDepth--
     }
   }
 
@@ -1202,11 +1218,12 @@ function createAnalysis(sourceCode, options, filename) {
 
   /**
    * Cross-file entry point, mirroring summarizeExport but for sink
-   * reachability. Memoized on `sinkExportMemo`, which — unlike
-   * sinkScanMemo — is never reset: this analysis instance is itself cached
-   * by SourceCode (see `analyze`), so the same target module imported and
-   * called from several call sites, or several times from one, reuses this
-   * exact instance and must not re-walk its body once per call.
+   * reachability. Memoized on `sinkExportMemo`, which — like the
+   * same-file `sinkScanMemo` above — is never reset: this analysis
+   * instance is itself cached by SourceCode (see `analyze`), so the same
+   * target module imported and called from several call sites, or
+   * several times from one, reuses this exact instance and must not
+   * re-walk its body once per call.
    */
   function sinksReachableInExport(exportedName, argumentTaints, kind, calleeLabel) {
     const signature = `${exportedName}#${kind}#${argumentTaints.map(taint => taint ? `${taint.confidence}|${[...taint.sanitizedFor].sort().join('+')}` : '-').join(',')}`
@@ -1220,10 +1237,10 @@ function createAnalysis(sourceCode, options, filename) {
       bindParamFromTaint(param, argumentTaints[index] ?? null, bindings)
     })
 
-    // A fresh top-level memo/dedup scope for this export's own walk — the
-    // same reason reachableSinksOf sets one up for a same-file entry call.
-    const previousMemo = sinkScanMemo
-    sinkScanMemo = new Map()
+    // A fresh top-level dedup scope for this export's own walk — the same
+    // reason reachableSinksOf applies one for a same-file entry call. The
+    // walk itself still shares the persistent sinkScanMemo above.
+    sinkScanDepth++
     const seen = new Set()
     let result
     try {
@@ -1233,7 +1250,7 @@ function createAnalysis(sourceCode, options, filename) {
         return true
       })
     } finally {
-      sinkScanMemo = previousMemo
+      sinkScanDepth--
     }
 
     sinkExportMemo.set(signature, result)

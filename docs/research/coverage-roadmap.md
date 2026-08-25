@@ -367,6 +367,48 @@ Two of five items shipped no rule at all — a reminder that "investigate
 before building" sometimes means finding there is nothing safe or useful
 to build, and that is itself the deliverable.
 
+### Reachable-sinks fix: same-file memo made persistent across the whole file
+
+A wider dogfood sweep (running the full security config across ~60 real
+Kaliber projects, at the user's request, targeting each project's whole
+tree rather than just `src`/`config`) surfaced a real, severe performance
+bug — and, separately, a scoping mistake in the sweep itself that should
+not be repeated.
+
+The bug: `reachableSinksOf`'s same-file memo (`sinkScanMemo`, added when
+this capability shipped — see "Tier 3 item 4" above) was reset after
+every *top-level* call, on the theory that a call graph is walked once
+per rule visiting its entry call site. That reasoning held for the
+fan-out shapes tested at the time (one entry point, internal fan-out) but
+missed the shape a real 26MB minified webpack bundle exposed: tens of
+thousands of *structurally unrelated* top-level call sites — no shared
+entry point — that all happen to reach the same widely-shared helper
+(module-scope functions in bundled code call each other constantly).
+Resetting the memo between them meant every single one re-walked that
+helper's body from scratch. Fixed by making the memo persistent for the
+whole analysis instance instead of one top-level call — safe because
+`bindingSignature` already disambiguates by the bound arguments' taint
+shape, not by which call reached it, the same reasoning `sinkExportMemo`
+already relied on for the cross-file case. A new regression test (3000
+independent call sites sharing one helper) went from the shape that made
+a real bundle not finish in 90 seconds to completing in well under a
+second.
+
+The scoping mistake: the wide sweep initially targeted whole project
+roots rather than first-party source directories, and hit a Kaliber-build
+convention (`target/`, the build-output directory — analogous to
+`dist/`/`build/` elsewhere, but not covered by the ignore patterns those
+names would suggest) plus a large embedded Sanity Studio's own
+`node_modules`. No JavaScript linter, security-focused or not, should be
+pointed at bundled/minified build output — style rules are meaningless
+there and a taint analysis meant for application code has no reason to
+walk vendored library internals. The fix that matters for real projects
+is standard ESLint hygiene (`ignores: ['**/target/**', ...]`), not a
+plugin-level safeguard; the persistent-memo fix above is kept regardless,
+because it is a genuine improvement for legitimate application code too
+— a shared helper called from many places in ordinary first-party source
+is exactly the shape it fixes.
+
 ## Dogfood measurement — rabobank-jobs
 
 Third real kaliber project, all 38 rules at warn (`configs.security`), run

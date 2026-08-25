@@ -204,4 +204,25 @@ describe('reachable sinks through a called function', () => {
     assert.strictEqual(found.length, 0)
     assert.ok(elapsed < 2000, `expected under 2s, took ${elapsed}ms`)
   })
+
+  test('the same widely-shared helper called from thousands of independent top-level sites resolves quickly, not once per call site', () => {
+    // The fan-out test above covers one entry call whose *own* internal
+    // walk fans out. This covers the other real shape found dogfooding
+    // against an actual (accidentally-linted) minified bundle: thousands
+    // of structurally unrelated top-level call sites — no shared entry
+    // point at all — that all happen to reach the same helper. Before
+    // making the same-file memo persistent for the whole analysis
+    // instance (previously reset after every top-level call), each of
+    // these re-walked that helper's body from scratch; a 26MB real bundle
+    // dropped from "did not finish in 90s" to under a second once fixed.
+    const calls = Array.from({ length: 3000 }, (_, i) => `function h${i}(req) { shared(req.query.q${i}) }`).join('\n')
+    const start = Date.now()
+    const found = reachableSinkLabels(`
+      function shared(x) { return String(x).trim() }
+      ${calls}
+    `)
+    const elapsed = Date.now() - start
+    assert.strictEqual(found.length, 0)
+    assert.ok(elapsed < 2000, `expected under 2s, took ${elapsed}ms`)
+  })
 })
