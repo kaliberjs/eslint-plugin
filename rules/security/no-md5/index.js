@@ -1,6 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { getCalleeName } = require('../../../machinery/ast')
 
 // MD5 is collision-broken and fast. The honest tension, per the research
 // entry: MD5-for-cache-keys is legitimate and common, so this rule is
@@ -53,12 +54,6 @@ module.exports = {
       },
     }
   },
-}
-
-function getCalleeName(callee) {
-  if (callee.type === 'Identifier') return callee.name
-  if (callee.type === 'MemberExpression' && !callee.computed) return callee.property?.name
-  return null
 }
 
 function isMd5(context, argument) {

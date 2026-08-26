@@ -1,6 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { getCalleeName } = require('../../../machinery/ast')
 
 // DES (56-bit key), 3DES (64-bit block, Sweet32, deprecated by NIST) and RC4
 // (broken) are still exposed by node:crypto through the algorithm string —
@@ -38,7 +39,7 @@ module.exports = {
     return {
       CallExpression(node) {
         const callee = node.callee
-        const name = callee.type === 'MemberExpression' && !callee.computed ? callee.property.name : callee.name
+        const name = getCalleeName(callee)
         if (!CIPHER_FACTORIES.has(name)) return
 
         const algorithm = node.arguments[0]

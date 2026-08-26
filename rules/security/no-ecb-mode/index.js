@@ -1,5 +1,5 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
-const { getStaticPropertyName } = require('../../../machinery/ast')
+const { getStaticPropertyName, getCalleeName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -40,7 +40,7 @@ module.exports = {
     return {
       CallExpression(node) {
         const callee = node.callee
-        const name = callee.type === 'MemberExpression' && !callee.computed ? callee.property.name : callee.name
+        const name = getCalleeName(callee)
 
         // createCipher (no iv argument) is deprecated because its key
         // derivation is MD5-based; it belongs to this weakness class.

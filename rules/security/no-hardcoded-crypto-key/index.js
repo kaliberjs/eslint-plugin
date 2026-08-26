@@ -1,6 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { getCalleeName } = require('../../../machinery/ast')
 
 // A key literal in source is not a secret: every holder of the repository
 // can decrypt and forge. The precise slice: a string literal passed as the
@@ -47,12 +48,6 @@ module.exports = {
       },
     }
   },
-}
-
-function getCalleeName(callee) {
-  if (callee.type === 'Identifier') return callee.name
-  if (callee.type === 'MemberExpression' && !callee.computed) return callee.property?.name
-  return null
 }
 
 /**

@@ -1,4 +1,4 @@
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * Adversarial corpus for no-groq-injection.
@@ -59,7 +59,6 @@ const { test, merge } = require('../../../machinery/test')
  * fix into a test failure.
  */
 
-const handler = code => `function handler(req, res) { ${code} }`
 const FIXTURES = `${__dirname}/../../../machinery/security/fixtures/interprocedural/src`
 
 test('security-no-groq-injection', merge(

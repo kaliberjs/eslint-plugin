@@ -1,5 +1,5 @@
 const { describe } = require('node:test')
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * False-positive corpus for `no-elasticsearch-injection`.
@@ -17,8 +17,6 @@ const { test, merge } = require('../../../machinery/test')
  *      needed an explicit DSL-ancestor requirement before it could be
  *      trusted as a sink.
  */
-
-const handler = code => `function handler(req, res) { ${code} }`
 
 describe('CLEAN — safe code the rule correctly ignores (regression tests)', () => test('security-no-elasticsearch-injection', merge(
   {

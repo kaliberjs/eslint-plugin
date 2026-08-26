@@ -1,6 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { getCalleeName } = require('../../../machinery/ast')
 
 // localStorage/sessionStorage is readable by every script on the page —
 // including anything from a compromised third-party tag. Tokens and session
@@ -76,13 +77,6 @@ function getStorageRoot(calleeOrTarget) {
 
   if (current?.type === 'Identifier' && /storage$/i.test(current.name)) storageName = current.name
   return storageName
-}
-
-function getCalleeName(node) {
-  const callee = node?.callee ?? node
-  if (callee?.type === 'Identifier') return callee.name
-  if (callee?.type === 'MemberExpression' && !callee.computed) return callee.property?.name
-  return null
 }
 
 function emit(context, node, key, storage) {

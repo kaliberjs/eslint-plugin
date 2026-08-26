@@ -1,7 +1,5 @@
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 const { browser } = require('globals')
-
-const handler = code => `function handler(req, res) { ${code} }`
 
 test('security-no-sql-injection', merge(
   {

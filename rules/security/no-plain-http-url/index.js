@@ -1,4 +1,4 @@
-const { getStaticPropertyName } = require('../../../machinery/ast')
+const { getStaticPropertyName, getCalleeName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -68,13 +68,6 @@ function checkUrl(context, node, value) {
     const key = String(getStaticPropertyName(parent) ?? '')
     if (/^(url|uri|baseurl|endpoint|href|src|host)$/i.test(key)) return reportCleartext(context, node, match[1])
   }
-}
-
-function getCalleeName(callee) {
-  if (!callee) return null
-  if (callee.type === 'Identifier') return callee.name
-  if (callee.type === 'MemberExpression' && !callee.computed) return callee.property?.name
-  return null
 }
 
 function reportCleartext(context, node, scheme) {

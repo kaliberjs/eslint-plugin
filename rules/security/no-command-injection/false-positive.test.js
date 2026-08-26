@@ -1,7 +1,5 @@
 const { describe } = require('node:test')
-const { test, merge } = require('../../../machinery/test')
-
-const handler = code => `function handler(req, res) { ${code} }`
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * The false-positive corpus. These cases are why the rule exists in this

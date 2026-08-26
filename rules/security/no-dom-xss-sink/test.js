@@ -1,4 +1,4 @@
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 const { browser } = require('globals')
 
 const withBrowser = tests => tests.map(test => ({ ...test, languageOptions: { globals: browser } }))

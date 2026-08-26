@@ -1,6 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { getCalleeName } = require('../../../machinery/ast')
 
 // SHA-1 is collision-broken (SHAttered, 2017). Same shape and same honest
 // tension as the MD5 rule: legitimate non-security uses exist (git object
@@ -42,12 +43,6 @@ module.exports = {
       },
     }
   },
-}
-
-function getCalleeName(callee) {
-  if (callee.type === 'Identifier') return callee.name
-  if (callee.type === 'MemberExpression' && !callee.computed) return callee.property?.name
-  return null
 }
 
 function isSha1(context, argument) {

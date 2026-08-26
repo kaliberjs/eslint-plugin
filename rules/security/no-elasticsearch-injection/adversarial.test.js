@@ -1,4 +1,4 @@
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * Adversarial corpus for no-elasticsearch-injection.
@@ -53,7 +53,6 @@ const { test, merge } = require('../../../machinery/test')
  *     limitation already documented in its own corpus.
  */
 
-const handler = code => `function handler(req, res) { ${code} }`
 const FIXTURES = `${__dirname}/../../../machinery/security/fixtures/interprocedural/src`
 
 test('security-no-elasticsearch-injection', merge(

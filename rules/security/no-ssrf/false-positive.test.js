@@ -1,6 +1,6 @@
 const { describe } = require('node:test')
 const { browser } = require('globals')
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, asyncHandler: handler } = require('../../../machinery/test')
 
 /**
  * False-positive corpus for `no-ssrf`.
@@ -57,7 +57,6 @@ const { test, merge } = require('../../../machinery/test')
  * has to keep every `invalid` case in that file invalid.
  */
 
-const handler = code => `async function handler(req, res) { ${code} }`
 const withBrowser = tests => tests.map(t => ({
   ...(typeof t === 'string' ? { code: t } : t),
   languageOptions: { globals: browser },

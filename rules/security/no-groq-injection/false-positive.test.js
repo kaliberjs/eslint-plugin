@@ -1,5 +1,5 @@
 const { describe } = require('node:test')
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * False-positive corpus for `no-groq-injection`.
@@ -24,8 +24,6 @@ const { test, merge } = require('../../../machinery/test')
  * (documents the misses). Anything proposed here has to keep every
  * `invalid` case in both of those files invalid — verified.
  */
-
-const handler = code => `function handler(req, res) { ${code} }`
 
 describe('CLEAN — safe code the rule correctly ignores (regression tests)', () => test('security-no-groq-injection', merge(
 

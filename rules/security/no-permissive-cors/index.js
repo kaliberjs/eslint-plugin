@@ -1,5 +1,5 @@
 const { getPropertyName, getStaticValue } = require('@eslint-community/eslint-utils')
-const { getStaticPropertyName } = require('../../../machinery/ast')
+const { getStaticPropertyName, getCalleeName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
 
@@ -117,12 +117,6 @@ module.exports = {
       return String(name ?? '').toLowerCase() === 'origin'
     }
   },
-}
-
-function getCalleeName(callee) {
-  if (callee.type === 'Identifier') return callee.name
-  if (callee.type === 'MemberExpression' && !callee.computed) return callee.property?.name
-  return null
 }
 
 function headerName(context, argument) {

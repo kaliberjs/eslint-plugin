@@ -1,6 +1,4 @@
-const { test, merge } = require('../../../machinery/test')
-
-const handler = code => `function handler(req, res) { ${code} }`
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * Adversarial corpus for no-open-redirect.

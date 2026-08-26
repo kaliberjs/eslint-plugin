@@ -15,6 +15,8 @@ const ruleTester = new RuleTester({
 
 module.exports = {
   test,
+  handler,
+  asyncHandler,
   merge,
 }
 
@@ -31,4 +33,17 @@ function merge(...tests) {
     }),
     { valid: [], invalid: [] }
   )
+}
+
+/**
+ * Wraps a snippet in an Express-shaped request handler, so `req` resolves to
+ * a registry source. Duplicated verbatim in 39 security test files before it
+ * lived here.
+ */
+function handler(code) {
+  return `function handler(req, res) { ${code} }`
+}
+
+function asyncHandler(code) {
+  return `async function handler(req, res) { ${code} }`
 }

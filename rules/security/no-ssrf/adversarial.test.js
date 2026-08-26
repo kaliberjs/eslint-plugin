@@ -1,4 +1,4 @@
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * Adversarial corpus for no-ssrf.
@@ -95,7 +95,6 @@ const { test, merge } = require('../../../machinery/test')
  *     never gets a parts list and the safe call is reported.
  */
 
-const handler = code => `function handler(req, res) { ${code} }`
 const ALLOWED = "const ALLOWED = ['images.example.com']\n"
 const FIXTURES = `${__dirname}/../../../machinery/security/fixtures/interprocedural/src`
 

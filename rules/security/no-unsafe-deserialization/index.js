@@ -1,6 +1,7 @@
 const { findVariable } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { getCalleeName } = require('../../../machinery/ast')
 
 // node-serialize's unserialize evaluates embedded IIFEs in the payload —
 // a documented RCE (CVE-2017-5941). Any call to it with non-literal input is
@@ -46,12 +47,6 @@ module.exports = {
       },
     }
   },
-}
-
-function getCalleeName(callee) {
-  if (callee.type === 'Identifier') return callee.name
-  if (callee.type === 'MemberExpression' && !callee.computed) return callee.property?.name
-  return null
 }
 
 /** The name this identifier was imported/destructured as from node-serialize, or null. */

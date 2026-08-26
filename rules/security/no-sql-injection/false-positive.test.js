@@ -1,5 +1,5 @@
 const { describe, it } = require('node:test')
-const { test, merge } = require('../../../machinery/test')
+const { test, merge, handler } = require('../../../machinery/test')
 
 /**
  * False-positive corpus for `no-sql-injection`.
@@ -41,8 +41,6 @@ const { test, merge } = require('../../../machinery/test')
  * Companion to test.js, which pins the true positives. Anything proposed here
  * has to keep every `invalid` case in that file invalid — verified.
  */
-
-const handler = code => `function handler(req, res) { ${code} }`
 
 describe('CLEAN — safe code the rule correctly ignores (regression tests)', () => test('security-no-sql-injection', merge(
 

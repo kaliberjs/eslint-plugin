@@ -6,6 +6,7 @@ module.exports = {
   isAnonymousFunction,
   isFunctionNode, isPascalCase,
   isInsideComponent, isArrowConciseBody, isUseStateCall,
+  getCalleeName,
 }
 
 function getPropertyName(property) {
@@ -176,4 +177,19 @@ function isUseStateCall(node) {
   ) return true
 
   return false
+}
+
+/**
+ * The name a call is made under: the identifier for a bare call, the property
+ * for a member call. Deliberately receiver-blind — `crypto.createHash(…)` and
+ * `createHash(…)` answer the same, which is what a factory-name matcher wants
+ * when the module could have been destructured, aliased or namespaced.
+ *
+ * Accepts a callee or the CallExpression itself.
+ */
+function getCalleeName(node) {
+  const callee = node?.callee ?? node
+  if (callee?.type === 'Identifier') return callee.name
+  if (callee?.type === 'MemberExpression' && !callee.computed) return callee.property?.name
+  return null
 }
