@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { reportReachableSinks, reportTaintedValue, taintMessages, callLabel, settings } = require('../../../machinery/security/finding')
 
 // GROQ (Sanity's query language) is addressed the same way SQL is: a query
 // string built with untrusted input lets an attacker change the structure
@@ -17,19 +17,11 @@ module.exports = {
       description: 'Detect untrusted input flowing into a raw GROQ query (CWE-943, OWASP A03:2021-Injection)',
       url: docsUrl(__dirname),
     },
-    messages: {
-      groqInjection: [
-        'Possible GROQ injection: untrusted input reaches {{sink}} as part of the query string.',
-        'Flow: {{flow}}.',
-        'Use a $parameter placeholder and pass the value in the second argument instead.',
-      ].join(' '),
-      groqInjectionQualified: [
-        'Possible GROQ injection: untrusted input reaches {{sink}} as part of the query string.',
-        'Flow: {{flow}}.',
-        'Confidence is {{confidence}} because the value passes through {{why}}.',
-        'Use a $parameter placeholder and pass the value in the second argument instead.',
-      ].join(' '),
-    },
+    messages: taintMessages(
+      'groqInjection',
+      'Possible GROQ injection: untrusted input reaches {{sink}} as part of the query string.',
+      'Use a $parameter placeholder and pass the value in the second argument instead.',
+    ),
     // No fix and no suggestion. Rewriting an interpolated query into a
     // parameterized one changes the query text (`$name` placeholder) and
     // the call's argument list — not a mechanical transformation, and a
@@ -57,7 +49,6 @@ module.exports = {
         // the sink.
         const taint = query && analysis.taintOf(query)
         if (!taint) return
-        if (taint.sanitizedFor.has('nosql') || taint.sanitizedFor.has('*')) return
 
         // `client`/`fetch` are the two most generic identifiers in the
         // receiver+method vocabulary this registry uses — unlike a SQL
@@ -71,23 +62,17 @@ module.exports = {
         // case, not a safe one, so it is never excused by this check.
         if (!hasGroqSyntaxHint(query, taint.path)) return
 
-        const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
-
-        report(context, {
-          node: query,
-          messageId: qualify ? 'groqInjectionQualified' : 'groqInjection',
-          data: { sink: describeSink(context.sourceCode, node) },
-          severity: sink.severity,
-          confidence: taint.confidence,
-          path: [...taint.path, { node, kind: 'sink', label: describeSink(context.sourceCode, node), penalty: 0 }],
+        reportTaintedValue(context, analysis, {
+          value: query,
+          kind: 'nosql',
+          sink,
+          label: callLabel(context.sourceCode, node),
+          messageId: 'groqInjection',
+          qualifiedMessageId: 'groqInjectionQualified',
         })
       },
     }
   },
-}
-
-function describeSink(sourceCode, node) {
-  return `${sourceCode.getText(node.callee)}()`
 }
 
 const GROQ_SYNTAX = /\*\s*\[|\b_type\b|\b_id\b|->|\|\s*order\b|\bdefined\(|\breferences\(|\bcount\(/

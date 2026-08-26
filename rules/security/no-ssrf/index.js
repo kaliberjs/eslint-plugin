@@ -1,7 +1,7 @@
 const { findVariable } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { reportReachableSinks, reportTaintedValue, taintMessages, callLabel, settings } = require('../../../machinery/security/finding')
 
 // An outbound request to an attacker-chosen URL turns the server into a
 // proxy into its own network: cloud metadata endpoints (169.254.169.254),
@@ -18,19 +18,11 @@ module.exports = {
       description: 'Detect untrusted input flowing into an outbound HTTP request URL (CWE-918, OWASP A10:2021)',
       url: docsUrl(__dirname),
     },
-    messages: {
-      ssrf: [
-        'Untrusted input reaches {{sink}}, which makes the server request that URL.',
-        'Flow: {{flow}}.',
-        'Parse the value and check its hostname against a literal allowlist before requesting it, or keep the origin fixed and take only a path segment from input.',
-      ].join(' '),
-      ssrfQualified: [
-        'Untrusted input reaches {{sink}}, which makes the server request that URL.',
-        'Flow: {{flow}}.',
-        'Confidence is {{confidence}} because the value passes through {{why}}.',
-        'Parse the value and check its hostname against a literal allowlist before requesting it, or keep the origin fixed and take only a path segment from input.',
-      ].join(' '),
-    },
+    messages: taintMessages(
+      'ssrf',
+      'Untrusted input reaches {{sink}}, which makes the server request that URL.',
+      'Parse the value and check its hostname against a literal allowlist before requesting it, or keep the origin fixed and take only a path segment from input.',
+    ),
     // No fix and no suggestion: the remediation is an allowlist whose
     // contents only the application knows, not a transformation of the
     // expression at the sink.
@@ -54,22 +46,21 @@ module.exports = {
 
         const target = node.arguments[sink.argument]
 
+        // These two gates need the resolved taint, so they cannot move into
+        // the shared reporter: SSRF is a server-side weakness, and a fixed
+        // authority with a tainted path is a different (or no) weakness.
         const taint = target && analysis.taintOf(target)
         if (!taint) return
-        if (taint.sanitizedFor.has('url') || taint.sanitizedFor.has('*')) return
         if (!isServerRequest(taint)) return
         if (authorityIsFixed(target, isTainted, makeSubstitute(context.sourceCode))) return
 
-        const label = describeSink(context.sourceCode, node.callee)
-        const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
-
-        report(context, {
-          node: target,
-          messageId: qualify ? 'ssrfQualified' : 'ssrf',
-          data: { sink: label },
-          severity: sink.severity,
-          confidence: taint.confidence,
-          path: [...taint.path, { node, kind: 'sink', label, penalty: 0 }],
+        reportTaintedValue(context, analysis, {
+          value: target,
+          kind: 'url',
+          sink,
+          label: callLabel(context.sourceCode, node),
+          messageId: 'ssrf',
+          qualifiedMessageId: 'ssrfQualified',
         })
       },
     }
@@ -294,8 +285,4 @@ function isOwnNode(sourceCode, node) {
   let current = node
   while (current.parent) current = current.parent
   return current === sourceCode.ast
-}
-
-function describeSink(sourceCode, node) {
-  return `${sourceCode.getText(node)}()`
 }

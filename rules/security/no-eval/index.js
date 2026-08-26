@@ -1,7 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { report, reportReachableSinks, reportTaintedValue, taintMessages, settings } = require('../../../machinery/security/finding')
 
 // ESLint core's no-eval, no-implied-eval and no-new-func (all enabled in the
 // shared config) cover eval, new Function and string-bodied timers. This rule
@@ -20,17 +20,11 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      codeInjection: [
+      ...taintMessages(
+        'codeInjection',
         'Untrusted input reaches {{sink}}, which compiles it as executable code.',
-        'Flow: {{flow}}.',
         'There is no safe way to run attacker-influenced code: restructure to data-driven logic instead.',
-      ].join(' '),
-      codeInjectionQualified: [
-        'Untrusted input reaches {{sink}}, which compiles it as executable code.',
-        'Flow: {{flow}}.',
-        'Confidence is {{confidence}} because the value passes through {{why}}.',
-        'There is no safe way to run attacker-influenced code: restructure to data-driven logic instead.',
-      ].join(' '),
+      ),
       dynamicCode: [
         '{{sink}} receives a value that was built at runtime.',
         'Whatever assembles it today, this is an arbitrary-code execution entry point one refactor away from receiving user input.',
@@ -55,25 +49,29 @@ module.exports = {
         const code = node.arguments[sink.argument]
         if (!code) return
 
+        const label = context.sourceCode.getText(node.callee)
+
+        // Seeing taint at all decides which of the two messages this rule
+        // owns applies — not whether the finding cleared the confidence
+        // floor. A tainted eval below the floor stays silent rather than
+        // falling through to the weaker dynamicCode message.
         const taint = analysis.taintOf(code)
         if (taint && !taint.sanitizedFor.has('code') && !taint.sanitizedFor.has('*')) {
-          const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
-          report(context, {
-            node: code,
-            messageId: qualify ? 'codeInjectionQualified' : 'codeInjection',
-            data: { sink: describeSink(context.sourceCode, node.callee) },
-            severity: sink.severity,
-            confidence: taint.confidence,
-            path: [...taint.path, { node: code, kind: 'sink', label: describeSink(context.sourceCode, node.callee), penalty: 0 }],
+          reportTaintedValue(context, analysis, {
+            value: code, kind: 'code', sink, label,
+            messageId: 'codeInjection',
+            qualifiedMessageId: 'codeInjectionQualified',
           })
           return
         }
 
+        // Not tainted, but not a literal either: an arbitrary-code entry
+        // point one refactor away from receiving user input.
         if (!getStaticValue(code, context.sourceCode.getScope(code))) {
           report(context, {
             node: code,
             messageId: 'dynamicCode',
-            data: { sink: describeSink(context.sourceCode, node.callee) },
+            data: { sink: label },
             severity: 'medium',
             confidence: 1,
           })
@@ -81,8 +79,4 @@ module.exports = {
       },
     }
   },
-}
-
-function describeSink(sourceCode, node) {
-  return sourceCode.getText(node)
 }

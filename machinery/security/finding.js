@@ -28,6 +28,9 @@ const SEVERITIES = Object.keys(REPORTABLE)
 module.exports = {
   report,
   reportReachableSinks,
+  reportTaintedValue,
+  taintMessages,
+  callLabel,
   SEVERITIES,
   confidenceBucket,
   describePath,
@@ -98,6 +101,73 @@ function reportReachableSinks(context, analysis, node, kind, messageId, qualifie
       confidence: taint.confidence,
       path: [...taint.path, { node, kind: 'sink', label: sinkLabel, penalty: 0 }],
     })
+  }
+}
+
+/**
+ * The tail every taint rule shares: a value, the sink it reaches, and the
+ * decision to report it. Sanitization is typed — a value cleaned for 'html'
+ * is still tainted for 'sql' — so the kind is checked here rather than left
+ * to each rule to remember.
+ *
+ * The prologue (which node is the sink, which argument carries the value,
+ * whether this rule owns that sink family) deliberately stays in the rule:
+ * that is where a rule differs from its neighbours, and it should be
+ * readable without opening this file.
+ *
+ * `severity` defaults to the sink's own. Pass it only to override.
+ *
+ * @returns {boolean} whether it reported
+ */
+function reportTaintedValue(context, analysis, { value, kind, sink, label, messageId, qualifiedMessageId, severity }) {
+  if (!value) return false
+
+  const taint = analysis.taintOf(value)
+  if (!taint) return false
+  if (taint.sanitizedFor.has(kind) || taint.sanitizedFor.has('*')) return false
+
+  // See explainConfidence for why both halves of this matter.
+  const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
+
+  return report(context, {
+    node: value,
+    messageId: qualify ? qualifiedMessageId : messageId,
+    data: { sink: label },
+    severity: severity ?? sink.severity,
+    confidence: taint.confidence,
+    path: [...taint.path, { node: value, kind: 'sink', label, penalty: 0 }],
+  })
+}
+
+/**
+ * How a call is named in a finding: `db.query()`, `fetch()`, `child.exec()`.
+ * Accepts the CallExpression or its callee. Nine rules each had a two-line
+ * version of this, four of which had quietly diverged in whitespace or in
+ * which node they were handed.
+ *
+ * A sink that is an assignment target (`el.innerHTML = …`) is not a call and
+ * is not named here — those rules use sourceCode.getText directly, which is
+ * shorter than any helper would be.
+ */
+function callLabel(sourceCode, node) {
+  return `${sourceCode.getText(node.callee ?? node)}()`
+}
+
+const FLOW = 'Flow: {{flow}}.'
+const CONFIDENCE = 'Confidence is {{confidence}} because the value passes through {{why}}.'
+
+/**
+ * The plain and qualified message pair for one taint finding, which differ
+ * only by the confidence sentence. Written out per rule twelve times before
+ * this existed, and the copies had already drifted in whitespace.
+ *
+ * `what` names the weakness and must interpolate {{sink}}; `remedy` is one or
+ * more sentences of advice, kept last because that is where a developer looks.
+ */
+function taintMessages(id, what, ...remedy) {
+  return {
+    [id]: [what, FLOW, ...remedy].join(' '),
+    [`${id}Qualified`]: [what, FLOW, CONFIDENCE, ...remedy].join(' '),
   }
 }
 

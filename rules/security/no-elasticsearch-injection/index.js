@@ -1,7 +1,7 @@
 const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { reportTaintedValue, taintMessages, settings } = require('../../../machinery/security/finding')
 
 // Elasticsearch's query DSL is a JSON tree, not a call with a fixed sink
 // argument, so this rule matches the DSL keys directly (`query_string`,
@@ -28,28 +28,16 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      luceneInjection: [
+      ...taintMessages(
+        'luceneInjection',
         'Possible Elasticsearch injection: untrusted input reaches {{sink}} as a raw Lucene query-syntax string.',
-        'Flow: {{flow}}.',
         'Escape Lucene reserved characters, or use a literal-value DSL field (match, term, multi_match) instead of building query syntax from input.',
-      ].join(' '),
-      luceneInjectionQualified: [
-        'Possible Elasticsearch injection: untrusted input reaches {{sink}} as a raw Lucene query-syntax string.',
-        'Flow: {{flow}}.',
-        'Confidence is {{confidence}} because the value passes through {{why}}.',
-        'Escape Lucene reserved characters, or use a literal-value DSL field (match, term, multi_match) instead of building query syntax from input.',
-      ].join(' '),
-      scriptInjection: [
+      ),
+      ...taintMessages(
+        'scriptInjection',
         'Untrusted input reaches {{sink}}, which Elasticsearch compiles and runs as a Painless script.',
-        'Flow: {{flow}}.',
         'There is no safe way to run attacker-influenced code: pass the value through the script\'s `params` instead of building the source string.',
-      ].join(' '),
-      scriptInjectionQualified: [
-        'Untrusted input reaches {{sink}}, which Elasticsearch compiles and runs as a Painless script.',
-        'Flow: {{flow}}.',
-        'Confidence is {{confidence}} because the value passes through {{why}}.',
-        'There is no safe way to run attacker-influenced code: pass the value through the script\'s `params` instead of building the source string.',
-      ].join(' '),
+      ),
     },
     // No fix and no suggestion. Rewriting a query_string into an
     // equivalent match/term query, or a script source into params, changes
@@ -91,7 +79,7 @@ module.exports = {
           } else {
             // Elasticsearch also accepts a script as a bare string, the
             // short form of { source: '<the same string>' }.
-            reportIfTainted(node.value, node, 'code', 'scriptInjection', 'scriptInjectionQualified', 'script')
+            reportIfTainted(node.value, 'code', 'scriptInjection', 'scriptInjectionQualified', 'script')
           }
         }
       },
@@ -105,23 +93,20 @@ module.exports = {
       )
       if (!property) return
 
-      reportIfTainted(property.value, property, kind, messageId, qualifiedMessageId, sinkLabel)
+      reportIfTainted(property.value, kind, messageId, qualifiedMessageId, sinkLabel)
     }
 
-    function reportIfTainted(valueNode, anchorNode, kind, messageId, qualifiedMessageId, sinkLabel) {
-      const taint = analysis.taintOf(valueNode)
-      if (!taint) return
-      if (taint.sanitizedFor.has(kind) || taint.sanitizedFor.has('*')) return
-
-      const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
-
-      report(context, {
-        node: valueNode,
-        messageId: qualify ? qualifiedMessageId : messageId,
-        data: { sink: sinkLabel },
+    // Severity is fixed at 'high' rather than taken from a sink: the sinks
+    // here are query-DSL positions matched structurally, not registry
+    // entries that carry their own.
+    function reportIfTainted(valueNode, kind, messageId, qualifiedMessageId, sinkLabel) {
+      reportTaintedValue(context, analysis, {
+        value: valueNode,
+        kind,
+        label: sinkLabel,
         severity: 'high',
-        confidence: taint.confidence,
-        path: [...taint.path, { node: anchorNode, kind: 'sink', label: sinkLabel, penalty: 0 }],
+        messageId,
+        qualifiedMessageId,
       })
     }
   },

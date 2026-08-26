@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { reportReachableSinks, reportTaintedValue, taintMessages, settings } = require('../../../machinery/security/finding')
 
 module.exports = {
   meta: {
@@ -9,19 +9,11 @@ module.exports = {
       description: 'Detect untrusted input flowing into DOM HTML-parser sinks (CWE-79, OWASP A03:2021-Injection)',
       url: docsUrl(__dirname),
     },
-    messages: {
-      domXss: [
-        'Possible DOM XSS: untrusted input reaches {{sink}}, which parses it as HTML.',
-        'Flow: {{flow}}.',
-        'Use textContent, or sanitize with an allowlist-based sanitizer before assigning.',
-      ].join(' '),
-      domXssQualified: [
-        'Possible DOM XSS: untrusted input reaches {{sink}}, which parses it as HTML.',
-        'Flow: {{flow}}.',
-        'Confidence is {{confidence}} because the value passes through {{why}}.',
-        'Use textContent, or sanitize with an allowlist-based sanitizer before assigning.',
-      ].join(' '),
-    },
+    messages: taintMessages(
+      'domXss',
+      'Possible DOM XSS: untrusted input reaches {{sink}}, which parses it as HTML.',
+      'Use textContent, or sanitize with an allowlist-based sanitizer before assigning.',
+    ),
     // No fix: no mechanical rewrite of dynamic HTML exists. See AGENTS.md.
     schema: [],
   },
@@ -37,7 +29,7 @@ module.exports = {
         const sink = analysis.sinkAt(node.left)
         if (sink?.requires !== 'html') return
 
-        reportTaint(context, analysis, node.right, sink, describeSink(context.sourceCode, node.left))
+        reportTaint(context, analysis, node.right, sink, context.sourceCode.getText(node.left))
       },
 
       CallExpression(node) {
@@ -49,29 +41,19 @@ module.exports = {
         const argument = node.arguments[sink.argument]
         if (!argument) return
 
-        reportTaint(context, analysis, argument, sink, describeSink(context.sourceCode, node.callee))
+        reportTaint(context, analysis, argument, sink, context.sourceCode.getText(node.callee))
       },
     }
   },
 }
 
 function reportTaint(context, analysis, value, sink, label) {
-  const taint = value && analysis.taintOf(value)
-  if (!taint) return
-  if (taint.sanitizedFor.has('html') || taint.sanitizedFor.has('*')) return
-
-  const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
-
-  report(context, {
-    node: value,
-    messageId: qualify ? 'domXssQualified' : 'domXss',
-    data: { sink: label },
-    severity: sink.severity,
-    confidence: taint.confidence,
-    path: [...taint.path, { node: value, kind: 'sink', label, penalty: 0 }],
+  reportTaintedValue(context, analysis, {
+    value,
+    kind: 'html',
+    sink,
+    label,
+    messageId: 'domXss',
+    qualifiedMessageId: 'domXssQualified',
   })
-}
-
-function describeSink(sourceCode, node) {
-  return sourceCode.getText(node)
 }

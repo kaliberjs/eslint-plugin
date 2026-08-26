@@ -1,6 +1,6 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { analyze } = require('../../../machinery/security/taint')
-const { report, reportReachableSinks, settings, explainConfidence } = require('../../../machinery/security/finding')
+const { reportReachableSinks, reportTaintedValue, taintMessages, callLabel, settings } = require('../../../machinery/security/finding')
 
 // Firebase Realtime Database and Firestore address data through a
 // `/`-separated hierarchy, the same shape as a filesystem path. A tainted
@@ -21,21 +21,12 @@ module.exports = {
       description: 'Detect untrusted input flowing into Firebase Realtime Database / Firestore path arguments (CWE-22, OWASP A01:2021)',
       url: docsUrl(__dirname),
     },
-    messages: {
-      firebasePathInjection: [
-        'Untrusted input reaches {{sink}} as part of a database path.',
-        'Flow: {{flow}}.',
-        "A '/' in the value addresses a different node or document than intended — on the admin SDK, one not subject to your Realtime Database / Firestore security rules at all.",
-        'Validate the value against an allowlist, or reject any value containing a slash.',
-      ].join(' '),
-      firebasePathInjectionQualified: [
-        'Untrusted input reaches {{sink}} as part of a database path.',
-        'Flow: {{flow}}.',
-        'Confidence is {{confidence}} because the value passes through {{why}}.',
-        "A '/' in the value addresses a different node or document than intended — on the admin SDK, one not subject to your Realtime Database / Firestore security rules at all.",
-        'Validate the value against an allowlist, or reject any value containing a slash.',
-      ].join(' '),
-    },
+    messages: taintMessages(
+      'firebasePathInjection',
+      'Untrusted input reaches {{sink}} as part of a database path.',
+      "A '/' in the value addresses a different node or document than intended — on the admin SDK, one not subject to your Realtime Database / Firestore security rules at all.",
+      'Validate the value against an allowlist, or reject any value containing a slash.',
+    ),
     // No fix: the correct validation (an allowlist of known IDs, or a
     // reject-on-slash check) is application knowledge.
     schema: [],
@@ -55,27 +46,15 @@ module.exports = {
         if (sink?.requires !== 'path') return
         if (!sink.id.startsWith('firebase.')) return
 
-        const target = node.arguments[sink.argument]
-
-        const taint = target && analysis.taintOf(target)
-        if (!taint) return
-        if (taint.sanitizedFor.has('path') || taint.sanitizedFor.has('*')) return
-
-        const qualify = taint.confidence < 0.8 && explainConfidence(taint.path)
-
-        report(context, {
-          node: target,
-          messageId: qualify ? 'firebasePathInjectionQualified' : 'firebasePathInjection',
-          data: { sink: describeSink(context.sourceCode, node.callee) },
-          severity: sink.severity,
-          confidence: taint.confidence,
-          path: [...taint.path, { node, kind: 'sink', label: describeSink(context.sourceCode, node.callee), penalty: 0 }],
+        reportTaintedValue(context, analysis, {
+          value: node.arguments[sink.argument],
+          kind: 'path',
+          sink,
+          label: callLabel(context.sourceCode, node),
+          messageId: 'firebasePathInjection',
+          qualifiedMessageId: 'firebasePathInjectionQualified',
         })
       },
     }
   },
-}
-
-function describeSink(sourceCode, node) {
-  return `${sourceCode.getText(node)}()`
 }
