@@ -184,7 +184,18 @@ module.exports = [
           message: 'Please use import() instead. More info: https://github.com/facebookincubator/create-react-app/blob/master/packages/react-scripts/template/README.md#code-splitting',
         },
       ],
-      'no-restricted-syntax': ['warn', 'WithStatement'],
+      'no-restricted-syntax': [
+        'warn',
+        'WithStatement',
+        {
+          selector: 'MethodDefinition[kind="method"][static=false]',
+          message: 'Use an arrow function class property so `this` is bound: `name = () => {}`',
+        },
+        {
+          selector: 'PropertyDefinition > FunctionExpression',
+          message: 'Use an arrow function so `this` is bound: `name = () => {}`',
+        },
+      ],
       'no-return-assign': 'warn',
       'no-script-url': 'warn',
       'no-self-assign': 'warn',
