@@ -2,9 +2,13 @@
 
 Do not use ECB block cipher mode.
 
-- **OWASP:** [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/)
+- **Preset:** `security-audit` only (`warn`). Deliberately not in `configs.security`.
+- **Impact if exploited:** high
+- **Analysis confidence:** high for a call resolved to a `node:crypto` import, medium for a bare name match (crypto-js ships as a CDN global with no import to resolve).
 - **CWE:** [CWE-327: Use of a Broken or Risky Cryptographic Algorithm](https://cwe.mitre.org/data/definitions/327.html)
-- **Severity:** high · **Confidence:** high
+- **CAPEC:** [CAPEC-97](https://capec.mitre.org/data/definitions/97.html), [CAPEC-20](https://capec.mitre.org/data/definitions/20.html)
+- **OWASP:** [A04:2025 – Cryptographic Failures](https://owasp.org/Top10/2025/A04_2025-Cryptographic_Failures/) · [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-11.3.3` — "Verify that encrypted data is protected against unauthorized modification preferably by using an approved authenticated encryption method or by combining an approved encryption method with an approved MAC algorithm."
 
 ## What it detects
 
@@ -51,3 +55,5 @@ SonarJS S5542, CodeQL `js/weak-cryptographic-algorithm`.
 
 - [Node.js crypto docs](https://nodejs.org/api/crypto.html)
 - [OWASP Cryptographic Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

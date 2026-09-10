@@ -15,15 +15,15 @@ test('security-no-jquery-html-sink', merge(
         errors: [{ messageId: 'jqueryHtmlSink' }],
       },
       {
-        code: "$list.append(itemMarkup)",
+        code: '$list.append(itemMarkup)',
         errors: [{ messageId: 'jqueryHtmlSink' }],
       },
       {
-        code: "$row.replaceWith(template(t))",
+        code: '$row.replaceWith(template(t))',
         errors: [{ messageId: 'jqueryHtmlSink' }],
       },
       {
-        code: "$.parseHTML(location.hash.slice(1))",
+        code: '$.parseHTML(location.hash.slice(1))',
         errors: [{ messageId: 'jqueryHtmlSink' }],
       },
     ],

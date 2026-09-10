@@ -13,8 +13,11 @@ test('security-no-plain-http-url', merge(
     ],
     invalid: [
       {
+        // The message interpolates the scheme. It read "'undefined' endpoint"
+        // for every http:// URL until a dogfood run caught it, because no test
+        // had ever asserted the rendered text.
         code: "fetch('http://api.example.com/v1/users')",
-        errors: [{ messageId: 'cleartextRequest' }],
+        errors: [{ messageId: 'cleartextRequest', data: { scheme: 'http' } }],
       },
       {
         code: "axios.get('http://internal.example.com/payments')",
@@ -22,7 +25,7 @@ test('security-no-plain-http-url', merge(
       },
       {
         code: "new WebSocket('ws://feed.example.com/prices')",
-        errors: [{ messageId: 'cleartextRequest' }],
+        errors: [{ messageId: 'cleartextRequest', data: { scheme: 'ws' } }],
       },
       {
         code: "http.request({ url: 'http://api.example.com/x' })",

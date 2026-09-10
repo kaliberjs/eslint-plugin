@@ -1,11 +1,19 @@
 const { getStaticValue, getPropertyName } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 
 // innerHTML, outerHTML, insertAdjacentHTML and document.write all invoke the
 // HTML parser. A non-literal value reaching any of them is the DOM form of
 // the XSS that dangerouslySetInnerHTML is on the React side — same rule
 // shape: constants stay quiet, everything else is flagged.
+//
+// This is an audit rule, not a vulnerability rule. It establishes only that
+// the value is not a constant; it traces nothing and proves no attacker
+// influence, so it reports at medium confidence and its message asks for a
+// read rather than declaring a bug. security-no-dom-xss-sink is the rule that
+// reports a traced flow into these same sinks, and it is the one in the
+// default preset.
 //
 // textContent is the safe alternative and deliberately absent from this list.
 const SINK_PROPERTIES = new Set(['innerHTML', 'outerHTML'])
@@ -19,8 +27,8 @@ module.exports = {
     },
     messages: {
       htmlSink: [
-        'Assigning a non-literal value to {{ sink }} parses it as HTML.',
-        'If the value ever contains attacker-influenced content, it becomes executable markup.',
+        'Audit this non-constant value: {{ sink }} parses whatever it receives as HTML.',
+        'Nothing here establishes where the value comes from — if it can carry attacker-influenced content, it becomes executable markup.',
         'Prefer textContent for text; sanitize with an allowlist-based sanitizer such as DOMPurify when HTML is genuinely required.',
       ].join(' '),
     },
@@ -43,7 +51,7 @@ module.exports = {
           messageId: 'htmlSink',
           data: { sink: String(name) },
           severity: 'medium',
-          confidence: 1,
+          confidence: NAME_ONLY_CONFIDENCE,
         })
       },
 
@@ -56,7 +64,7 @@ module.exports = {
         if (name === 'insertAdjacentHTML') {
           const html = node.arguments[1]
           if (html && !isConstant(context, html)) {
-            report(context, { node: html, messageId: 'htmlSink', data: { sink: 'insertAdjacentHTML' }, severity: 'medium', confidence: 1 })
+            report(context, { node: html, messageId: 'htmlSink', data: { sink: 'insertAdjacentHTML' }, severity: 'medium', confidence: NAME_ONLY_CONFIDENCE })
           }
           return
         }
@@ -64,7 +72,7 @@ module.exports = {
         if ((name === 'write' || name === 'writeln') && isDocument(callee.object)) {
           const html = node.arguments[0]
           if (html && !isConstant(context, html)) {
-            report(context, { node: html, messageId: 'htmlSink', data: { sink: `document.${name}` }, severity: 'medium', confidence: 1 })
+            report(context, { node: html, messageId: 'htmlSink', data: { sink: `document.${name}` }, severity: 'medium', confidence: NAME_ONLY_CONFIDENCE })
           }
         }
       },

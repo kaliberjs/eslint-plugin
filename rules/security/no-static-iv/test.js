@@ -5,7 +5,7 @@ test('security-no-static-iv', merge(
     valid: [
       // Fresh IV per encryption — the remediation.
       "crypto.createCipheriv('aes-256-cbc', key, crypto.randomBytes(16))",
-      "crypto.createDecipheriv(alg, key, iv)",
+      'crypto.createDecipheriv(alg, key, iv)',
       // GCM counter nonces are an accepted pattern (documented in the inventory).
       "crypto.createCipheriv('aes-256-gcm', key, nonce)",
     ],

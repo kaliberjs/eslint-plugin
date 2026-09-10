@@ -9,6 +9,13 @@ test('security-no-timing-unsafe-secret-comparison', merge(
       'if (user.name === expectedName) {}',
       // Secret-shaped but not a comparison.
       'log(token)',
+      // A URL fragment is not secret material. `hash` used to be in the name
+      // pattern and this was the single largest false-positive family in the
+      // dogfood run — eight of fourteen findings across sixty projects.
+      "if (hash === '#section-2') scrollTo(el)",
+      'const active = hash === `#${id}`',
+      "if (window.location.hash === '#open') openDialog()",
+      'if (currentHash === anchorId) setActive(true)',
     ],
     invalid: [
       {
@@ -21,6 +28,11 @@ test('security-no-timing-unsafe-secret-comparison', merge(
       },
       {
         code: 'if (apiKey === process.env.API_KEY) allow()',
+        errors: [{ messageId: 'timingUnsafeCompare' }],
+      },
+      {
+        // A hash of a secret still carries the other half of the name.
+        code: 'if (passwordHash === storedHash) grant()',
         errors: [{ messageId: 'timingUnsafeCompare' }],
       },
     ],

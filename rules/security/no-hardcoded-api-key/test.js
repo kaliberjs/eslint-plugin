@@ -3,7 +3,7 @@ const { test, merge } = require('../../../machinery/test')
 test('security-no-hardcoded-api-key', merge(
   {
     valid: [
-      "openai.configure({ apiKey: process.env.OPENAI_KEY })",
+      'openai.configure({ apiKey: process.env.OPENAI_KEY })',
       "headers['Authorization'] = `Bearer ${token}`",
       "'sk-' + suffix",                                 // not a literal key
       "'AKIA' + accessPart",

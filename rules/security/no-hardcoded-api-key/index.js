@@ -24,7 +24,7 @@ module.exports = {
     },
     messages: {
       apiKeyPattern: [
-        "This string matches the shape of {{ kind }}.",
+        'This string matches the shape of {{ kind }}.',
         'Keys in source leak through git history, bundles and build logs.',
         'Move it to configuration outside the source and rotate the exposed key.',
       ].join(' '),

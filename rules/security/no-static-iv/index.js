@@ -2,11 +2,18 @@ const { getStaticValue, findVariable } = require('@eslint-community/eslint-utils
 const { getStaticPropertyName, getCalleeName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { calleeApi, NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 
 // A fixed IV destroys the semantic guarantee of the block cipher mode:
 // identical plaintext plus identical key produces identical ciphertext, and
 // for CBC it enables chosen-plaintext attacks. The IV must be fresh per
 // encryption. The slice: node:crypto factories whose IV argument is static.
+//
+// Confidence follows provenance, as in no-ecb-mode: high for a resolved
+// node:crypto import, medium for a name match. The crypto-js `{ iv: ... }`
+// option shape is always the medium case.
+
+const CRYPTO_MODULE = /^(node:)?crypto$/
 
 module.exports = {
   meta: {
@@ -28,10 +35,9 @@ module.exports = {
   create(context) {
     return {
       CallExpression(node) {
-        const callee = node.callee
-        const name = getCalleeName(callee)
+        const api = calleeApi(context.sourceCode, node.callee, CRYPTO_MODULE)
         // The IV is argument 2 of both factories.
-        if (name !== 'createCipheriv' && name !== 'createDecipheriv') return
+        if (api?.name !== 'createCipheriv' && api?.name !== 'createDecipheriv') return
 
         const iv = node.arguments[2]
         if (!isStaticValue(context, iv)) return
@@ -39,9 +45,9 @@ module.exports = {
         report(context, {
           node,
           messageId: 'staticIv',
-          data: { what: `${name}()` },
+          data: { what: `${api.name}()` },
           severity: 'medium',
-          confidence: 1,
+          confidence: api.proven ? 1 : NAME_ONLY_CONFIDENCE,
         })
       },
 
@@ -55,7 +61,7 @@ module.exports = {
           messageId: 'staticIv',
           data: { what: "the 'iv' option" },
           severity: 'medium',
-          confidence: 1,
+          confidence: NAME_ONLY_CONFIDENCE,
         })
       },
     }

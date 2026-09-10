@@ -2,9 +2,14 @@
 
 Do not use MD5 for any security purpose.
 
-- **OWASP:** [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/)
+- **Preset:** `security-audit` only (`warn`). Deliberately not in `configs.security`.
+- **Impact if exploited:** medium
+- **Analysis confidence:** high for a call resolved to a `node:crypto` import, medium for a bare name match (crypto-js ships as a CDN global with no import to resolve).
 - **CWE:** [CWE-328: Use of Weak Hash](https://cwe.mitre.org/data/definitions/328.html)
-- **Severity:** medium · **Confidence:** high
+- **CAPEC:** [CAPEC-461](https://capec.mitre.org/data/definitions/461.html), [CAPEC-68](https://capec.mitre.org/data/definitions/68.html)
+- **OWASP:** [A04:2025 – Cryptographic Failures](https://owasp.org/Top10/2025/A04_2025-Cryptographic_Failures/) · [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-11.4.1` — "Verify that only approved hash functions are used for general cryptographic use cases, including digital signatures, HMAC, KDF, and random bit generation. Disallowed hash functions, such as MD5, must not be used for any cryptographic purpose."
+- **ASVS 5.0:** `v5.0.0-11.4.3` — "Verify that hash functions used in digital signatures, as part of data authentication or data integrity are collision resistant and have appropriate bit-lengths. If collision resistance is required, the output length must be at least 256 bits. If only resistance to second pre-image attacks is required, the output length must be at least 128 bits."
 
 ## What it detects
 
@@ -56,3 +61,5 @@ CodeQL `js/weak-cryptographic-algorithm`, SonarJS S4790.
 
 - [Node.js crypto docs](https://nodejs.org/api/crypto.html)
 - [OWASP Cryptographic Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

@@ -1,12 +1,14 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
-const { getCalleeName } = require('../../../machinery/ast')
+const { calleeApi, NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 
 // DES (56-bit key), 3DES (64-bit block, Sweet32, deprecated by NIST) and RC4
 // (broken) are still exposed by node:crypto through the algorithm string —
 // a literal match with essentially zero false positives.
 const WEAK_ALGORITHM = /^(des|des3|des-|rc2|rc4|bf-|cast5)/i
+
+const CRYPTO_MODULE = /^(node:)?crypto$/
 
 const CIPHER_FACTORIES = new Set(['createCipheriv', 'createDecipheriv'])
 
@@ -38,9 +40,8 @@ module.exports = {
   create(context) {
     return {
       CallExpression(node) {
-        const callee = node.callee
-        const name = getCalleeName(callee)
-        if (!CIPHER_FACTORIES.has(name)) return
+        const api = calleeApi(context.sourceCode, node.callee, CRYPTO_MODULE)
+        if (!api || !CIPHER_FACTORIES.has(api.name)) return
 
         const algorithm = node.arguments[0]
         if (!algorithm) return
@@ -52,7 +53,7 @@ module.exports = {
           messageId: 'weakAlgorithm',
           data: { algorithm: value.value },
           severity: 'high',
-          confidence: 1,
+          confidence: api.proven ? 1 : NAME_ONLY_CONFIDENCE,
         })
       },
 
@@ -67,7 +68,7 @@ module.exports = {
           messageId: 'cryptoJsWeakCipher',
           data: { name: node.property.name },
           severity: 'high',
-          confidence: 1,
+          confidence: NAME_ONLY_CONFIDENCE,
         })
       },
     }

@@ -1,12 +1,21 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
-const { getStaticPropertyName, getCalleeName } = require('../../../machinery/ast')
+const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { calleeApi, NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 
 // ECB encrypts identical plaintext blocks to identical ciphertext blocks,
 // leaking structure and permitting block reordering. It is never the right
 // mode for application data, and Node exposes it through the algorithm
 // string passed to createCipheriv — a literal substring check.
+//
+// Confidence follows provenance: high when the factory resolves to a
+// node:crypto import, medium when only the name matched. The crypto-js
+// `{ mode: CryptoJS.mode.ECB }` shape has no import to resolve at all and is
+// always the medium case — which is why this rule is audit-only.
+
+const CRYPTO_MODULE = /^(node:)?crypto$/
+
 const CIPHER_FACTORIES = new Set(['createCipheriv', 'createDecipheriv'])
 
 module.exports = {
@@ -39,17 +48,18 @@ module.exports = {
   create(context) {
     return {
       CallExpression(node) {
-        const callee = node.callee
-        const name = getCalleeName(callee)
+        const api = calleeApi(context.sourceCode, node.callee, CRYPTO_MODULE)
+        if (!api) return
+        const confidence = api.proven ? 1 : NAME_ONLY_CONFIDENCE
 
         // createCipher (no iv argument) is deprecated because its key
         // derivation is MD5-based; it belongs to this weakness class.
-        if (name === 'createCipher') {
-          report(context, { node, messageId: 'createCipher', severity: 'high', confidence: 1 })
+        if (api.name === 'createCipher') {
+          report(context, { node, messageId: 'createCipher', severity: 'high', confidence })
           return
         }
 
-        if (!CIPHER_FACTORIES.has(name)) return
+        if (!CIPHER_FACTORIES.has(api.name)) return
 
         const algorithm = node.arguments[0]
         if (!algorithm) return
@@ -61,7 +71,7 @@ module.exports = {
           messageId: 'ecbAlgorithm',
           data: { algorithm: value.value },
           severity: 'high',
-          confidence: 1,
+          confidence,
         })
       },
 
@@ -76,7 +86,7 @@ module.exports = {
 
         if (!isEcb) return
 
-        report(context, { node, messageId: 'ecbMode', severity: 'high', confidence: 1 })
+        report(context, { node, messageId: 'ecbMode', severity: 'high', confidence: NAME_ONLY_CONFIDENCE })
       },
     }
   },

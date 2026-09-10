@@ -1,10 +1,16 @@
 const { getStaticPropertyName, getCalleeName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 
 // Cleartext HTTP exposes credentials, tokens and response bodies to any
 // network observer. The slice is literal URLs only — a variable holding a
 // scheme is invisible to us and saying otherwise would be a lie.
+//
+// Audit-only. The URL itself is certain, but "is this a request" is inferred
+// from the callee's name and the option key it is assigned to: `get`, `open`,
+// `send` and `{ url: ... }` belong to plenty of APIs that never open a
+// socket. Confidence is capped at medium for that reason.
 
 const REQUEST_APIS = new Set([
   'fetch', 'get', 'post', 'put', 'patch', 'delete', 'head', 'request',
@@ -48,9 +54,11 @@ module.exports = {
 }
 
 function checkUrl(context, node, value) {
-  const match = /^http:\/\//i.exec(value)
-    || (/^ws:\/\//i.test(value) ? { 1: 'ws' } : null)
-  if (!match) return
+  // The capture group is what the message interpolates. Without it the finding
+  // read "a cleartext 'undefined' endpoint" for every http:// URL — found in a
+  // dogfood run, not by a test, because no test asserted the message text.
+  const scheme = /^(http|ws):\/\//i.exec(value)?.[1]
+  if (!scheme) return
   if (SAFE_HOSTS.test(value)) return
 
   const parent = node.parent
@@ -59,14 +67,14 @@ function checkUrl(context, node, value) {
   // new WebSocket('ws://…') — constructor calls included.
   if ((parent?.type === 'CallExpression' || parent?.type === 'NewExpression') && parent.arguments.includes(node)) {
     const name = getCalleeName(parent.callee)
-    if (REQUEST_APIS.has(name ?? '')) return reportCleartext(context, node, match[1])
-    if (name === 'WebSocket') return reportCleartext(context, node, match[1])
+    if (REQUEST_APIS.has(name ?? '')) return reportCleartext(context, node, scheme.toLowerCase())
+    if (name === 'WebSocket') return reportCleartext(context, node, scheme.toLowerCase())
   }
 
   // Assigned into an option shape: { url: 'http://…' }, { baseURL }.
   if (parent?.type === 'Property' && parent.value === node) {
     const key = String(getStaticPropertyName(parent) ?? '')
-    if (/^(url|uri|baseurl|endpoint|href|src|host)$/i.test(key)) return reportCleartext(context, node, match[1])
+    if (/^(url|uri|baseurl|endpoint|href|src|host)$/i.test(key)) return reportCleartext(context, node, scheme.toLowerCase())
   }
 }
 
@@ -76,6 +84,6 @@ function reportCleartext(context, node, scheme) {
     messageId: 'cleartextRequest',
     data: { scheme },
     severity: 'medium',
-    confidence: 1,
+    confidence: NAME_ONLY_CONFIDENCE,
   })
 }

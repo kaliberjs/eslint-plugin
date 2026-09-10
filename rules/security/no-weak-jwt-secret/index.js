@@ -1,6 +1,7 @@
 const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { isNonTrivialStringLiteral } = require('../../../machinery/security/expression')
 
 // The precise half of the secrets family: a *literal* passed where a secret
 // belongs. No entropy scanning — that half of the family is a documented
@@ -48,7 +49,7 @@ module.exports = {
 
         // sign(payload, secret) / verify(token, secret[, options])
         const secret = node.arguments[method === 'sign' ? 1 : 1]
-        if (!isStringLiteral(secret)) return
+        if (!isNonTrivialStringLiteral(secret)) return
 
         report(context, {
           node: secret,
@@ -64,7 +65,7 @@ module.exports = {
         // session middlewares: an options property named like a secret.
         const key = getStaticPropertyName(node)
         if (!SECRET_PARAMS.has(String(key ?? ''))) return
-        if (!isStringLiteral(node.value)) return
+        if (!isNonTrivialStringLiteral(node.value)) return
 
         report(context, {
           node,
@@ -76,10 +77,4 @@ module.exports = {
       },
     }
   },
-}
-
-function isStringLiteral(node) {
-  return node?.type === 'Literal'
-    && typeof node.value === 'string'
-    && node.value.length >= 4
 }

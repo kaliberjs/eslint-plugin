@@ -30,7 +30,7 @@ test('security-no-path-traversal', merge(
       },
       {
         // Direct member access: exact hops, plain message.
-        code: handler("res.sendFile(req.params.path)"),
+        code: handler('res.sendFile(req.params.path)'),
         errors: [{ messageId: 'pathTraversal' }],
       },
       {
@@ -44,7 +44,7 @@ test('security-no-path-traversal', merge(
     // --- what stays quiet ---------------------------------------------------
     valid: [
       // Untainted paths are no-inner-html's... nobody's problem.
-      "fs.readFile(config.dataPath, cb)",
+      'fs.readFile(config.dataPath, cb)',
       // Reading .length of a tainted value is a number.
       handler(`fs.writeFile(logPath, String(req.body.msg.length))`),
     ],

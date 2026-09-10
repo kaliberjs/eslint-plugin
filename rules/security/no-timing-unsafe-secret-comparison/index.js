@@ -1,12 +1,25 @@
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 
 // `===` on a secret is not constant-time: string comparison short-circuits
 // at the first differing byte, leaking how much of the guess was right,
 // one byte per request. crypto.timingSafeEqual exists for exactly this.
-// Identifier names gate the rule; flagging every === would be absurd.
+//
+// Audit-only, and the weakest inference in the set. Whether an identifier
+// called `token` holds secret material is a guess from its name, and whether
+// a byte-at-a-time timing difference is remotely observable depends on the
+// network, the runtime and what else the handler does — neither is visible
+// here. Confidence is capped at medium for the first, and the message says
+// "looks like" rather than "is" for both. Deliberately absent from
+// configs.security.
 
-const SECRET_NAME = /secret|token|password|passwd|signature|hmac|apikey|api[-_]key|hash/i
+// `hash` was in this list and was the single largest false-positive family in
+// the dogfood run: eight of fourteen findings across sixty projects were a
+// `location.hash` fragment compared against an anchor id. A URL fragment is not
+// secret material, and `passwordHash` / `tokenHash` still match through their
+// other half. `hmac` and `signature` stay — those names mean what they say.
+const SECRET_NAME = /secret|token|password|passwd|signature|hmac|apikey|api[-_]key/i
 
 module.exports = {
   meta: {
@@ -47,8 +60,8 @@ module.exports = {
           node,
           messageId: 'timingUnsafeCompare',
           data: { operator: node.operator, name: named.name },
-          severity: 'low',
-          confidence: 0.8,
+          severity: 'medium',
+          confidence: NAME_ONLY_CONFIDENCE,
         })
       },
     }

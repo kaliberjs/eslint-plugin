@@ -1,6 +1,7 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 const { getCalleeName } = require('../../../machinery/ast')
 
 // localStorage/sessionStorage is readable by every script on the page —
@@ -8,6 +9,12 @@ const { getCalleeName } = require('../../../machinery/ast')
 // material belong in httpOnly cookies; this rule fires when credential-shaped
 // keys are stored web-side. Key names gate the rule: flagging every
 // localStorage write would be the noise that kills it.
+//
+// Audit-only, and heuristic on both axes: the receiver is any name ending in
+// `Storage` (an idb wrapper, a redux-persist adapter, a mock) and the key is
+// matched by shape, not by knowing what it holds. `sessionId` may be a
+// bearer token or a correlation id for logs. Confidence is capped at medium
+// and the finding is a prompt to look, not a verdict.
 
 const CREDENTIAL_KEY = /token|secret|password|passwd|jwt|auth|session|apikey|api[-_]key|credential|refresh/i
 
@@ -85,6 +92,6 @@ function emit(context, node, key, storage) {
     messageId: 'credentialInStorage',
     data: { key, storage },
     severity: 'medium',
-    confidence: 1,
+    confidence: NAME_ONLY_CONFIDENCE,
   })
 }

@@ -2,11 +2,17 @@ const { getStaticValue } = require('@eslint-community/eslint-utils')
 const { getStaticPropertyName, getCalleeName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { NAME_ONLY_CONFIDENCE } = require('../../../machinery/security/provenance')
 
 // Turning off a template engine's autoescaping re-opens XSS for every value
 // that ever flows through it — one configuration line defeats what the
 // engine does for every template. The JS-visible slice: option properties
 // and the escape-hatch APIs of Handlebars, nunjucks and Angular.
+//
+// Audit-only. `autoescape: false` is matched wherever it appears, on any
+// object, and the Handlebars/Angular receivers are matched by name — nothing
+// proves which library the option belongs to, or that it belongs to one at
+// all. Confidence is capped at medium accordingly.
 
 // Angular's explicit trust escapes; everything else here is an engine-wide
 // or per-value switch.
@@ -67,6 +73,6 @@ function emit(context, node, what) {
     messageId: 'autoescapeDisabled',
     data: { what },
     severity: 'medium',
-    confidence: 1,
+    confidence: NAME_ONLY_CONFIDENCE,
   })
 }

@@ -1,6 +1,7 @@
 const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { isNonTrivialStringLiteral } = require('../../../machinery/security/expression')
 
 // The precise half of the credentials family: credential-named options and
 // connection properties carrying string literals. No entropy scanning —
@@ -59,7 +60,7 @@ module.exports = {
       Property(node) {
         const key = String(getStaticPropertyName(node) ?? '')
         if (!CREDENTIAL_KEYS.has(key)) return
-        if (!isCredentialLiteral(node.value)) return
+        if (!isNonTrivialStringLiteral(node.value)) return
 
         report(context, {
           node,
@@ -83,7 +84,7 @@ module.exports = {
 
         for (const userProperty of usersProperty.value.properties) {
           if (userProperty.type !== 'Property') continue
-          if (!isCredentialLiteral(userProperty.value)) continue
+          if (!isNonTrivialStringLiteral(userProperty.value)) continue
 
           report(context, {
             node: userProperty,
@@ -110,10 +111,4 @@ module.exports = {
       },
     }
   },
-}
-
-function isCredentialLiteral(node) {
-  return node?.type === 'Literal'
-    && typeof node.value === 'string'
-    && node.value.length >= 4
 }

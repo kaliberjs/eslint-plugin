@@ -22,8 +22,8 @@ module.exports = {
     },
     messages: {
       nonConstantHtml: [
-        'dangerouslySetInnerHTML receives a value that is not a constant.',
-        'This bypasses React\'s escaping entirely: if the value ever contains attacker-influenced content, it becomes executable HTML.',
+        'Audit this non-constant value: dangerouslySetInnerHTML bypasses React\'s escaping entirely.',
+        'This rule establishes only that the value is not a constant — it traces nothing, so whether the content is attacker-influenced is yours to confirm.',
         'Sanitize at the assignment site with an allowlist-based sanitizer such as DOMPurify, and prefer rendering React nodes when possible.',
       ].join(' '),
     },
