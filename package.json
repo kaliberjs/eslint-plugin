@@ -7,7 +7,8 @@
     "test": "node --test",
     "lint": "eslint --config eslint.self.config.js .",
     "lint:fix": "eslint --config eslint.self.config.js --fix .",
-    "migrate": "node bin/migrate-to-flat-config.js"
+    "migrate": "node bin/migrate-to-flat-config.js",
+    "benchmark:security": "node --expose-gc benchmarks/security.js"
   },
   "version": "2.2.1",
   "dependencies": {

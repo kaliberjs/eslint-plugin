@@ -20,6 +20,7 @@ const { Linter } = require('eslint')
  * daemon use case ever makes that observably wrong.
  */
 const crossFileSourceCache = new Map()
+const resolvedPathCache = new Map()
 const sourceRootCache = new Map()
 const crossFileLinter = new Linter()
 
@@ -87,7 +88,26 @@ function resolveModulePath(specifier, fromFile, configuredSourceRoot) {
   return resolveExistingFile(base)
 }
 
+/**
+ * Up to five `statSync` calls per specifier, so the answer is memoised by
+ * base path — including the null answer, which is the common one: most
+ * specifiers in a file are relative imports of siblings that this analysis
+ * will never read, and every one of them was re-statted for every rule, on
+ * every file, before this cache existed. A CPU profile of the `security`
+ * preset over a 48 KB file with no sinks in it spent a third of its time
+ * in `statSync`.
+ *
+ * Same process-lifetime tradeoff as crossFileSourceCache above.
+ */
 function resolveExistingFile(base) {
+  if (resolvedPathCache.has(base)) return resolvedPathCache.get(base)
+
+  const resolved = statForExistingFile(base)
+  resolvedPathCache.set(base, resolved)
+  return resolved
+}
+
+function statForExistingFile(base) {
   for (const candidate of [base, `${base}.js`, `${base}.jsx`, path.join(base, 'index.js'), path.join(base, 'index.jsx')]) {
     try {
       if (fs.statSync(candidate).isFile()) return candidate

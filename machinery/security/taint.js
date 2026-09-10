@@ -138,21 +138,33 @@ function createAnalysis(sourceCode, options, filename) {
   function resolve(node) {
     const unwrapped = unwrap(node)
 
-    // Cheapest, highest-precision rejection available: a value we can fold to a
-    // constant cannot be tainted. This filters most of the safe cases in one
-    // call, including `'a' + 'b'` and template literals with no expressions.
-    if (getStaticValue(unwrapped, sourceCode.getScope(unwrapped))) return null
-
     const result = resolveByType(unwrapped)
+    if (!result) return null
+
+    // A value that folds to a constant cannot be tainted. This used to run
+    // first, on every node — the cheapest, highest-precision rejection
+    // available. It was also quadratic: getStaticValue walks the whole subtree
+    // beneath a node, and taintOf visits every node in a `+` chain, so the
+    // i-th link paid for i levels. Structural resolution already returns null
+    // for a foldable subtree in every shape except a branch, where a folded
+    // condition decides which side is even evaluated (`false && req.query.a`
+    // is tainted through its operand and constant as a whole). So the fold is
+    // asked for there and nowhere else.
+    if (foldsToConstant(unwrapped)) return null
 
     // Flow sensitivity, in the shapes this file can prove without a CFG: an
     // allowlist membership guard, or a path-containment guard, over this
     // exact expression. `if (!TABLES.includes(t)) return` and
     // `if (!resolved.startsWith(base)) return` both make every later use
     // of the guarded expression safe.
-    if (result && isFlowGuarded(sourceCode, unwrapped, isTainted)) return null
+    if (isFlowGuarded(sourceCode, unwrapped, isTainted)) return null
 
     return result
+  }
+
+  function foldsToConstant(node) {
+    if (node.type !== 'ConditionalExpression' && node.type !== 'LogicalExpression') return false
+    return Boolean(getStaticValue(node, sourceCode.getScope(node)))
   }
 
   function resolveByType(unwrapped) {
