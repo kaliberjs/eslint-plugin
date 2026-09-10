@@ -13,13 +13,35 @@ test('parses JSX with the shared config', () => {
 
 test('class methods must be arrow function properties', () => {
   const messages = new Linter().verify(
-    'class A { constructor() {} get x() { return 1 } static make() {} static create = function () {}; *gen() {} agen = function* () {}; ok = () => {}; bad() {} worse = function () {}; }',
+    `class Good {
+      constructor() {};
+      get x() { return 1 };
+      static make() {};
+      static create = function () {};
+      *gen() {};
+      agen = function* () {};
+      ok = () => {};
+    }`,
     config,
     'test.js'
   )
-  const restricted = messages.filter(message => message.ruleId === 'no-restricted-syntax')
+  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
 
-  assert.deepEqual(restricted.map(message => message.message), [
+  assert.deepEqual(results.map(message => message.message), [])
+})
+
+test('class methods not must be named or anonymous functions', () => {
+  const messages = new Linter().verify(
+    `class Bad {
+      bad() {};
+      worse = function () {};
+    }`,
+    config,
+    'test.js'
+  )
+  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
+
+  assert.deepEqual(results.map(message => message.message), [
     'Use an arrow function class property so `this` is bound: `name = () => {}`',
     'Use an arrow function so `this` is bound: `name = () => {}`',
   ])
