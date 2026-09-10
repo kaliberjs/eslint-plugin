@@ -4,6 +4,7 @@ module.exports = {
   referenceFor,
   memberChain, shortText, calleeText,
   isGlobalNamed, isGlobalConstructorNamed,
+  isNonTrivialStringLiteral,
   unwrap, isPrefix,
 }
 
@@ -90,6 +91,18 @@ function isUnshadowedGlobal(sourceCode, identifier) {
   if (!variable) return true
 
   return !variable.defs.length && variable.scope.type === 'global'
+}
+
+/**
+ * A string literal long enough to be a real secret rather than a placeholder
+ * ('', 'x', 'dev'). no-weak-jwt-secret and no-hardcoded-credentials each had
+ * this under a different name with the same four-character floor; one of them
+ * moving the floor without the other would have been invisible.
+ */
+function isNonTrivialStringLiteral(node, minLength = 4) {
+  return node?.type === 'Literal'
+    && typeof node.value === 'string'
+    && node.value.length >= minLength
 }
 
 /** Strip wrappers that cannot change the value. */

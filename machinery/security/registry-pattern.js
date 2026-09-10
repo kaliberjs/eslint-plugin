@@ -7,7 +7,7 @@ const { referenceFor } = require('./expression')
  * a real node. Shared by the source, sink, sanitizer and propagator matchers,
  * which is the only reason it is its own file.
  */
-module.exports = { matchesModuleSink, requiredBy, matchesReceiver, matchesPattern, patternSegments }
+module.exports = { matchesModuleSink, requiredBy, isRequireCall, matchesReceiver, matchesPattern, patternSegments }
 
 /**
  * Module-rooted sinks bind to where the function *came from*, which is
