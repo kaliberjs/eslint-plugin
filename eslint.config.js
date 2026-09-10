@@ -188,11 +188,11 @@ module.exports = [
         'warn',
         'WithStatement',
         {
-          selector: 'MethodDefinition[kind="method"][static=false]',
+          selector: 'MethodDefinition[kind="method"][static=false][value.generator=false]',
           message: 'Use an arrow function class property so `this` is bound: `name = () => {}`',
         },
         {
-          selector: 'PropertyDefinition[static=false] > FunctionExpression',
+          selector: 'PropertyDefinition[static=false] > FunctionExpression[generator=false]',
           message: 'Use an arrow function so `this` is bound: `name = () => {}`',
         },
       ],

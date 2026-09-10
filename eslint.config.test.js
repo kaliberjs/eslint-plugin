@@ -13,7 +13,7 @@ test('parses JSX with the shared config', () => {
 
 test('class methods must be arrow function properties', () => {
   const messages = new Linter().verify(
-    'class A { constructor() {} get x() { return 1 } static make() {} static create = function () {}; ok = () => {}; bad() {} worse = function () {}; }',
+    'class A { constructor() {} get x() { return 1 } static make() {} static create = function () {}; *gen() {} agen = function* () {}; ok = () => {}; bad() {} worse = function () {}; }',
     config,
     'test.js'
   )
