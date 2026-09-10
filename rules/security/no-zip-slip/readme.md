@@ -3,13 +3,13 @@
 Check archive entry paths stay inside the extraction directory before
 writing them.
 
-- **OWASP:** [A01:2021 – Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/)
-- **CWE:** [CWE-22: Improper Limitation of a Pathname to a Restricted Directory](https://cwe.mitre.org/data/definitions/22.html)
-  (parents: [CWE-706: Use of Incorrectly-Resolved Name or Reference](https://cwe.mitre.org/data/definitions/706.html),
-  [CWE-664: Improper Control of a Resource Through its Lifetime](https://cwe.mitre.org/data/definitions/664.html))
-- **CAPEC:** [CAPEC-126: Path Traversal](https://capec.mitre.org/data/definitions/126.html),
-  [CAPEC-76: Manipulating Web Input to File System Calls](https://capec.mitre.org/data/definitions/76.html)
-- **Severity:** high · **Confidence:** high
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** high — the finding is a literal in the source with no dataflow to be wrong about.
+- **CWE:** [CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')](https://cwe.mitre.org/data/definitions/22.html)
+- **CAPEC:** [CAPEC-126](https://capec.mitre.org/data/definitions/126.html), [CAPEC-76](https://capec.mitre.org/data/definitions/76.html)
+- **OWASP:** [A01:2025 – Broken Access Control](https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/) · [A01:2021 – Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-5.3.2` — "Verify that when the application creates file paths for file operations, instead of user-submitted filenames, it uses internally generated or trusted data, or if user-submitted filenames or file metadata must be used, strict validation and sanitization must be applied. This is to protect against path traversal, local or remote file inclusion (LFI, RFI), and server-side request forgery (SSRF) attacks."
 
 ## What it detects
 
@@ -344,3 +344,5 @@ not be verified — listed for completeness only.
 - [GHSA-3jfq-g458-7qm9 — node-tar arbitrary file creation/overwrite (CVE-2021-32804)](https://github.com/advisories/GHSA-3jfq-g458-7qm9)
 - [node-tar README — `preservePaths`, `filter`, and the default containment behaviour](https://github.com/isaacs/node-tar#readme)
 - [yauzl README — `validateFileName()`](https://github.com/thejoshwolfe/yauzl#readme)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

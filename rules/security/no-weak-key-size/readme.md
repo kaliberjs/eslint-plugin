@@ -2,13 +2,14 @@
 
 Do not generate asymmetric keys below the recommended size.
 
-- **OWASP:** [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/)
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** medium
+- **Analysis confidence:** high — the finding is a literal in the source with no dataflow to be wrong about.
 - **CWE:** [CWE-326: Inadequate Encryption Strength](https://cwe.mitre.org/data/definitions/326.html)
-  (parent: [CWE-693: Protection Mechanism Failure](https://cwe.mitre.org/data/definitions/693.html))
-- **CAPEC:** [CAPEC-112: Brute Force](https://capec.mitre.org/data/definitions/112.html),
-  [CAPEC-192: Protocol Analysis](https://capec.mitre.org/data/definitions/192.html),
-  [CAPEC-20: Encryption Brute Forcing](https://capec.mitre.org/data/definitions/20.html)
-- **Severity:** medium · **Confidence:** high
+- **CAPEC:** [CAPEC-112](https://capec.mitre.org/data/definitions/112.html), [CAPEC-192](https://capec.mitre.org/data/definitions/192.html), [CAPEC-20](https://capec.mitre.org/data/definitions/20.html)
+- **OWASP:** [A04:2025 – Cryptographic Failures](https://owasp.org/Top10/2025/A04_2025-Cryptographic_Failures/) · [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-11.2.3` — "Verify that all cryptographic primitives utilize a minimum of 128-bits of security based on the algorithm, key size, and configuration. For example, a 256-bit ECC key provides roughly 128 bits of security where RSA requires a 3072-bit key to achieve 128 bits of security."
+- **ASVS 5.0:** `v5.0.0-11.6.2` — "Verify that approved cryptographic algorithms are used for key exchange (such as Diffie-Hellman) with a focus on ensuring that key exchange mechanisms use secure parameters. This will prevent attacks on the key establishment process which could lead to adversary-in-the-middle attacks or cryptographic breaks."
 
 ## What it detects
 
@@ -138,3 +139,5 @@ be robust").
 - [OWASP Cryptographic Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
 - [Node.js crypto docs — generateKeyPair](https://nodejs.org/api/crypto.html#cryptogeneratekeypairtype-options-callback)
 - [Weak Diffie-Hellman and the Logjam attack](https://weakdh.org/)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

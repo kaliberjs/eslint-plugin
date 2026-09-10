@@ -181,11 +181,26 @@ test('security-no-zip-slip', merge(
 
       // Same option name, not node-tar.
       'archiver.x({ preservePaths: true })',
+      // Nothing proves this is node-tar, and `x` is one letter.
+      'tar.x({ file: archive, cwd: dest, preservePaths: true })',
+      "const tar = require('./our-tar-wrapper'); tar.x({ cwd: dest, preservePaths: true })",
       'tar.c({ preservePaths: true, cwd: src }, files)',
     ],
     invalid: [
       {
         code: "import * as tar from 'tar'; tar.x({ file: archive, cwd: dest, preservePaths: true })",
+        errors: [{ messageId: 'tarPreservePaths' }],
+      },
+      {
+        code: "import { x } from 'node:tar'; export const done = x({ file: archive, cwd: dest, preservePaths: true })",
+        errors: [{ messageId: 'tarPreservePaths' }],
+      },
+      {
+        code: "import { extract as untar } from 'tar'; export const done = untar({ file: archive, cwd: dest, preservePaths: true })",
+        errors: [{ messageId: 'tarPreservePaths' }],
+      },
+      {
+        code: "const { x } = require('tar'); x({ file: archive, cwd: dest, preservePaths: true })",
         errors: [{ messageId: 'tarPreservePaths' }],
       },
       {

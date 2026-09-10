@@ -2,6 +2,7 @@ const { findVariable } = require('@eslint-community/eslint-utils')
 const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { importedFrom } = require('../../../machinery/security/provenance')
 
 // Positive-obligation rule: `verify()` without an explicit `algorithms`
 // allowlist lets the token's own header choose the algorithm. With an RSA
@@ -11,13 +12,15 @@ const { report } = require('../../../machinery/security/finding')
 //
 // The rule cannot see the key type, so it reports at medium confidence and
 // leaves "is this key symmetric anyway" to the reader.
+//
+// The callee is resolved to a JWT module rather than matched on the receiver
+// name: `verify` is what half the validators in a codebase are called, and a
+// rule in the default preset does not get to guess. `const jwt = { verify }`
+// of someone's own making is correctly not this.
 
-// Object roots whose .verify() is JWT verification. Note 'jsonwebtoken'
-// contains no 'jwt' substring, so it is spelled out.
-const JWT_ROOTS = /^(jwt|jsonwebtoken|jws|jose)/i
-
-// Modules a bare `verify` / `jwtVerify` identifier may come from.
 const JWT_MODULES = /^(jsonwebtoken|jose|jws)$/
+
+const VERIFIERS = new Set(['verify', 'jwtVerify'])
 
 module.exports = {
   meta: {
@@ -46,27 +49,10 @@ module.exports = {
     return {
       CallExpression(node) {
         const callee = node.callee
-
-        // Member form: jwt.verify, jsonwebtoken.verify, jose.jwtVerify.
-        if (callee.type === 'MemberExpression') {
-          const name = callee.computed ? null : callee.property?.name
-          if (name !== 'verify' && name !== 'jwtVerify') return
-          const rootName = callee.object.type === 'Identifier' ? callee.object.name : null
-          if (!rootName || !JWT_ROOTS.test(rootName)) return
-        }
-
-        // Identifier form. `jwtVerify` is unique to jose; a bare `verify`
-        // must be proven to come from a JWT module — matching the name alone
-        // would flag every custom validator called verify().
-        else if (callee.type === 'Identifier') {
-          if (callee.name !== 'verify' && callee.name !== 'jwtVerify') return
-          if (callee.name === 'verify' && !isFromJwtModule(context, callee)) return
-        } else {
-          return
-        }
+        if (!VERIFIERS.has(importedFrom(context.sourceCode, callee, JWT_MODULES))) return
 
         // verify(token, key, options?, callback?)
-        const options = findOptionsObject(node.arguments)
+        const options = findOptionsObject(context, node.arguments)
 
         if (!options || !hasAlgorithms(options)) {
           const isSingularTypo = options && hasSingularAlgorithm(options)
@@ -83,36 +69,39 @@ module.exports = {
   },
 }
 
-function isFromJwtModule(context, identifier) {
-  const variable = findVariable(context.sourceCode.getScope(identifier), identifier)
-  const definition = variable?.defs[0]
-  if (!definition) return false
-
-  if (definition.type === 'ImportBinding') {
-    return JWT_MODULES.test(String(definition.parent.source.value))
-  }
-
-  // const { verify } = require('jsonwebtoken')
-  if (definition.type === 'Variable') {
-    const init = definition.node.init
-    return init?.type === 'CallExpression'
-      && init.callee?.type === 'Identifier'
-      && init.callee.name === 'require'
-      && init.arguments[0]?.type === 'Literal'
-      && JWT_MODULES.test(String(init.arguments[0].value))
-  }
-
-  return false
-}
-
 /**
  * The options object is the third argument in jsonwebtoken's API — but only
  * when there is no callback-only form (`verify(token, key, cb)`). Any object
- * literal among arguments after the first two counts; anything else means no
- * options were passed.
+ * literal among arguments after the first two counts, including one held in a
+ * local `const` — the callback form reads far better with the options lifted
+ * out, and requiring them inline made this rule fire on
+ *
+ *   const options = { ignoreExpiration: true, algorithms: ['RS256'] }
+ *   jwt.verify(token, publicKey, options, (err, decoded) => …)
+ *
+ * which is a correctly pinned call. Found in a dogfood run.
+ *
+ * One hop only, and only to an object literal, matching the depth every other
+ * matcher here resolves to. An options object built elsewhere, or a property of
+ * something else (`config.jwtOptions`), is still reported: the rule genuinely
+ * cannot see whether it pins the algorithms.
  */
-function findOptionsObject(args) {
-  return args.slice(2).find(arg => arg.type === 'ObjectExpression') ?? null
+function findOptionsObject(context, args) {
+  for (const argument of args.slice(2)) {
+    const resolved = objectLiteralFor(context, argument)
+    if (resolved) return resolved
+  }
+  return null
+}
+
+function objectLiteralFor(context, node) {
+  if (node.type === 'ObjectExpression') return node
+  if (node.type !== 'Identifier') return null
+
+  const definition = findVariable(context.sourceCode.getScope(node), node)?.defs[0]
+  if (definition?.type !== 'Variable') return null
+
+  return definition.node.init?.type === 'ObjectExpression' ? definition.node.init : null
 }
 
 function hasAlgorithms(options) {

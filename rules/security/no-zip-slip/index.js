@@ -2,6 +2,7 @@ const { findVariable } = require('@eslint-community/eslint-utils')
 const { getStaticPropertyName, isFunctionNode } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { importedFrom } = require('../../../machinery/security/provenance')
 
 // Zip Slip: an archive stores the name of every entry, and nothing stops
 // that name from being `../../etc/cron.d/x` or `/etc/cron.d/x`. Writing an
@@ -298,8 +299,9 @@ function isFilesCollection(node) {
  * filter, and they cannot veto anything.
  */
 function checkTarPreservePaths(context, node) {
-  if (!TAR_EXTRACTORS.has(importedName(context, node.callee))) return
-  if (!isTarCallee(context, node.callee)) return
+  // node-tar's own x()/extract(), proven by the import: `x` is one letter
+  // and belongs to half the libraries in existence.
+  if (!TAR_EXTRACTORS.has(importedFrom(context.sourceCode, node.callee, TAR_MODULE))) return
 
   const options = node.arguments.find(argument => argument.type === 'ObjectExpression')
   const preservePaths = options && findProperty(options, ['preservePaths', 'P'])
@@ -340,29 +342,6 @@ function findProperty(objectExpression, names) {
   ) ?? null
 }
 
-function isTarCallee(context, callee) {
-  if (callee.type === 'Identifier') return isTarBinding(context, callee)
-  if (callee.type !== 'MemberExpression') return false
-
-  const object = callee.object
-  if (object.type === 'CallExpression') return isTarRequire(object)
-  return object.type === 'Identifier' && isTarBinding(context, object)
-}
-
-function isTarBinding(context, identifier) {
-  const definition = findVariable(context.sourceCode.getScope(identifier), identifier)?.defs[0]
-  if (!definition) return false
-
-  if (definition.type === 'ImportBinding') return TAR_MODULE.test(String(definition.parent.source.value))
-  if (definition.type === 'Variable') return isTarRequire(definition.node.init)
-
-  return false
-}
-
-function isTarRequire(node) {
-  return isRequireCall(node) && TAR_MODULE.test(String(node.arguments[0].value))
-}
-
 function isArchiveRequire(node) {
   return isRequireCall(node) && ARCHIVE_MODULES.test(String(node.arguments[0].value))
 }
@@ -400,28 +379,6 @@ function calleeName(callee) {
   if (callee.type === 'Identifier') return callee.name
   if (callee.type === 'MemberExpression') return memberName(callee)
   return null
-}
-
-/**
- * The name a callee was imported under, so `const { x: extract } =
- * require('tar')` matches on `x`. Renaming an import is the cheapest
- * evasion of a name matcher and the binding is resolved anyway.
- */
-function importedName(context, callee) {
-  if (callee.type !== 'Identifier') return calleeName(callee)
-
-  const definition = findVariable(context.sourceCode.getScope(callee), callee)?.defs[0]
-
-  if (definition?.node?.type === 'ImportSpecifier') return definition.node.imported?.name ?? callee.name
-
-  if (definition?.type === 'Variable' && definition.node.id?.type === 'ObjectPattern') {
-    const property = definition.node.id.properties.find(
-      it => it.type === 'Property' && it.value === definition.name
-    )
-    if (property) return String(getStaticPropertyName(property))
-  }
-
-  return callee.name
 }
 
 function memberName(node) {

@@ -128,6 +128,16 @@ test('security-no-weak-key-size', merge(
     valid: [
       "const { generateKeyPairSync } = require('crypto'); generateKeyPairSync('rsa', { modulusLength: 3072 })",
       "import { generateKeyPairSync } from 'node:crypto'; generateKeyPairSync('rsa', { modulusLength: 2048 })",
+
+      // Same method name, different library. `generateKeyPair` belongs to
+      // every KMS client and wallet SDK there is, so the module has to be
+      // proven before a key size means anything.
+      "const kms = require('./our-kms-client'); kms.generateKeyPairSync('rsa', { modulusLength: 1024 })",
+      "import { generateKeyPairSync } from 'some-wallet-sdk'; generateKeyPairSync('rsa', { modulusLength: 1024 })",
+      'const helpers = { generateKeyPairSync(type, options) { return null } }; helpers.generateKeyPairSync(\'rsa\', { modulusLength: 1024 })',
+      'function createDiffieHellman(bits) { return bits }; createDiffieHellman(1024)',
+      // A shadowing local `crypto` is not node:crypto.
+      "const crypto = require('./crypto-helpers'); crypto.generateKeyPairSync('rsa', { modulusLength: 1024 })",
     ],
     invalid: [
       {
@@ -162,6 +172,19 @@ test('security-no-weak-key-size', merge(
       {
         code: "import { generateKeyPair } from 'crypto'; generateKeyPair('ec', { namedCurve: 'secp160k1' }, cb)",
         errors: [{ messageId: 'weakNamedCurve' }],
+      },
+      {
+        // Renamed on the way in: the export's own name is what is matched.
+        code: "import { generateKeyPairSync as makeKeys } from 'node:crypto'; export const keys = makeKeys('rsa', { modulusLength: 1024 })",
+        errors: [{ messageId: 'weakModulusLength' }],
+      },
+      {
+        code: "const { generateKeyPairSync: makeKeys } = require('crypto'); makeKeys('rsa', { modulusLength: 1024 })",
+        errors: [{ messageId: 'weakModulusLength' }],
+      },
+      {
+        code: "import * as crypto from 'node:crypto'; export const keys = crypto.generateKeyPairSync('rsa', { modulusLength: 1024 })",
+        errors: [{ messageId: 'weakModulusLength' }],
       },
     ],
   },

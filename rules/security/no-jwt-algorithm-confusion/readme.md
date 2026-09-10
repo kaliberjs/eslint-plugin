@@ -2,9 +2,13 @@
 
 Always pin the accepted JWT algorithms when verifying.
 
-- **OWASP:** [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/), [API2:2023 – Broken Authentication](https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/)
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** medium — the rule can see the call shape but not the fact that decides exploitability.
 - **CWE:** [CWE-347: Improper Verification of Cryptographic Signature](https://cwe.mitre.org/data/definitions/347.html)
-- **Severity:** high · **Confidence:** medium
+- **CAPEC:** [CAPEC-475](https://capec.mitre.org/data/definitions/475.html)
+- **OWASP:** [A04:2025 – Cryptographic Failures](https://owasp.org/Top10/2025/A04_2025-Cryptographic_Failures/) · [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-9.1.2` — "Verify that only algorithms on an allowlist can be used to create and verify self-contained tokens, for a given context. The allowlist must include the permitted algorithms, ideally only either symmetric or asymmetric algorithms, and must not include the 'None' algorithm. If both symmetric and asymmetric must be supported, additional controls will be needed to prevent key confusion."
 
 ## What it detects
 
@@ -82,3 +86,5 @@ CodeQL `js/jwt-missing-verification`, SonarJS S5659.
 
 - [OWASP JWT Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html)
 - [GHSA-hjrf-2m68-5959](https://github.com/advisories/GHSA-hjrf-2m68-5959)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

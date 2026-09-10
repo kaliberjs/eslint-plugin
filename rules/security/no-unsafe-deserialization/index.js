@@ -1,12 +1,16 @@
-const { findVariable } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
-const { getCalleeName } = require('../../../machinery/ast')
+const { importedFrom } = require('../../../machinery/security/provenance')
 
 // node-serialize's unserialize evaluates embedded IIFEs in the payload —
 // a documented RCE (CVE-2017-5941). Any call to it with non-literal input is
 // arbitrary code execution by construction.
-const SERIALIZE_MODULES = /^node-serialize$/
+//
+// Gated on the import rather than the name: this rule is in the default
+// `security` preset at error level, and `unserialize(x)` is a name any
+// project's own codec may use. A bare call with no visible node-serialize
+// binding is a deliberate miss — see the readme.
+const SERIALIZE_MODULE = /^node-serialize$/
 
 module.exports = {
   meta: {
@@ -28,11 +32,7 @@ module.exports = {
   create(context) {
     return {
       CallExpression(node) {
-        const name = getCalleeName(node.callee)
-        // Bare name match, or a renamed import proven to come from
-        // node-serialize's actual export: `const { unserialize: u } =
-        // require('node-serialize'); u(x)`.
-        if (name !== 'unserialize' && importedUnserializeName(context, node.callee) !== 'unserialize') return
+        if (importedFrom(context.sourceCode, node.callee, SERIALIZE_MODULE) !== 'unserialize') return
 
         const argument = node.arguments[0]
         if (!argument || argument.type === 'Literal') return
@@ -47,35 +47,4 @@ module.exports = {
       },
     }
   },
-}
-
-/** The name this identifier was imported/destructured as from node-serialize, or null. */
-function importedUnserializeName(context, callee) {
-  if (callee.type !== 'Identifier') return null
-
-  const variable = findVariable(context.sourceCode.getScope(callee), callee)
-  const definition = variable?.defs[0]
-  if (!definition) return null
-
-  if (definition.type === 'ImportBinding') {
-    if (!SERIALIZE_MODULES.test(String(definition.parent.source.value))) return null
-    const imported = definition.node.imported
-    return imported?.type === 'Identifier' ? imported.name : (imported?.value ?? null)
-  }
-
-  if (definition.type === 'Variable') {
-    const init = definition.node.init
-    const isRequireOfSerializeModule = init?.type === 'CallExpression'
-      && init.callee?.type === 'Identifier' && init.callee.name === 'require'
-      && init.arguments[0]?.type === 'Literal'
-      && SERIALIZE_MODULES.test(String(init.arguments[0].value))
-    if (!isRequireOfSerializeModule) return null
-
-    const property = definition.name.parent
-    if (property?.type !== 'Property') return null
-    if (property.key?.type === 'Identifier') return property.key.name
-    return property.key?.type === 'Literal' ? String(property.key.value) : null
-  }
-
-  return null
 }

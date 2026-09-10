@@ -1,7 +1,9 @@
-const { findVariable, getStaticValue } = require('@eslint-community/eslint-utils')
+const { getPropertyName, getStaticValue } = require('@eslint-community/eslint-utils')
 const { getStaticPropertyName } = require('../../../machinery/ast')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { importedFrom } = require('../../../machinery/security/provenance')
+const { isGlobalNamed } = require('../../../machinery/security/expression')
 
 // Key size is a literal at the generation call site, so this is a numeric
 // comparison, not a taint problem. NIST SP 800-57 Part 1 Rev. 5 retired
@@ -53,9 +55,8 @@ module.exports = {
   create(context) {
     return {
       CallExpression(node) {
-        const name = calleeName(context, node.callee)
+        const name = cryptoFunctionName(context, node.callee)
         if (!GENERATORS.has(name)) return
-        if (!isCryptoCallee(context, node.callee)) return
 
         if (name === 'createDiffieHellman') checkDiffieHellman(context, node)
         else checkKeyPair(context, node)
@@ -148,78 +149,33 @@ function staticValueOf(context, node) {
 }
 
 /**
- * The node:crypto function being called, seen through a rename. A local
- * alias (`const { generateKeyPairSync: gen } = require('crypto')`) is the
- * cheapest possible evasion of a name matcher, and the binding already has
- * to be resolved for the provenance check, so the imported name is free.
+ * The node:crypto function being called, resolved through the binding rather
+ * than read off the callee.
+ *
+ * Both halves matter. `generateKeyPair` is a plausible method name on an
+ * unrelated object — a KMS client, a wallet library, a test helper — so the
+ * module has to be proven; and a local alias
+ * (`const { generateKeyPairSync: gen } = require('crypto')`) is the cheapest
+ * possible evasion of a name matcher, so the *export's* name is what is
+ * compared. See machinery/security/provenance.js for the shapes it resolves.
  */
-function calleeName(context, callee) {
-  if (callee.type === 'MemberExpression') {
-    if (!callee.computed) return callee.property?.name
-    // crypto['generateKeyPairSync'](...)
-    return callee.property?.type === 'Literal' ? String(callee.property.value) : null
-  }
+function cryptoFunctionName(context, callee) {
+  const imported = importedFrom(context.sourceCode, callee, CRYPTO_MODULE)
+  if (imported) return imported
 
-  if (callee.type !== 'Identifier') return null
-
-  const definition = findVariable(context.sourceCode.getScope(callee), callee)?.defs[0]
-
-  // import { generateKeyPairSync as gen } from 'crypto'
-  if (definition?.node?.type === 'ImportSpecifier') return definition.node.imported?.name ?? callee.name
-
-  // const { generateKeyPairSync: gen } = require('crypto')
-  if (definition?.type === 'Variable' && definition.node.id?.type === 'ObjectPattern') {
-    const property = definition.node.id.properties.find(
-      it => it.type === 'Property' && it.value === definition.name
-    )
-    if (property) return getStaticPropertyName(property)
-  }
-
-  return callee.name
+  return unboundCryptoGlobal(context, callee)
 }
 
 /**
- * Provenance, in the same spirit as no-jwt-algorithm-confusion's
- * isFromJwtModule: `generateKeyPair` is a plausible method name on an
- * unrelated object (a KMS client, a test helper, a wallet library), so the
- * callee must be provably node:crypto before anything is reported.
+ * No binding for `crypto` anywhere in the file: `crypto.generateKeyPairSync`
+ * is node:crypto by elimination — the webcrypto global has no such method,
+ * it has crypto.subtle.generateKey. A shadowing `const crypto = ...` resolves
+ * and correctly does not match.
  */
-function isCryptoCallee(context, callee) {
-  if (callee.type === 'Identifier') return isCryptoBinding(context, callee)
+function unboundCryptoGlobal(context, callee) {
+  if (callee.type !== 'MemberExpression') return null
+  if (!isGlobalNamed(context.sourceCode, callee.object, 'crypto')) return null
 
-  if (callee.type !== 'MemberExpression') return false
-  const object = callee.object
-
-  // require('node:crypto').generateKeyPairSync(...)
-  if (object.type === 'CallExpression') return isCryptoRequire(object)
-
-  if (object.type !== 'Identifier') return false
-  if (isCryptoBinding(context, object)) return true
-
-  // No binding in this file: `crypto.generateKeyPairSync` is node:crypto by
-  // elimination — the webcrypto global has no such method, it has
-  // crypto.subtle.generateKey.
-  return !findVariable(context.sourceCode.getScope(object), object)?.defs.length
-    && object.name === 'crypto'
-}
-
-function isCryptoBinding(context, identifier) {
-  const definition = findVariable(context.sourceCode.getScope(identifier), identifier)?.defs[0]
-  if (!definition) return false
-
-  // import crypto from 'crypto' / import { generateKeyPairSync } from 'node:crypto'
-  if (definition.type === 'ImportBinding') return CRYPTO_MODULE.test(String(definition.parent.source.value))
-
-  // const crypto = require('crypto') / const { generateKeyPairSync } = require('crypto')
-  if (definition.type === 'Variable') return isCryptoRequire(definition.node.init)
-
-  return false
-}
-
-function isCryptoRequire(node) {
-  return node?.type === 'CallExpression'
-    && node.callee?.type === 'Identifier'
-    && node.callee.name === 'require'
-    && node.arguments[0]?.type === 'Literal'
-    && CRYPTO_MODULE.test(String(node.arguments[0].value))
+  const name = getPropertyName(callee, context.sourceCode.getScope(callee))
+  return name === null ? null : String(name)
 }
