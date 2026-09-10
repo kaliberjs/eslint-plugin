@@ -1,96 +1,79 @@
 const { getStaticValue } = require('@eslint-community/eslint-utils')
 const docsUrl = require('../../../machinery/docsUrl')
 const { report } = require('../../../machinery/security/finding')
+const { isGlobalNamed } = require('../../../machinery/security/expression')
 
-// Reverse-tabnabbing: a page opened via target="_blank" could, historically,
-// control the opener via window.opener. Modern browsers imply noopener for
-// anchor targets — which is why this rule is low severity for anchors and
-// reserves its real finding for window.open, where the opener relationship
-// still exists unless explicitly severed.
+// Reverse tabnabbing: a page opened with a `window.opener` handle can navigate
+// or script the page that opened it.
+//
+// For anchors this is over. HTML now defines `target="_blank"` on an `a`,
+// `area` or `form` as implying `noopener` unless `rel` explicitly opts back in
+// with `opener` — the "navigable target names" section of the HTML Standard,
+// via `noopener` in the tokenised rel list. Every engine ships it. Reporting
+// `<a target="_blank">` today is a lint rule policing a browser default, and
+// the anchors it fires on are overwhelmingly fine; that visitor is gone.
+//
+// `window.open()` is a different call. It takes its opener behaviour from the
+// features string alone, and omitting `noopener` there still hands over the
+// handle.
+const OPEN = 'open'
 
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Do not open untrusted windows without severing the opener relationship (CWE-1022)',
+      description: 'Do not open windows with window.open() without severing the opener relationship (CWE-1022)',
       url: docsUrl(__dirname),
     },
     messages: {
-      anchorNoopener: [
-        "A link with target=\"_blank\" has no rel=\"noopener\".",
-        'Modern browsers imply it for anchors, but spelling it out keeps the guarantee against legacy embeds and non-browser contexts.',
-        'Add rel="noopener noreferrer".',
-      ].join(' '),
       windowOpenNoopener: [
         'window.open() without noopener in its features gives the opened page a window.opener handle.',
         'The opened page can then navigate or script this application.',
         "Pass 'noopener' in the features argument (third argument).",
       ].join(' '),
+      windowOpenUnknownFeatures: [
+        'window.open() is called with a features argument this rule cannot read.',
+        'Audit it: if the string omits noopener, the opened page gets a window.opener handle and can navigate or script this application.',
+        "Pass a literal containing 'noopener', or open with `{ ...features }` assembled where it can be read.",
+      ].join(' '),
     },
+    // No fix: appending to a features string the rule could not read is how a
+    // fix breaks a popup's dimensions.
     schema: [],
   },
 
   create(context) {
     return {
-      JSXElement(node) {
-        const name = node.openingElement?.name?.name
-        if (name !== 'a') return
-
-        const attributes = node.openingElement.attributes ?? []
-        const target = attributes.find(a => a.type === 'JSXAttribute' && a.name?.name === 'target')
-        if (!isBlankLiteral(target)) return
-
-        const rel = attributes.find(a => a.type === 'JSXAttribute' && a.name?.name === 'rel')
-        if (hasNoopener(rel)) return
-
-        report(context, {
-          node: node.openingElement,
-          messageId: 'anchorNoopener',
-          severity: 'low',
-          confidence: 1,
-        })
-      },
-
       CallExpression(node) {
         const callee = node.callee
         if (callee.type !== 'MemberExpression' || callee.computed) return
-        if (callee.property?.name !== 'open') return
-        // window.open only — other .open calls are files, databases, sockets.
-        const root = String(callee.object?.name ?? '')
-        if (!/^window$/i.test(root)) return
+        if (callee.property?.name !== OPEN) return
+
+        // The real `window`, not a local of that name — `.open()` also belongs
+        // to files, databases, sockets and every test double of those.
+        if (!isGlobalNamed(context.sourceCode, callee.object, 'window')) return
 
         const features = node.arguments[2]
+
         // No features argument at all is the default-opener case.
         if (!features) {
           return report(context, { node, messageId: 'windowOpenNoopener', severity: 'medium', confidence: 0.9 })
         }
+
         // Folded through getStaticValue rather than requiring an inline
         // Literal, so a const alias for the features string is not a wall.
         const value = getStaticValue(features, context.sourceCode.getScope(features))
-        if (typeof value?.value === 'string' && !/noopener/i.test(value.value)) {
+
+        if (typeof value?.value !== 'string') {
+          // Unread is not the same as safe. Reported as the open question it
+          // is, at a confidence that says so, in the audit preset only.
+          return report(context, { node, messageId: 'windowOpenUnknownFeatures', severity: 'medium', confidence: 0.6 })
+        }
+
+        if (!/noopener/i.test(value.value)) {
           return report(context, { node, messageId: 'windowOpenNoopener', severity: 'medium', confidence: 1 })
         }
       },
     }
   },
-}
-
-function isBlankLiteral(attribute) {
-  return attribute?.type === 'JSXAttribute'
-    && attribute.value?.type === 'Literal'
-    && attribute.value.value === '_blank'
-}
-
-function hasNoopener(rel) {
-  const value = rel?.value
-  if (!value) return false
-  const text = value.type === 'JSXExpressionContainer'
-    ? (value.expression?.type === 'Literal' ? String(value.expression.value) : null)
-    : String(value.value ?? '')
-  // noreferrer implies noopener per the HTML spec — browsers sever the
-  // opener handle for it too, specifically so the referrer-hiding keyword
-  // can't be defeated through the opener relationship. Confirmed a real
-  // false positive by a dogfood run: every target="_blank" in one real
-  // project used noreferrer alone.
-  return text ? /noopener|noreferrer/i.test(text) : true // dynamic rel: give benefit of the doubt? no—unknown means unchecked; treat as present to stay quiet on computed values
 }
