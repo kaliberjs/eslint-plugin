@@ -192,7 +192,7 @@ module.exports = [
           message: 'Use an arrow function class property so `this` is bound: `name = () => {}`',
         },
         {
-          selector: 'PropertyDefinition > FunctionExpression',
+          selector: 'PropertyDefinition[static=false] > FunctionExpression',
           message: 'Use an arrow function so `this` is bound: `name = () => {}`',
         },
       ],
