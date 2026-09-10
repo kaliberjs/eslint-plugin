@@ -45,6 +45,45 @@ module.exports = [
 | [`data-x-sectioning-elements`](rules/data-x-sectioning-elements/readme.md) | Sectioning HTML elements (section, header, footer, nav, etc.) must have data-x |
 | [`data-x-form-naming`](rules/data-x-form-naming/readme.md) | Form elements must have a data-x value ending with -form |
 
+## Security rules
+
+44 opt-in security rules, shipped as two flat configs. They are **not** in
+`eslint.config.js`: a noisy security rule does not just get itself disabled, it
+gets the whole shared config distrusted, so enabling them is a decision.
+
+```js
+const kaliberConfig = require('@kaliber/eslint-plugin/eslint.config')
+const kaliber = require('@kaliber/eslint-plugin')
+
+module.exports = [
+  ...kaliberConfig,
+  kaliber.configs.security,
+]
+```
+
+Both presets register the plugin themselves — drop one into the array and
+nothing else is needed.
+
+| Preset | Rules | Levels | For |
+|---|---|---|---|
+| `configs.security` | 18 | `warn`, with `error` for four findings that are a literal switch with no dataflow to be unsure about | CI. Every rule is either dataflow-backed or gated on a resolved import. |
+| `configs['security-audit']` | all 44 | `warn` throughout | A read-through. Adds name-based matchers and policy preferences; not a build gate. |
+
+Every rule stays individually addressable by id, whichever preset you use or
+don't:
+
+```js
+{ rules: { '@kaliber/security-no-md5': 'error' } }
+```
+
+Each rule's readme states which preset it is in, its impact and its analysis
+confidence as separate things, its CWE/OWASP/ASVS metadata, and what it is
+known to miss. Start at [`docs/research/owasp-coverage.md`](docs/research/owasp-coverage.md)
+for the whole map — including the categories no linter can reach.
+
+**A clean run is not a security guarantee.** It means these 44 patterns were
+not found in the files that were linted.
+
 ## Documentation
 
 Each rule is self-contained — implementation, tests, and documentation live together:

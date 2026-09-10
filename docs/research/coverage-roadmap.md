@@ -15,9 +15,15 @@ directly, or in Tier 3's narrowed forms after machinery work.
 
 ## Current state
 
-16 rules shipped (`configs.security`, opt-in). Every inventory entry scoring
-≥100 is covered except the secrets family, held deliberately pending the
-scope decision below.
+44 rules shipped, opt-in, across two presets: 18 in `configs.security` and all
+44 in `configs['security-audit']` (see `index.js` for the split and the root
+readme for what each preset is for). Every inventory entry scoring ≥100 is
+covered except the secrets family, held deliberately pending the scope
+decision below.
+
+The counts in the tiers below were written when 16 rules shipped and describe
+the *plan*, not the current state — they have not been re-cut. `owasp-coverage.md`
+is the current map.
 
 ## Tier 1 — directly lintable today (~20 rules, no new machinery)
 
@@ -467,7 +473,9 @@ declined, not overlooked.
 
 ## Dogfood measurement — rabobank-jobs
 
-Third real kaliber project, all 38 rules at warn (`configs.security`), run
+Third real kaliber project, run at the time with all 38 then-shipped rules at
+warn (the single opt-in preset that predates the `security` / `security-audit`
+split), run
 externally against the checkout (no dependency added, nothing committed
 there) via this repo's own ESLint 10 pointed at rabobank-jobs' source.
 

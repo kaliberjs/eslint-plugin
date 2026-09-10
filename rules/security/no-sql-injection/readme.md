@@ -2,13 +2,16 @@
 
 Detects untrusted input flowing into a raw SQL string.
 
-- **OWASP:** [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/)
-- **CWE:** [CWE-89: SQL Injection](https://cwe.mitre.org/data/definitions/89.html)
-- **CAPEC:** [CAPEC-66: SQL Injection](https://capec.mitre.org/data/definitions/66.html)
-- **Severity:** high · **Confidence:** varies per finding, reported in the message
-
 > The OWASP category is pinned to the 2021 edition deliberately. The 2025 edition
 > renumbers Injection to A05, so an unsuffixed `A03` would silently change meaning.
+
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** computed per flow and reported in the message — the analysis is sure the value reaches the sink, less sure how far it travelled. Findings below the floor in `machinery/security/finding.js` are not reported at all.
+- **CWE:** [CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')](https://cwe.mitre.org/data/definitions/89.html)
+- **CAPEC:** [CAPEC-66](https://capec.mitre.org/data/definitions/66.html), [CAPEC-7](https://capec.mitre.org/data/definitions/7.html), [CAPEC-108](https://capec.mitre.org/data/definitions/108.html), [CAPEC-109](https://capec.mitre.org/data/definitions/109.html)
+- **OWASP:** [A05:2025 – Injection](https://owasp.org/Top10/2025/A05_2025-Injection/) · [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.2.4` — "Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures."
 
 ## What it detects
 
@@ -277,3 +280,5 @@ transformation, and a wrong "fix" applied to a security finding is worse than no
 - [Knex: raw](https://knexjs.org/guide/raw.html)
 - [Sequelize: raw queries](https://sequelize.org/docs/v6/core-concepts/raw-queries/)
 - [node-postgres: parameterized queries](https://node-postgres.com/features/queries)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

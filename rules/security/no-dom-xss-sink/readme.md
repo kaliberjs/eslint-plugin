@@ -2,9 +2,14 @@
 
 Detects untrusted input flowing into DOM HTML-parser sinks.
 
-- **OWASP:** [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/)
-- **CWE:** [CWE-79: Cross-site Scripting (XSS)](https://cwe.mitre.org/data/definitions/79.html)
-- **Severity:** high · **Confidence:** varies per finding, reported in the message
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** computed per flow and reported in the message — the analysis is sure the value reaches the sink, less sure how far it travelled. Findings below the floor in `machinery/security/finding.js` are not reported at all.
+- **CWE:** [CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')](https://cwe.mitre.org/data/definitions/79.html)
+- **CAPEC:** [CAPEC-588](https://capec.mitre.org/data/definitions/588.html)
+- **OWASP:** [A05:2025 – Injection](https://owasp.org/Top10/2025/A05_2025-Injection/) · [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.2.1` — "Verify that output encoding for an HTTP response, HTML document, or XML document is relevant for the context required, such as encoding the relevant characters for HTML elements, HTML attributes, HTML comments, CSS, or HTTP header fields, to avoid changing the message or document structure."
+- **ASVS 5.0:** `v5.0.0-1.2.3` — "Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection)."
 
 ## What it detects
 
@@ -65,3 +70,5 @@ CodeQL `js/xss`, `eslint-plugin-no-unsanitized` + Semgrep
 
 - [OWASP XSS Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
 - [DOM-based XSS Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

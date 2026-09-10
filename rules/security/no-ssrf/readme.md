@@ -2,10 +2,13 @@
 
 Detects untrusted input flowing into the URL of an outbound HTTP request.
 
-- **OWASP:** [A10:2021 – Server-Side Request Forgery (SSRF)](https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/) · [API7:2023 – Server Side Request Forgery](https://owasp.org/API-Security/editions/2023/en/0xa7-server-side-request-forgery/)
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** computed per flow and reported in the message — the analysis is sure the value reaches the sink, less sure how far it travelled. Findings below the floor in `machinery/security/finding.js` are not reported at all.
 - **CWE:** [CWE-918: Server-Side Request Forgery (SSRF)](https://cwe.mitre.org/data/definitions/918.html)
-- **CAPEC:** [CAPEC-664: Server Side Request Forgery](https://capec.mitre.org/data/definitions/664.html)
-- **Severity:** high · **Confidence:** varies per finding, reported in the message
+- **CAPEC:** [CAPEC-664](https://capec.mitre.org/data/definitions/664.html)
+- **OWASP:** [A01:2025 – Broken Access Control](https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/) · [A10:2021 – Server-Side Request Forgery (SSRF)](https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.3.6` — "Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service."
 
 ## What it detects
 
@@ -282,3 +285,5 @@ should be added as a follow-up, with their own false-positive pass.
 - [CWE-918](https://cwe.mitre.org/data/definitions/918.html)
 - [MDN: `fetch()`](https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch)
 - [WHATWG URL Standard — parsing against a base URL](https://url.spec.whatwg.org/#concept-basic-url-parser)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

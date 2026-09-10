@@ -2,9 +2,13 @@
 
 Do not trust claims from a decoded-but-unverified JWT.
 
-- **OWASP:** [A07:2021 – Identification and Authentication Failures](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/), [API2:2023 – Broken Authentication](https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/)
+- **Preset:** `security-audit` only (`warn`). Deliberately not in `configs.security`.
+- **Impact if exploited:** high
+- **Analysis confidence:** medium — the rule can see the call shape but not the fact that decides exploitability.
 - **CWE:** [CWE-347: Improper Verification of Cryptographic Signature](https://cwe.mitre.org/data/definitions/347.html)
-- **Severity:** high · **Confidence:** medium
+- **CAPEC:** [CAPEC-475](https://capec.mitre.org/data/definitions/475.html)
+- **OWASP:** [A04:2025 – Cryptographic Failures](https://owasp.org/Top10/2025/A04_2025-Cryptographic_Failures/) · [A07:2021 – Identification and Authentication Failures](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-9.1.1` — "Verify that self-contained tokens are validated using their digital signature or MAC to protect against tampering before accepting the token's contents."
 
 ## What it detects
 
@@ -54,3 +58,5 @@ to unrelated names are a known miss.
 
 - [OWASP JWT Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html)
 - [RFC 8725](https://www.rfc-editor.org/rfc/rfc8725.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

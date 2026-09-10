@@ -2,9 +2,13 @@
 
 Do not log request credentials wholesale.
 
-- **OWASP:** [A09:2021 – Security Logging and Monitoring Failures](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/)
+- **Preset:** `security-audit` only (`warn`). Deliberately not in `configs.security`.
+- **Impact if exploited:** medium
+- **Analysis confidence:** high — the finding is a literal in the source with no dataflow to be wrong about.
 - **CWE:** [CWE-532: Insertion of Sensitive Information into Log File](https://cwe.mitre.org/data/definitions/532.html)
-- **Severity:** medium · **Confidence:** high
+- **CAPEC:** [CAPEC-215](https://capec.mitre.org/data/definitions/215.html)
+- **OWASP:** [A09:2025 – Security Logging and Alerting Failures](https://owasp.org/Top10/2025/A09_2025-Security_Logging_and_Alerting_Failures/) · [A09:2021 – Security Logging and Monitoring Failures](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-16.2.5` — "Verify that when logging sensitive data, the application enforces logging based on the data's protection level. For example, it may not be allowed to log certain data, such as credentials or payment details. Other data, such as session tokens, may only be logged by being hashed or masked, either in full or partially."
 
 ## What it detects
 
@@ -60,3 +64,5 @@ console.log({ requestId: req.headers['x-request-id'], userAgent: req.headers['us
 ## References
 
 - [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

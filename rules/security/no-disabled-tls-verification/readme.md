@@ -2,10 +2,13 @@
 
 Disables of TLS certificate or hostname verification, per connection.
 
-- **OWASP:** [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/), [API8:2023 – Security Misconfiguration](https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/)
-- **CWE:** [CWE-295: Improper Certificate Validation](https://cwe.mitre.org/data/definitions/295.html), [CWE-297: Improper Validation of Certificate with Host Mismatch](https://cwe.mitre.org/data/definitions/297.html)
+- **Preset:** `security` (`error`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** high — the finding is a literal in the source with no dataflow to be wrong about.
+- **CWE:** [CWE-295: Improper Certificate Validation](https://cwe.mitre.org/data/definitions/295.html)
 - **CAPEC:** [CAPEC-459](https://capec.mitre.org/data/definitions/459.html), [CAPEC-475](https://capec.mitre.org/data/definitions/475.html)
-- **Severity:** high · **Confidence:** high
+- **OWASP:** [A07:2025 – Authentication Failures](https://owasp.org/Top10/2025/A07_2025-Authentication_Failures/) · [A02:2021 – Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-12.3.2` — "Verify that TLS clients validate certificates received before communicating with a TLS server."
 
 ## What it detects
 
@@ -98,3 +101,5 @@ Stated honestly:
 
 - [Node.js docs: tls.checkServerIdentity](https://nodejs.org/api/tls.html#tlscheckserveridentityhostname-cert)
 - [OWASP TLS Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

@@ -2,10 +2,13 @@
 
 Untrusted or dynamically-built code reaching the `vm` module.
 
-- **OWASP:** [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/)
-- **CWE:** [CWE-95: Eval Injection](https://cwe.mitre.org/data/definitions/95.html)
-- **CAPEC:** [CAPEC-77](https://capec.mitre.org/data/definitions/77.html)
-- **Severity:** high when tainted · medium when dynamic · silent when static
+- **Preset:** `security-audit` only (`warn`). Deliberately not in `configs.security`.
+- **Impact if exploited:** medium
+- **Analysis confidence:** high — the finding is a literal in the source with no dataflow to be wrong about.
+- **CWE:** [CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')](https://cwe.mitre.org/data/definitions/95.html)
+- **CAPEC:** [CAPEC-35](https://capec.mitre.org/data/definitions/35.html)
+- **OWASP:** [A05:2025 – Injection](https://owasp.org/Top10/2025/A05_2025-Injection/) · [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.3.2` — "Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed."
 
 ## Why this rule exists alongside core `no-eval`
 
@@ -75,3 +78,5 @@ CodeQL `js/code-injection`, Semgrep `lang/security/audit/eval`.
 
 - [Node.js vm docs](https://nodejs.org/api/vm.html)
 - [OWASP OS Command Injection Defense Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html) — the argv-array principle applies to code dispatch too
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

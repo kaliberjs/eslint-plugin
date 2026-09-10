@@ -2,9 +2,12 @@
 
 Detects untrusted input flowing into a raw GROQ query (Sanity's query language).
 
-- **OWASP:** [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/)
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** computed per flow and reported in the message — the analysis is sure the value reaches the sink, less sure how far it travelled. Findings below the floor in `machinery/security/finding.js` are not reported at all.
 - **CWE:** [CWE-943: Improper Neutralization of Special Elements in Data Query Logic](https://cwe.mitre.org/data/definitions/943.html)
-- **Severity:** high · **Confidence:** varies per finding, reported in the message
+- **OWASP:** [A05:2025 – Injection](https://owasp.org/Top10/2025/A05_2025-Injection/) · [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.2.4` — "Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures."
 
 ## What it detects
 
@@ -171,3 +174,5 @@ query languages.
 - [CWE-943: Improper Neutralization of Special Elements in Data Query Logic](https://cwe.mitre.org/data/definitions/943.html)
 - [Sanity: GROQ parameters](https://www.sanity.io/docs/groq-parameters)
 - [Sanity: query the Content Lake](https://www.sanity.io/docs/how-queries-work)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

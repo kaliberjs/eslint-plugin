@@ -2,10 +2,13 @@
 
 Detects untrusted input flowing into a shell command string.
 
-- **OWASP:** [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/)
-- **CWE:** [CWE-78: Improper Neutralization of Special Elements used in an OS Command](https://cwe.mitre.org/data/definitions/78.html)
-- **CAPEC:** [CAPEC-88](https://capec.mitre.org/data/definitions/88.html)
-- **Severity:** high · **Confidence:** varies per finding, reported in the message
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** computed per flow and reported in the message — the analysis is sure the value reaches the sink, less sure how far it travelled. Findings below the floor in `machinery/security/finding.js` are not reported at all.
+- **CWE:** [CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')](https://cwe.mitre.org/data/definitions/78.html)
+- **CAPEC:** [CAPEC-88](https://capec.mitre.org/data/definitions/88.html), [CAPEC-6](https://capec.mitre.org/data/definitions/6.html), [CAPEC-15](https://capec.mitre.org/data/definitions/15.html)
+- **OWASP:** [A05:2025 – Injection](https://owasp.org/Top10/2025/A05_2025-Injection/) · [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.2.5` — "Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding."
 
 ## What it detects
 
@@ -61,8 +64,6 @@ shell string that we would be willing to certify as a sanitizer, so the
 registry deliberately registers none.
 
 ## Configuration level
-
-Reports `warn` in the opt-in `configs.security`: findings carry medium
 confidence whenever template interpolation or parameter-name source matching
 is involved, and per the severity matrix that does not reach error.
 

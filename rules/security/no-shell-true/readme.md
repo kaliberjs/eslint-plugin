@@ -3,9 +3,13 @@
 Do not pass `shell: true` to `spawn`, `spawnSync`, `execFile`,
 `execFileSync` or `execa`.
 
-- **OWASP:** [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/)
-- **CWE:** [CWE-78: Improper Neutralization of Special Elements used in an OS Command](https://cwe.mitre.org/data/definitions/78.html)
-- **Severity:** medium · **Confidence:** high
+- **Preset:** `security-audit` only (`warn`). Deliberately not in `configs.security`.
+- **Impact if exploited:** medium
+- **Analysis confidence:** high — the finding is a literal in the source with no dataflow to be wrong about.
+- **CWE:** [CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')](https://cwe.mitre.org/data/definitions/78.html)
+- **CAPEC:** [CAPEC-88](https://capec.mitre.org/data/definitions/88.html), [CAPEC-6](https://capec.mitre.org/data/definitions/6.html)
+- **OWASP:** [A05:2025 – Injection](https://owasp.org/Top10/2025/A05_2025-Injection/) · [A03:2021 – Injection](https://owasp.org/Top10/A03_2021-Injection/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.2.5` — "Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding."
 
 ## What it detects
 
@@ -48,3 +52,5 @@ Semgrep `spawn-shell-true`, `dangerous-spawn-shell`.
 
 - [Node.js child_process docs](https://nodejs.org/api/child_process.html)
 - [OWASP OS Command Injection Defense Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

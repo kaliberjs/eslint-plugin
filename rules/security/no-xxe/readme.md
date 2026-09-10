@@ -2,6 +2,14 @@
 
 Do not enable XML entity expansion or DTD loading.
 
+- **Preset:** `security-audit` only (`warn`). Deliberately not in `configs.security`.
+- **Impact if exploited:** high
+- **Analysis confidence:** high — the finding is a literal in the source with no dataflow to be wrong about.
+- **CWE:** [CWE-611: Improper Restriction of XML External Entity Reference](https://cwe.mitre.org/data/definitions/611.html)
+- **CAPEC:** [CAPEC-221](https://capec.mitre.org/data/definitions/221.html)
+- **OWASP:** [A02:2025 – Security Misconfiguration](https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/) · [A05:2021 – Security Misconfiguration](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-1.5.1` — "Verify that the application configures XML parsers to use a restrictive configuration and that unsafe features such as resolving external entities are disabled to prevent XML eXternal Entity (XXE) attacks."
+
 ## Why it matters
 
 External entities permit file reads from the server (XXE) and billion-laughs denial of service. Covers libxml-js option shapes; parsers with entities off by default stay quiet.
@@ -50,4 +58,11 @@ for it.
 
 SonarJS S2755, OWASP XXE Prevention Cheat Sheet
 
-Warn level in `configs.security`; scores, sources and references in docs/research/rule-inventory.yaml.
+## References
+
+- [CWE-611](https://cwe.mitre.org/data/definitions/611.html)
+- [OWASP XML External Entity Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html)
+- [codeql.github.com](https://codeql.github.com/codeql-query-help/javascript/js-xxe/)
+- [github.com](https://github.com/advisories/GHSA-crh6-fp67-6883)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.

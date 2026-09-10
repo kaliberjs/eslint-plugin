@@ -2,10 +2,13 @@
 
 Detects untrusted input flowing into server-side redirects.
 
-- **OWASP:** [A01:2021 – Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/)
+- **Preset:** `security` (`warn`) and `security-audit` (`warn`)
+- **Impact if exploited:** high
+- **Analysis confidence:** computed per flow and reported in the message — the analysis is sure the value reaches the sink, less sure how far it travelled. Findings below the floor in `machinery/security/finding.js` are not reported at all.
 - **CWE:** [CWE-601: URL Redirection to Untrusted Site ('Open Redirect')](https://cwe.mitre.org/data/definitions/601.html)
-- **CAPEC:** [CAPEC-593](https://capec.mitre.org/data/definitions/593.html)
-- **Severity:** high · **Confidence:** varies per finding, reported in the message
+- **CAPEC:** [CAPEC-178](https://capec.mitre.org/data/definitions/178.html)
+- **OWASP:** [A01:2025 – Broken Access Control](https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/) · [A01:2021 – Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) (previous edition)
+- **ASVS 5.0:** `v5.0.0-3.7.2` — "Verify that the application will only automatically redirect the user to a different hostname or domain (which is not controlled by the application) where the destination appears on an allowlist."
 
 ## What it detects
 
@@ -71,3 +74,5 @@ family conventions for taint-based rules.
 ## References
 
 - [OWASP Unvalidated Redirects and Forwards Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html)
+
+Scores, sources and references in `docs/research/rule-inventory.yaml`.
