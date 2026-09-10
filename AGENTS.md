@@ -58,13 +58,28 @@ machinery/security/
   finding.js      severity / confidence / OWASP / CWE metadata + the ESLint-level matrix
   registry.js     framework knowledge: sources, sinks, sanitizers (data, not code branches)
   taint.js        per-file taint analysis, scope-based, cached per SourceCode
+  provenance.js   which module a callee actually came from, resolved through the scope
 ```
 
 Rules stay thin. **Never reimplement taint logic inside a rule** — extend the shared layer instead.
 
-Security rules are **not** in `eslint.config.js`. They ship behind an opt-in
-`configs.security` at `warn`, because a noisy security rule does not just get itself
-disabled — it gets the whole shared config distrusted.
+Security rules are **not** in `eslint.config.js`. They ship behind two opt-in flat
+configs, because a noisy security rule does not just get itself disabled — it gets
+the whole shared config distrusted:
+
+- `configs.security` — the CI preset. Only rules that are dataflow-backed or gated on
+  a resolved import/global. `error` is reserved for a literal switch with no dataflow
+  to be unsure about; everything else is `warn`.
+- `configs['security-audit']` — every registered security rule, all at `warn`. Where
+  name-based matchers and policy preferences live.
+
+Both presets carry `plugins: { '@kaliber': plugin }` so a consumer can spread one
+straight into their flat config. `rules/security-presets.test.js` verifies that
+through `Linter#verify`, because `RuleTester` never resolves the namespace and a
+broken preset passes every unit test in the repo.
+
+A new rule goes in `security-audit`. Promoting it to `security` means proving
+provenance, not raising a level.
 
 Hard rules for security work:
 
@@ -74,6 +89,11 @@ Hard rules for security work:
   suggestion, or diagnostic only.
 - A function is never a sanitizer because it is *named* `sanitize`, `clean`, `escape`, or
   `validate`. Sanitizers are explicit registry entries.
+- A call is never `node:crypto`'s, or jsonwebtoken's, or node-tar's, because it is *named*
+  `createHash` / `verify` / `x`. Resolve the binding with `machinery/security/provenance.js`.
+  A rule that cannot (a CDN global, a `<script>` tag, a parameter) belongs in
+  `security-audit` with its confidence capped at `NAME_ONLY_CONFIDENCE`, and its readme
+  must say the matching is name-based.
 - False positives are the failure mode that kills adoption. A rule that is technically right and
   practically noisy is not shippable. The metric is useful findings ÷ false-positive burden.
 - Every security claim in docs needs a primary source (OWASP, CWE, official library docs).

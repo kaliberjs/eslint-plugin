@@ -78,72 +78,87 @@ const plugin = {
     'security-no-zip-slip': require('./rules/security/no-zip-slip'),
   },
 
-  configs: {
-    // Opt-in only, and deliberately not part of any recommended config. The
-    // security rules carry a different risk profile from the house rules: a
-    // noisy security rule does not just get itself disabled, it gets the whole
-    // shared config distrusted. Enabling them has to be a decision.
-    //
-    // `warn` rather than `error` for the first release: the analysis reports
-    // medium-confidence findings, and a medium-confidence finding failing CI on
-    // day one is how a plugin gets removed.
-    security: {
-      rules: {
-        '@kaliber/security-no-sql-injection': 'warn',
+  configs: {},
+}
 
-        // High severity and high confidence — a literal assignment or a
-        // literal string with no dataflow and no legitimate production use —
-        // so the severity matrix puts them at error even in the opt-in config.
-        '@kaliber/security-no-node-tls-reject-unauthorized': 'error',
-        '@kaliber/security-no-disabled-tls-verification': 'error',
-        '@kaliber/security-no-jwt-alg-none': 'error',
-        '@kaliber/security-no-ecb-mode': 'error',
-        '@kaliber/security-no-des-3des': 'error',
+// The baseline: rules that report a concrete weakness with provenance-gated
+// or dataflow-backed evidence. `error` is reserved for findings that are both
+// high impact and high confidence under machinery/security/finding.js — a
+// literal switch that disables a protection, with no dataflow to be unsure
+// about. Everything taint-based reports at `warn`, because exploitability
+// depends on things the syntax cannot show.
+const baseline = {
+  '@kaliber/security-no-node-tls-reject-unauthorized': 'error',
+  '@kaliber/security-no-disabled-tls-verification': 'error',
+  '@kaliber/security-no-jwt-alg-none': 'error',
+  '@kaliber/security-no-unsafe-deserialization': 'error',
 
-        // High confidence about *what the code does*, but exploitability
-        // depends on things the syntax cannot show (is the input tainted,
-        // is the value sanitized upstream) — so they report at warn.
-        '@kaliber/security-no-jwt-decode-without-verify': 'warn',
-        '@kaliber/security-no-shell-true': 'warn',
-        '@kaliber/security-no-authorization-header-log': 'warn',
-        '@kaliber/security-no-dangerously-set-inner-html': 'warn',
-        '@kaliber/security-no-command-injection': 'warn',
-        '@kaliber/security-no-inner-html': 'warn',
-        '@kaliber/security-no-dom-xss-sink': 'warn',
-        '@kaliber/security-no-eval': 'warn',
-        '@kaliber/security-no-jwt-algorithm-confusion': 'warn',
-        '@kaliber/security-no-md5': 'warn',
-        '@kaliber/security-no-permissive-cors': 'warn',
-        '@kaliber/security-no-insecure-cookie-flags': 'warn',
-        '@kaliber/security-no-plain-http-url': 'warn',
-        '@kaliber/security-no-javascript-url': 'warn',
-        '@kaliber/security-no-sensitive-data-in-web-storage': 'warn',
-        '@kaliber/security-no-dynamic-require': 'warn',
-        '@kaliber/security-no-disabled-security-framework-check': 'warn',
-        '@kaliber/security-no-weak-jwt-secret': 'warn',
-        '@kaliber/security-no-hardcoded-crypto-key': 'warn',
-        '@kaliber/security-no-xxe': 'warn',
-        '@kaliber/security-no-unsafe-deserialization': 'error',
-        '@kaliber/security-no-timing-unsafe-secret-comparison': 'warn',
-        '@kaliber/security-no-sha1-for-security': 'warn',
-        '@kaliber/security-no-static-iv': 'warn',
-        '@kaliber/security-no-template-autoescape-disabled': 'warn',
-        '@kaliber/security-no-target-blank-without-noopener': 'warn',
-        '@kaliber/security-no-jquery-html-sink': 'warn',
-        '@kaliber/security-no-hardcoded-credentials': 'warn',
-        '@kaliber/security-no-hardcoded-api-key': 'warn',
-        '@kaliber/security-no-path-traversal': 'warn',
-        '@kaliber/security-no-firebase-path-injection': 'warn',
-        '@kaliber/security-no-groq-injection': 'warn',
-        '@kaliber/security-no-elasticsearch-injection': 'warn',
-        '@kaliber/security-no-open-redirect': 'warn',
-        '@kaliber/security-no-client-side-open-redirect': 'warn',
-        '@kaliber/security-no-ssrf': 'warn',
-        '@kaliber/security-no-weak-key-size': 'warn',
-        '@kaliber/security-no-zip-slip': 'warn',
-      },
-    },
-  },
+  '@kaliber/security-no-sql-injection': 'warn',
+  '@kaliber/security-no-command-injection': 'warn',
+  '@kaliber/security-no-dom-xss-sink': 'warn',
+  '@kaliber/security-no-path-traversal': 'warn',
+  '@kaliber/security-no-firebase-path-injection': 'warn',
+  '@kaliber/security-no-groq-injection': 'warn',
+  '@kaliber/security-no-elasticsearch-injection': 'warn',
+  '@kaliber/security-no-open-redirect': 'warn',
+  '@kaliber/security-no-client-side-open-redirect': 'warn',
+  '@kaliber/security-no-ssrf': 'warn',
+  '@kaliber/security-no-jwt-algorithm-confusion': 'warn',
+  '@kaliber/security-no-insecure-cookie-flags': 'warn',
+  '@kaliber/security-no-weak-key-size': 'warn',
+  '@kaliber/security-no-zip-slip': 'warn',
+}
+
+// Everything else: name-based matching, policy preferences, and findings whose
+// exploitability the analysis cannot establish. Useful to read through once;
+// not useful as a CI gate, which is why the audit preset is warn throughout.
+const auditOnly = [
+  '@kaliber/security-no-jwt-decode-without-verify',
+  '@kaliber/security-no-shell-true',
+  '@kaliber/security-no-authorization-header-log',
+  '@kaliber/security-no-dangerously-set-inner-html',
+  '@kaliber/security-no-inner-html',
+  '@kaliber/security-no-jquery-html-sink',
+  '@kaliber/security-no-eval',
+  '@kaliber/security-no-md5',
+  '@kaliber/security-no-sha1-for-security',
+  '@kaliber/security-no-ecb-mode',
+  '@kaliber/security-no-des-3des',
+  '@kaliber/security-no-static-iv',
+  '@kaliber/security-no-permissive-cors',
+  '@kaliber/security-no-plain-http-url',
+  '@kaliber/security-no-javascript-url',
+  '@kaliber/security-no-sensitive-data-in-web-storage',
+  '@kaliber/security-no-dynamic-require',
+  '@kaliber/security-no-disabled-security-framework-check',
+  '@kaliber/security-no-weak-jwt-secret',
+  '@kaliber/security-no-hardcoded-crypto-key',
+  '@kaliber/security-no-hardcoded-credentials',
+  '@kaliber/security-no-hardcoded-api-key',
+  '@kaliber/security-no-xxe',
+  '@kaliber/security-no-timing-unsafe-secret-comparison',
+  '@kaliber/security-no-template-autoescape-disabled',
+  '@kaliber/security-no-target-blank-without-noopener',
+]
+
+// Both presets carry the plugin they name, so `eslint.config.js` can spread
+// one straight into its array. Assigned after `plugin` exists because a flat
+// config that registers a plugin has to reference the finished object.
+//
+// Opt-in only, and deliberately not part of any recommended config. The
+// security rules carry a different risk profile from the house rules: a noisy
+// security rule does not just get itself disabled, it gets the whole shared
+// config distrusted. Enabling them has to be a decision.
+plugin.configs.security = {
+  plugins: { '@kaliber': plugin },
+  rules: { ...baseline },
+}
+
+// Every registered security rule, all at warn. Audit findings answer "what
+// should someone read through once", not "what should fail the build".
+plugin.configs['security-audit'] = {
+  plugins: { '@kaliber': plugin },
+  rules: Object.fromEntries([...Object.keys(baseline), ...auditOnly].map(id => [id, 'warn'])),
 }
 
 module.exports = plugin
