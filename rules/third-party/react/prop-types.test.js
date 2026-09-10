@@ -9,6 +9,7 @@ const ruleTester = new RuleTester({
       ecmaFeatures: { jsx: true },
     },
   },
+  settings: { react: { version: '18.0' } },
 })
 
 ruleTester.run('react/prop-types', rule, {
