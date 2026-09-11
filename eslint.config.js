@@ -195,6 +195,10 @@ module.exports = [
           selector: 'PropertyDefinition[static=false] > FunctionExpression[generator=false]',
           message: 'Use an arrow function so `this` is bound: `name = () => {}`',
         },
+        {
+          selector: 'AssignmentExpression[left.object.type="ThisExpression"] > FunctionExpression[generator=false]',
+          message: 'Use an arrow function so `this` is bound: `this.name = () => {}`',
+        },
       ],
       'no-return-assign': 'warn',
       'no-script-url': 'warn',
