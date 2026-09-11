@@ -3,6 +3,7 @@
 | Name | Description | Source | Test Location | Configuration |
 |---|---|---|---|---|
 | **Custom Rules** | | | | |
+| @kaliber/bound-instance-methods | Requires functions on an instance to bind `this`, so they keep working when detached. | Custom | [rules/bound-instance-methods/test.js](rules/bound-instance-methods/test.js) | `"warn"` |
 | @kaliber/component-properties | Enforces prop destructuring and consistent variable passing for components. | Custom | [rules/component-properties/test.js](rules/component-properties/test.js) | `"warn"` |
 | @kaliber/jsx-key | Adaptation of the original `react/jsx-key` rule to allow for keyless JSX in array literals, which is common in DSLs. | Custom | [rules/jsx-key/test.js](rules/jsx-key/test.js) | `"warn"` |
 | @kaliber/layout-class-name | Enforces the use of `layoutClassName` for positioning custom components to maintain a black box approach. | Custom | [rules/layout-class-name/test.js](rules/layout-class-name/test.js) | `"warn"` |

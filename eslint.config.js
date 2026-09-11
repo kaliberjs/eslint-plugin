@@ -75,6 +75,7 @@ module.exports = [
       '@kaliber/jsx-key': 'warn',
       '@kaliber/import-sort': 'warn',
       '@kaliber/stable-query-client': 'warn',
+      '@kaliber/bound-instance-methods': 'warn',
 
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
@@ -184,30 +185,7 @@ module.exports = [
           message: 'Please use import() instead. More info: https://github.com/facebookincubator/create-react-app/blob/master/packages/react-scripts/template/README.md#code-splitting',
         },
       ],
-      'no-restricted-syntax': [
-        'warn',
-        'WithStatement',
-        {
-          selector: 'MethodDefinition[kind="method"][static=false][value.generator=false]',
-          message: 'Use an arrow function class property so `this` is bound: `name = () => {}`',
-        },
-        {
-          selector: 'PropertyDefinition[static=false] > FunctionExpression[generator=false]',
-          message: 'Use an arrow function so `this` is bound: `name = () => {}`',
-        },
-        {
-          selector: 'AssignmentExpression[left.object.type="ThisExpression"] > FunctionExpression[generator=false]',
-          message: 'Use an arrow function so `this` is bound: `this.name = () => {}`',
-        },
-        {
-          selector: [
-            'MethodDefinition[kind="method"][static=false][value.generator=true]',
-            'PropertyDefinition[static=false] > FunctionExpression[generator=true]',
-            'AssignmentExpression[left.object.type="ThisExpression"] > FunctionExpression[generator=true]',
-          ].join(', '),
-          message: 'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
-        },
-      ],
+      'no-restricted-syntax': ['warn', 'WithStatement'],
       'no-return-assign': 'warn',
       'no-script-url': 'warn',
       'no-self-assign': 'warn',

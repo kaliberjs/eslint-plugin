@@ -3,7 +3,7 @@ const { rules } = require('..')
 
 const ruleTester = new RuleTester({
   languageOptions: {
-    ecmaVersion: 2020,
+    ecmaVersion: 'latest',
     sourceType: 'module',
     parserOptions: {
       ecmaFeatures: {
