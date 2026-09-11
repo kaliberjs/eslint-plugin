@@ -38,8 +38,7 @@ class Menu {
   static create() {}
   static make = function () {}
 
-  // Not methods
-  constructor() {}
+  // Accessors are exempt
   get isOpen() { return this.open }
 }
 ```
@@ -70,6 +69,8 @@ class Menu {
 }
 ```
 
+Arrow functions and computed field names inherit the surrounding `this`. A computed field name does not use the field initializer's instance.
+
 ### ❌ Invalid
 
 ```js
@@ -88,7 +89,7 @@ function toggle() {}
 
 ## Generators
 
-A generator cannot be written as an arrow function, so it gets its own message pointing at the only remedy — binding it in the constructor:
+A generator cannot be written as an arrow function. Use a function expression bound to the instance when initializing the field:
 
 ```js
 // ❌
@@ -96,33 +97,52 @@ class Stream {
   *values() {}
   values = function* () {}
 }
+```
 
+```js
 // ✅
 class Stream {
-  constructor() {
-    this.values = values.bind(this)
-  }
+  #value = 42
+
+  values = (function* () { yield this.#value }).bind(this)
 }
 
-function* values() {}
+const { values } = new Stream()
+values().next()                     // { value: 42, done: false }
 ```
+
+For constructor assignments, use `this.values = (function* () {}).bind(this)`. A separately declared generator can also be assigned with `this.values = values.bind(this)`.
+
+Binding the generator in the constructor works too, and is recognised:
+
+```js
+class Stream {
+  constructor() {
+    this.values = this.values.bind(this)
+  }
+
+  *values() {}
+}
+```
+
+The binding has to be a statement in the constructor body, assigning to the same name with `this` as the only argument. A regular method bound the same way still warns — it has an arrow form, which is the house style.
 
 ## Limitations
 
-Assigning an identifier is only flagged when the declaration is visible in the same file:
+Assigning an identifier is only flagged when it has a single declaration in the same file and is not reassigned. Imported values, parameters, and reassigned variables are treated as unknown:
 
 ```js
-function handler() {}
-this.handler = handler              // flagged
+import { handler as importedHandler } from './handler'
 
-import { handler } from './handler'
-this.handler = handler              // not flagged — the declaration is elsewhere
+function handler() {}
 
 class Menu {
-  constructor(handler) {
-    this.handler = handler          // not flagged — a parameter can be anything
+  constructor(callback) {
+    this.handler = handler          // flagged
+    this.imported = importedHandler // not flagged — the declaration is elsewhere
+    this.callback = callback        // not flagged — a parameter can be anything
   }
 }
 ```
 
-Closing those would need type information, not scope analysis.
+The rule does not perform type or control-flow analysis to recover those values.
