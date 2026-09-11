@@ -36,8 +36,6 @@ test('class methods not must be named or anonymous functions', () => {
     `class Bad {
       bad() {};
       worse = function () {};
-      *gen() {};
-      agen = function* () {};
     }`,
     config,
     'test.js'
@@ -47,8 +45,6 @@ test('class methods not must be named or anonymous functions', () => {
   assert.deepEqual(results.map(message => message.message), [
     'Use an arrow function class property so `this` is bound: `name = () => {}`',
     'Use an arrow function so `this` is bound: `name = () => {}`',
-    'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
-    'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
   ])
 })
 
@@ -56,7 +52,6 @@ test('`this` assignments must be arrow functions', () => {
   const messages = new Linter().verify(
     `class Good {
       constructor() {
-        this.agen = agen.bind(this);
         this.ok = () => {};
       }
     }`,
@@ -76,7 +71,6 @@ test('`this` assignments must not be named or anonymous functions', () => {
         this.bad1 = function () {};
         this.bad2 = func;
         this.bad4 = generatorFunc;
-        this.gen = function* () {};
       }
     }`,
     config,
@@ -87,6 +81,45 @@ test('`this` assignments must not be named or anonymous functions', () => {
   assert.deepEqual(results.map(message => message.message), [
     'Use an arrow function so `this` is bound: `this.name = () => {}`',
     'Use an arrow function so `this` is bound: `this.name = () => {}`',
+  ])
+})
+
+test('generators must be bound in the constructor', () => {
+  const messages = new Linter().verify(
+    `class Good {
+      constructor() {
+        this.agen = agen.bind(this);
+      }
+
+      static *make() {};
+      static create = function* () {};
+    }`,
+    config,
+    'test.js'
+  )
+  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
+
+  assert.deepEqual(results.map(message => message.message), [])
+})
+
+test('generators must not be methods or function properties', () => {
+  const messages = new Linter().verify(
+    `class Bad {
+      constructor() {
+        this.gen = function* () {};
+      }
+
+      *gen() {};
+      agen = function* () {};
+    }`,
+    config,
+    'test.js'
+  )
+  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
+
+  assert.deepEqual(results.map(message => message.message), [
+    'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
+    'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
     'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
   ])
 })
