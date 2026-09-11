@@ -1,11 +1,12 @@
 module.exports = {
-  getPropertyName,
+  getPropertyName, getStaticPropertyName,
   getFunctionName, getFunctionNodeName,
   getJSXElementName, getParentJSXElement,
   isRootJSXElement, hasParentsJSXElementsWithClassName, isInJSXBranch, isInExport,
   isAnonymousFunction,
   isFunctionNode, isPascalCase,
   isInsideComponent, isArrowConciseBody, isUseStateCall,
+  getCalleeName,
 }
 
 function getPropertyName(property) {
@@ -21,6 +22,20 @@ function getPropertyName(property) {
     }
     default: return null
   }
+}
+
+/**
+ * An ObjectExpression Property's key name, gated on `computed`: a computed
+ * Identifier key (`{ [x]: v }`) is a variable reference, not a name, so only
+ * a computed Literal key is trusted there. A non-computed key goes through
+ * getPropertyName as usual — this is what an options-object matcher wants
+ * (`{ secret: v }` and `{ 'secret': v }` are the same key), where
+ * getPropertyName alone is not enough because it has no way to know
+ * `property` came from a computed position.
+ */
+function getStaticPropertyName(property) {
+  if (!property.computed) return getPropertyName(property.key)
+  return property.key?.type === 'Literal' ? property.key.value : undefined
 }
 
 function getFunctionName(sourceCode, node) {
@@ -162,4 +177,19 @@ function isUseStateCall(node) {
   ) return true
 
   return false
+}
+
+/**
+ * The name a call is made under: the identifier for a bare call, the property
+ * for a member call. Deliberately receiver-blind — `crypto.createHash(…)` and
+ * `createHash(…)` answer the same, which is what a factory-name matcher wants
+ * when the module could have been destructured, aliased or namespaced.
+ *
+ * Accepts a callee or the CallExpression itself.
+ */
+function getCalleeName(node) {
+  const callee = node?.callee ?? node
+  if (callee?.type === 'Identifier') return callee.name
+  if (callee?.type === 'MemberExpression' && !callee.computed) return callee.property?.name
+  return null
 }

@@ -20,6 +20,6 @@ module.exports = [
     },
   },
   {
-    ignores: ['node_modules/**', 'rules/third-party/mocks/**'],
+    ignores: ['node_modules/**', 'rules/third-party/mocks/**', 'machinery/security/fixtures/**'],
   },
 ]

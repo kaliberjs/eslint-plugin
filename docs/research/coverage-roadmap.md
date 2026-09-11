@@ -1,0 +1,797 @@
+# Coverage roadmap — from the shipped 16 to everything statically lintable
+
+Canonical backlog companion to `rule-inventory.yaml`. Written 2026-08-24,
+after the first sixteen security rules landed. Answers: what does "100% of
+what a JS/TS linter can do" mean, and what is the path there?
+
+## The honest definition of done
+
+100% of *statically visible* weaknesses. Not 100% of the CWE universe:
+memory-safety classes (#787/#125/#416/#476), presence-of-control checks
+(rate limiting, CSRF middleware, session fixation), and dependency
+vulnerabilities (A06 — SCA's job) are permanently out of scope, per
+`taxonomy.md` §7. Everything else in the 79-entry inventory ships — either
+directly, or in Tier 3's narrowed forms after machinery work.
+
+## Current state
+
+44 rules shipped, opt-in, across two presets: 18 in `configs.security` and all
+44 in `configs['security-audit']` (see `index.js` for the split and the root
+readme for what each preset is for). Every inventory entry scoring ≥100 is
+covered except the secrets family, held deliberately pending the scope
+decision below.
+
+The counts in the tiers below were written when 16 rules shipped and describe
+the *plan*, not the current state — they have not been re-cut. `owasp-coverage.md`
+is the current map.
+
+## Tier 1 — directly lintable today (~20 rules, no new machinery)
+
+Literal matching, options-object matching, or existing taint kinds. Each ≤1 day.
+
+| id | score | note |
+|----|-------|------|
+| no-permissive-cors | 80 | two-tier: origin-reflection+credentials = finding; bare '*' = info |
+| no-insecure-cookie-flags | 53.3 | session/auth-pattern cookie names only, by default |
+| no-javascript-url | 48 | href/src javascript: literals |
+| no-sensitive-data-in-web-storage | 48 | tokens/session keys into localStorage/sessionStorage |
+| no-plain-http-url | 45 | http:// literals into request APIs; ws:// too |
+| no-dynamic-require | 45 | require(variable) |
+| no-disabled-security-framework-check | 45 | helmet()/express-limiter disabled or absent-by-config |
+| no-xxe | 80 | libxmljs/xml2js entity options |
+| no-unsafe-deserialization | 80 | node-serialize unserialize, js-yaml load w/o schema |
+| no-sha1-for-security | 13.5 | bundles with md5 |
+| no-static-iv | 32 | constant IV reused across calls |
+| no-template-autoescape-disabled | 21.3 | nunjucks/handlebars autoescape off |
+| no-timing-unsafe-secret-comparison | 18 | === on secrets instead of timingSafeEqual |
+| no-jquery-html-sink | 32 | $(html-string), .html(x) |
+| no-target-blank-without-noopener | 80 | window.open without noopener (the part still relevant) |
+
+Secrets family (precise half only — literal secrets passed to sign/createCipheriv/
+Pool configs; NO entropy scanning, ever):
+no-hardcoded-credentials (53.3), no-hardcoded-crypto-key (75),
+no-weak-jwt-secret (150), no-hardcoded-api-key (22.5).
+
+Plus deep-dive finds riding along: err.stack/err.message in HTTP responses
+(CWE-209, missing from the inventory entirely), Redis Lua EVAL sink,
+Elasticsearch query-DSL sink.
+
+## Tier 2 — taint-ready registry data (~15 rules)
+
+The kinds exist; these need source/sink entries plus corpora.
+path-traversal (45), zip-slip (40), arbitrary-file-read/write (30/40),
+open-redirect + client-side variant (36/24), nosql-injection (80),
+server-side-template-injection (80), ldap/xpath/expression-language injection
+(32/24/12), user-controlled-regexp (33.8), dangerous-url-construction (48),
+reflected-xss (13.5), log-injection (9.6), request-body-log (12),
+secret-in-log (32), insecure-random done properly via sink-gating (40),
+polynomial-redos (6.8).
+
+## Tier 3 — "almost lintable": pushing ESLint
+
+In leverage order:
+
+1. **Sanitizer modelling** — register zod/joi/DOMPurify parse results as
+   `sanitizedFor` sources. Converts warn-noise into precision across every
+   existing rule; unlocks mass-assignment (18.0 score, API3:2023 mapping).
+2. **Flow sensitivity** — kills the standing early-return allowlist `todo`;
+   the most embarrassing remaining false-positive class.
+3. **Interprocedural-lite** — extend module-sink resolution to *values* that
+   cross file boundaries within a package. Unlocks the SSRF family and part
+   of A01. Smallest version first: one-hop helper functions in the same
+   package.
+4. **String/value analysis** — statically track content/length of strings.
+   Unlocks weak-key-size (150) and predictable-token (30) honestly.
+5. **Non-JS processing** — ESLint processors for .env files, JSON/YAML config,
+   firebase.rules.json, Dockerfiles. The config-half of A05 lives outside JS.
+   Spike before committing; this changes what the plugin is.
+
+## Governance gates (non-negotiable at any cadence)
+
+Adversarial pass over everything post-SQL before release. Measured FP rates
+against real kaliber projects before declaring any tier done. Useful findings ÷
+false-positive burden remains the only metric that matters.
+
+## Dogfood measurement — 2026-08-24
+
+First evidence pass, two real kaliber projects, all 24 rules at warn:
+
+| project | first-party files | security findings | triage |
+|---|---|---|---|
+| asito-werkenbij | 327 | 6 | 6 FP: icon sprites (`__html: icon`) and config-built inline scripts (`JSON.stringify(config.x)` interpolation) |
+| alliander | 360 | 62 | ~1 FP (innerHTML save/restore idiom), rest of src hits all one family: CMS rich text rendered via dangerouslySetInnerHTML (`quote`, `title`, `i18n(...)`) |
+
+Zero crashes. Zero true vulnerabilities found (also expected: these are
+maintained sites). Every finding lands in ONE documented family: dynamic-but-
+trusted HTML. The noise profile is therefore not spread across rules — it is
+concentrated exactly where the roadmap said sanitizer modelling would pay.
+
+Key discovery: consumers cannot currently register a trusted-HTML source
+(e.g. the `i18n()` helper) as a sanitizer, because registry.validate()
+requires a receiver constraint on method-rooted sanitizers — and bare
+helper calls like `i18n('x')` have none. That validation rule exists to
+stop wrongly-trusted escapers, which is correct, but it blocks the exact
+configuration the dogfood run shows teams need. Resolution belongs to
+Tier 3 item 1 (sanitizer modelling): an explicit opt-in shape for
+user-registered helpers, distinct from built-in escapers.
+
+Interim guidance for CMS-heavy projects until then: disable
+security-no-dangerously-set-inner-html per project, or line-disable with a
+comment at trusted render sites. Both keep the other 23 rules active.
+
+### Tier 3 item 1: sanitizer modelling — shipped 2026-08-24
+
+The minimal high-leverage version is done:
+
+- `root.helper` — consumers register bare trusted helpers (`i18n()`, CMS
+  getters) explicitly; bare *method*-name registration stays rejected.
+- Consumer entries accept plain-string method/receiver patterns, matching
+  built-in regex ergonomics.
+- `sanitizedAt(node, kind)` on the analysis lets matcher-style rules ask
+  "was a clearing call made here" independent of taint; dsih consumes it,
+  so both DOM rules honor registrations.
+
+This resolves the dogfood blocker: the alliander CMS family and the asito
+config-script family are now one settings block per project instead of
+per-line disables.
+
+### Tier 3 item 2: flow sensitivity — shipped
+
+The allowlist-guard proof (`if (!TABLES.includes(t)) return`) landed, and
+was later generalized to a second guard shape: path-containment
+(`if (!resolved.startsWith(base)) return`), needed once path.resolve's own
+propagation gap was fixed and its "resolve-then-check" remediation had to
+be provable rather than accidentally quiet.
+
+### Tier 3 item 3: interprocedural-lite — Phase 0 and Phase 1 shipped
+
+Phase 0 (same-file, cheap): member-callee helpers (`const utils = { clean:
+x => x.trim() }; utils.clean(tainted)`, previously a wall — only bare
+Identifier calls got summarized) and destructured/defaulted parameters
+(`function pick({ id }) { return id }` previously never bound; now binds
+each field to the *matching property's* taint when the call site passes an
+object literal, not the whole argument's taint, since that would have been
+a new false-positive source).
+
+Phase 1 (cross file, one hop): a named import from a relative (`./x`) or
+root-slash (`/machinery/x`, the Kaliber convention — resolved against the
+nearest ancestor package.json's `src`, or an explicit
+`settings['@kaliber/security'].sourceRoot`) specifier gets the same
+summary treatment, by reading and parsing the target file directly rather
+than depending on ESLint's own lint order across files — this works
+regardless of lint order or a partial/single-file run. `require()`
+destructuring is supported alongside `import`; a bare package specifier
+never resolves (no chasing into node_modules — that is what registry
+entries are for); a rename at the export boundary (`export { x as y }`,
+`module.exports = { y: x }`) is a documented miss, not guessed at.
+Multi-hop composition (file A's helper calls an import from file B) falls
+out of the same mechanism for free, bounded by the existing `maxHops` and
+a new cross-file cycle guard (A→B→A mutual recursion, keyed by
+path+export since there is no shared node identity across two analysis
+instances).
+
+Fixing this surfaced a real, pre-existing correctness bug in the
+already-shipped same-file mechanism: taint was cached by AST node identity
+alone, with no regard for *which call's* parameter bindings were active
+when a helper's return expression was resolved — so calling the same
+helper twice with different taint in one file let whichever call ran
+first silently decide the result for both, a false negative when the
+untainted call happened to run first. Fixed by not caching while a
+bindingScope is active; both same-file and cross-file summarization share
+the fix since cross-file reuses the identical mechanism.
+
+Sized against rabobank-jobs before building Phase 1: 352 relative-import
+calls, only 18 with an already-tainted argument, most of those the
+type-coercion family (`ensureInt`/`ensureFloat`/etc., already-registered-
+sanitizer-equivalent) that resolve to confirmed-safe rather than a new
+finding — and 1432 root-slash-import calls, ~4x more than relative,
+which is why Phase 1 covers both from the start rather than relative-only
+as first scoped. Re-run after shipping: same 5 findings, same ~2.2s, zero
+regressions — the interesting leads sizing found don't reach a registered
+sink yet (Tier 2 territory), so no new findings fired in this specific
+project, as expected.
+
+### Tier 3 item 4: reachable sinks through a called function — shipped
+
+Interprocedural-lite (Phase 0/1 above) only tracks taint flowing *out* of
+a call through its return value. It stayed blind to Kaliber's own most
+common architectural shape: a route handler delegates to a same-file or
+cross-file domain/data-layer function, and the actual sink is *inside*
+that function's body, reached with the return value never used —
+`getUserSelection({ userId: req.params.userId })` where `getUserSelection`
+itself calls `db.ref(...)`. No taint-based rule could see this: the call
+site has no sink, and the callee's sink call, resolved on its own without
+the call-site's argument bindings, resolves its own parameter as
+untainted.
+
+`reachableSinksOf(node, kind)` closes this: given a call to a resolvable
+local or cross-file function, it walks the callee's body (transitively,
+through further same-file or cross-file calls, one function at a time)
+looking for a registered sink of `kind` whose argument taint traces back
+to the call's own arguments. Reuses the same same-file/cross-file
+resolution, param binding, and cycle-guard machinery as return-value
+summarization — including the same documented cross-file
+object-destructured-param miss (only a whole-object taint crosses the
+file boundary, never the AST node, so `getUserSelection({ userId })`
+called cross-file still isn't caught; only the same-file case is). Wired
+into all 8 rules that consult the sink registry from a `CallExpression`
+(no-sql-injection, no-command-injection, no-eval, no-dom-xss-sink,
+no-client-side-open-redirect, no-open-redirect, no-path-traversal,
+no-firebase-path-injection) via a shared `reportReachableSinks` helper in
+finding.js — no-dangerously-set-inner-html doesn't use the sink registry
+at all (JSX-attribute matching), so it's not part of this mechanism.
+
+A real double-report bug surfaced during development: a same-file
+function whose sink closes over an outer free variable rather than its
+own parameter (`function inner() { db.query('SELECT ' + req.query.id) }`,
+called as `inner()`) was already found by ESLint's own direct traversal
+into `inner`'s body — no call-site binding needed — and got reported a
+second time by the new mechanism walking in from the call site. Fixed by
+re-resolving the sink's argument taint with no binding context active
+before reporting, and skipping the finding if that alone already finds
+it — the mechanism only reports what genuinely depends on the call's
+arguments.
+
+A second, unrelated, real bug found and fixed along the way (not
+specific to this feature but exposed by testing it against a fixture
+with a cross-file taint hop): `hop()` deferred resolving a step's `label`
+to report time, using `sourceCode.getText(hop.node)` against whichever
+file was currently being *reported on* — wrong when `hop.node` belonged
+to a different file in the chain. Fixed by resolving the label eagerly,
+inside the correct file's own closure.
+
+An adversarial pass and a false-positive pass, run independently against
+each other, converged on the same two real defects before this shipped:
+
+- **Duplicate reports.** A diamond call graph — two functions sharing one
+  helper that contains the sink — reported the same sink call once per
+  path to it. Ordinary code (`insertOrder` and `writeAudit` both calling
+  a shared `record`) got reported twice on the same line, same-file and
+  cross-file alike. Fixed by tagging each finding with its sink AST node
+  and deduping on that identity once per top-level walk (same-file) or
+  once per cached cross-file analysis instance (cross-file, since that
+  instance — and its export-level memo — outlives any single call site).
+- **Exponential runtime with zero sinks in the file.** Without memoizing
+  a function body's walk per (function, argument-taint signature),
+  re-walking a shared function once per path to it makes cost
+  `fanout^depth`. A 26-function same-file service layer with no
+  db/fs/exec/DOM call anywhere took over twenty seconds; an 18-module
+  cross-file import chain took over ten. Fixed by memoizing each walk:
+  `sinkScanMemo` for one top-level same-file call (reset after, since a
+  different entry call can bind the same function differently), and a
+  persistent `sinkExportMemo` per cross-file analysis instance (never
+  reset, because `analyze()` already caches that instance by SourceCode
+  and reuses it across every call site that reaches the same module).
+  Both confirmed down to milliseconds after the fix, both now guarded by
+  a regression test with a wall-clock budget.
+
+A third bug, smaller but real, surfaced by the same passes: the
+double-report suppression above (the same-file case, a callee whose sink
+depends on a closure rather than a parameter) asked only "is there
+ambient taint" when re-resolving with no binding context, never "would
+that ambient taint actually be reported." A low-confidence ambient
+source at the same sink argument (`process.argv`, sitting below the
+default floor) silently swallowed a genuinely higher-confidence bound
+flow reaching the exact same sink. Fixed by only suppressing when the
+ambient resolution is at least as confident as the bound one.
+
+### Kaliber-stack gap: GROQ/Sanity injection — shipped
+
+From the stack-survey list (SAML, GROQ, express-basic-auth, Elasticsearch,
+xml2js): `no-groq-injection`, covering `client.fetch(query, params)` for
+Sanity's query language. Research found all ~30 Sanity-backed projects use
+`@sanity/client` (never `next-sanity`'s own client, never a Kaliber
+wrapper) with client instances built once and exported under a small,
+closed set of names (`client`, `sanityClient`, `readOnlyClient`,
+`authorizedClient`, `previewClient`, and two migration-script spellings).
+
+Two real, reusable engine findings came out of this, not just registry data:
+
+- **The `groq` template tag needed the taint engine itself to change.**
+  `resolveTaggedTemplate` treated every tagged template as an opaque wall
+  (correct for `sql`/Prisma's `$queryRaw`, which genuinely parameterize
+  their interpolations) — but the `groq` npm package's tag is a verified
+  no-op, `(strings, ...keys) => concatenation`, existing purely for editor
+  syntax highlighting. It is also the dominant way GROQ queries are
+  actually written (~1600 real call sites surveyed, vs. single digits for
+  a bare template literal), so bailing made the common case invisible.
+  Fixed by recognizing the bare tag name `groq` and propagating taint
+  through its interpolations exactly like a plain template literal — the
+  same name-trust shape this registry already accepts for `root.helper`
+  sanitizers, not import-traced.
+- **The sink's own vocabulary is unusually collision-prone.** `client` and
+  `fetch` are, respectively, the most generic receiver name and the most
+  generic method verb this registry uses anywhere — unlike a SQL handle,
+  an ordinary HTTP/API client wrapper is routinely named and shaped
+  exactly like `client.fetch(url)`, and `client` cannot be dropped from
+  the receiver list without losing the canonical Sanity case. A
+  false-positive pass confirmed this fires on a plain, correctly-encoded
+  HTTP fetch with a security-nonsense remediation message attached. Fixed
+  by requiring the query — or any hop the taint took to reach it, or
+  having been wrapped in the `groq` tag at any point — to carry
+  recognizable GROQ syntax before trusting the match; a query with no
+  static text anywhere at all is never excused by this, since that is the
+  most dangerous shape, not a safe one. (The "wrapped in `groq` at any
+  point" clause mattered on its own: a `+=` query-builder's earlier,
+  untainted write carries the real GROQ syntax, and the combined taint's
+  path only keeps the tainted write — without it, an adversarial-pass
+  regression case for exactly that shape went from a confirmed detection
+  to a silent miss.)
+
+Adversarial and false-positive passes run independently found real misses
+worth documenting rather than fixing immediately: chained/wrapped client
+receivers (`client.withConfig({ token }).fetch(...)`, next-sanity's
+preview-mode switch), `defineQuery()` (a verified identity wrapper,
+unrecognised as a call), Next.js App Router sources (`searchParams`/`params`
+props — the primary road for untrusted input into a GROQ query in that
+framework, not a side one), and unregistered Sanity APIs beyond `.fetch()`
+(`.listen()`, `.observable.fetch()`, next-sanity's object-shaped
+`sanityFetch({ query, params })`). All listed honestly in the rule's
+readme rather than silently accepted.
+
+Remaining Tier 3: string/value analysis, non-JS processors.
+
+### Kaliber-stack gap survey — closed out
+
+The full stack-survey list (SAML, GROQ, express-basic-auth,
+Elasticsearch, xml2js) is now resolved, three different ways:
+
+- **GROQ** — shipped (`no-groq-injection`, above).
+- **express-basic-auth** — shipped: `no-hardcoded-credentials` extended
+  for the `basicAuth({ users: { <name>: '<literal>' } })` shape, where the
+  credential sits under an arbitrary username key no fixed-key-name check
+  could ever see. Verified against real production config files across
+  three client projects with confirmed hardcoded values.
+- **Elasticsearch** — shipped (`no-elasticsearch-injection`): `query_string`
+  / `simple_query_string` (Lucene syntax injection) and `script` /
+  `script_score.script` (Painless script injection), matched as DSL keys
+  directly rather than a call's sink argument, since the DSL is a JSON
+  tree with no fixed argument position. The dominant real pattern (a
+  shared escaping helper that never writes the DSL keys in consumer
+  source) stays quiet by construction.
+- **SAML** — no rule built. `@kaliber/saml-authentication`, the one
+  library backing all 10 SAML-consuming projects, exposes no
+  misconfigurable option at all — the real vulnerability found (an XML
+  Signature Wrapping authentication bypass, confirmed with a working
+  offline proof-of-concept) lives entirely inside the library's own
+  verification logic, invisible to every one of the 10 identical,
+  correctly-written call sites. Filed as KAL-476, not an ESLint rule: a
+  library-internal fix there fixes it for all 10 projects at once, which
+  a per-project lint warning structurally cannot do.
+- **xml2js** — no rule built, and not because no pattern was found: xml2js
+  parses XML via `sax`, a pure-JS parser with no filesystem or network
+  access anywhere in its entity-handling code, and xml2js's own parser
+  wrapper passes through only three hardcoded, unrelated options
+  (`trim`, `normalize`, `xmlns`) to the underlying `sax.parser()` call —
+  every other option, including anything DTD- or entity-related, is
+  discarded. Classic XXE (external entity file read or SSRF) is not a
+  capability this parser has, through any configuration; `no-xxe`'s own
+  readme already claimed this, and this closes it out as verified rather
+  than assumed. See `no-xxe`'s readme for the full evidence.
+
+Two of five items shipped no rule at all — a reminder that "investigate
+before building" sometimes means finding there is nothing safe or useful
+to build, and that is itself the deliverable.
+
+### Reachable-sinks fix: same-file memo made persistent across the whole file
+
+A wider dogfood sweep (running the full security config across ~60 real
+Kaliber projects, at the user's request, targeting each project's whole
+tree rather than just `src`/`config`) surfaced a real, severe performance
+bug — and, separately, a scoping mistake in the sweep itself that should
+not be repeated.
+
+The bug: `reachableSinksOf`'s same-file memo (`sinkScanMemo`, added when
+this capability shipped — see "Tier 3 item 4" above) was reset after
+every *top-level* call, on the theory that a call graph is walked once
+per rule visiting its entry call site. That reasoning held for the
+fan-out shapes tested at the time (one entry point, internal fan-out) but
+missed the shape a real 26MB minified webpack bundle exposed: tens of
+thousands of *structurally unrelated* top-level call sites — no shared
+entry point — that all happen to reach the same widely-shared helper
+(module-scope functions in bundled code call each other constantly).
+Resetting the memo between them meant every single one re-walked that
+helper's body from scratch. Fixed by making the memo persistent for the
+whole analysis instance instead of one top-level call — safe because
+`bindingSignature` already disambiguates by the bound arguments' taint
+shape, not by which call reached it, the same reasoning `sinkExportMemo`
+already relied on for the cross-file case. A new regression test (3000
+independent call sites sharing one helper) went from the shape that made
+a real bundle not finish in 90 seconds to completing in well under a
+second.
+
+The scoping mistake: the wide sweep initially targeted whole project
+roots rather than first-party source directories, and hit a Kaliber-build
+convention (`target/`, the build-output directory — analogous to
+`dist/`/`build/` elsewhere, but not covered by the ignore patterns those
+names would suggest) plus a large embedded Sanity Studio's own
+`node_modules`. No JavaScript linter, security-focused or not, should be
+pointed at bundled/minified build output — style rules are meaningless
+there and a taint analysis meant for application code has no reason to
+walk vendored library internals. The fix that matters for real projects
+is standard ESLint hygiene (`ignores: ['**/target/**', ...]`), not a
+plugin-level safeguard; the persistent-memo fix above is kept regardless,
+because it is a genuine improvement for legitimate application code too
+— a shared helper called from many places in ordinary first-party source
+is exactly the shape it fixes.
+
+### Profiling follow-up: collectReturns, and a real remaining cost left alone on purpose
+
+Requested speed work, using the `/v8-perf-v2` profiling methodology
+(profile → price → apply → verify against the noise floor) against the
+same real bundle file from the sweep above.
+
+**Two real fixes, both behavior-preserving, both test-covered:**
+
+- A CPU profile of a moderate real file (1.45 MB, part of the same
+  bundle) showed `collectReturns` — the function that finds a helper's
+  own return statements, to resolve what calling it hands back — at
+  ~60% of all samples. It carried a per-return-statement
+  `enclosingFunctionOf(node) === ownerFn` check that walked the AST
+  parent chain to confirm ownership. That check is a tautology:
+  `collectReturns`'s only call site already never descends into a
+  nested function, so every return statement it finds already belongs
+  to `ownerFn` by construction. Removed the check (and the now-dead
+  `enclosingFunctionOf`) — measured effect on its own: small, a reminder
+  that a profile's self-time bucket can include an inlined callee whose
+  removal doesn't move the needle alone.
+- The real fix, found chasing why removing that check barely helped:
+  `collectReturns` ran fresh on *every* call to a given function, with
+  no caching at all — its result depends only on the function node,
+  never on a call's bindings, so a widely-shared helper's body was
+  re-scanned once per call site. The same shape of bug already fixed
+  for `reachableSinksOf`'s memo above, in the sibling mechanism nobody
+  had applied it to. Added a `Map<fnNode, returnNodes[]>` cache. Measured
+  on the same 1.45 MB file: **~16–17.6s → ~4.9s, about 3.3×** — full
+  security config, not an isolated microbenchmark. Full test suite green
+  throughout (0 regressions), plus a new regression test (3000
+  independent call sites sharing one helper, previously the exact shape
+  this bug hit).
+
+**Re-profiled after both fixes: genuinely flat, and left there on
+purpose.** The new top self-time entry was `getStaticValue`
+(`@eslint-community/eslint-utils`) at ~14% — spread across roughly 25
+independent matcher-style rules, each with its own legitimate reason to
+fold a static value on a node it visits, no single redundant call site
+to fix. Per the skill's own stopping rule (a flat profile under 30% in
+its largest bucket means the *work*, not the technique, would need to
+change), this is where the profiling stopped.
+
+**A real remaining cost, found and deliberately not chased:** the same
+26 MB bundle from the sweep above still runs slowly — traced to
+`diffMatchPatch` (a vendored diff-algorithm library, likely from a
+rich-text editor's change tracking) called repeatedly with *genuinely
+different* argument taint each time. This is not a caching bug: the memo
+is keyed by confidence-and-sanitized-kind signature specifically so that
+different taint shapes resolve independently, and here they legitimately
+differ call to call, so the memo correctly does not share the work.
+Fixing this further would mean a coarser, riskier caching strategy or an
+explicit complexity cap with a real false-negative cost — for a pattern
+that only shows up in bundled/vendored code a linter should never be
+pointed at in the first place (see the scoping note above). Priced and
+declined, not overlooked.
+
+## Dogfood measurement — rabobank-jobs
+
+Third real kaliber project, run at the time with all 38 then-shipped rules at
+warn (the single opt-in preset that predates the `security` / `security-audit`
+split), run
+externally against the checkout (no dependency added, nothing committed
+there) via this repo's own ESLint 10 pointed at rabobank-jobs' source.
+
+| project | first-party files | security findings | time | triage |
+|---|---|---|---|---|
+| rabobank-jobs | 686 | 14 → 5 after fixes | 2.4s | see below |
+
+Zero crashes. Two NEW false-positive classes not seen in the asito/
+alliander runs, both now fixed:
+
+- `no-target-blank-without-noopener`: `rel="noreferrer"` implies
+  `noopener` per the HTML spec, but the check only matched the literal
+  substring `noopener`. 4 of 4 target="_blank" anchors in the project
+  used `noreferrer` alone.
+- `no-timing-unsafe-secret-comparison`: `hash !== ''` flagged a URL
+  fragment (SPA routing), because `hash` is in the secret-name regex.
+  Fixed structurally — skip existence checks (comparison against
+  undefined/null/empty-string) rather than narrowing the regex, since an
+  existence check leaks no timing information about a secret regardless
+  of the identifier's name.
+
+One instance of the already-documented dynamic-but-trusted-HTML family,
+same shape as the asito/alliander runs but a new sanitizer: `@kaliber/
+safe-json-stringify` (escapes `<`, `>`, `/`, U+2028/U+2029 — verified
+against its source — exactly the JSON-in-script-tag shape used for
+structured data and analytics dataLayer pushes). Registered as the first
+built-in `root.helper` sanitizer; this also required generalizing
+no-dangerously-set-inner-html's constant check to look inside template
+literals per-interpolation, since the real usage is a sanitizer call
+interpolated into an otherwise-static template, not a bare call.
+
+Residual 5 findings are all genuine dynamic-but-*unverified*-HTML: a raw
+SVG icon prop, CMS rich text, search-highlight markup, font-face CSS, and
+one unsanitized tracking-script interpolation. None resolved by a
+sanitizer registration — each needs a human decision about the actual
+trust boundary, which is the rule doing its job.
+
+### A10 SSRF: `no-ssrf` — shipped 2026-08-25
+
+Takes A10:2021 from zero rules to one, and closes the first of the four
+`REQUIRES_INTERPROCEDURAL_ANALYSIS` candidates `owasp-coverage.md` flagged
+as "worth a fresh look" now that the taint layer exists.
+
+Unblocked by one engine capability added for it: `sinkAt` previously
+matched two callee shapes — method+receiver, and an `Identifier` resolved
+through `root.module` to a real import binding. Native `fetch` is neither.
+It is never imported, so there was literally no way to register the single
+most important SSRF sink in a Node 18+ or browser codebase. `sinkAt` now
+also matches `root: { global: '<name>' }` through the same shadowing-safe
+`isGlobalNamed` check the browser sources use for `location`/`document`, so
+a project's own `const fetch = require('./our-fetch')` does not match while
+the platform global does.
+
+The rest was registry data plus a thin rule, as the revised
+implementation_cost of 2 in the inventory predicted. Eleven `ssrf.*` sink
+entries (fetch and its polyfill packages, axios, got, node http/https,
+undici), reusing the existing `url` kind rather than minting one for
+CWE-918 — the deciding argument being sanitizer scope, not taxonomy: every
+sanitizer that makes a URL safe to redirect to (an allowlisted host,
+`encodeURIComponent` on a segment of a fixed-base URL) makes it safe to
+request, so a separate kind would have needed those entries duplicated, and
+a forgotten duplicate fails open. The `ssrf.` id prefix keeps the two
+open-redirect rules and this one from reporting each other's sinks, exactly
+as `firebase.` does inside the `path` kind — both redirect rules gained the
+inverse filter in the same change.
+
+`reportReachableSinks` carried its weight immediately: the canonical SSRF
+shape is a route handler delegating to a `fetchRemote(url)` data-layer
+helper, which is precisely what Tier 3 item 4 was built for, and it
+resolved end to end with no further engine work.
+
+One shared-layer extension, in the guard layer rather than the sink layer:
+a membership check now also proves the flow safe when the checked
+expression is a *host* read of the guarded value —
+`ALLOWED.includes(new URL(input).hostname)`, `.host`, `.origin`. This is
+the OWASP-recommended SSRF remediation and the documented false-positive
+class for the whole rule (link preview, webhook delivery, feed readers), so
+failing to recognise it would have meant reporting the fix. Guarded against
+the unsound spellings: two-argument `new URL(input, base).hostname` does
+not clear (the base can be overridden by a `//` or scheme-carrying input),
+nor does a check on a different expression. Recorded imprecision: guards
+clear taint for every kind at once, so a host-allowlisted URL string
+interpolated into SQL is a false negative — not observed in any surveyed
+codebase, and cheaper than the alternative.
+
+Explicitly out of scope for this pass, documented in the rule readme rather
+than half-implemented: `puppeteer`/`playwright` `page.goto`, image and
+document processors, and `http-proxy-middleware`'s `target`. All three are
+config-object properties rather than call arguments — the matcher shape
+`no-elasticsearch-injection` uses — and lower value against the "we mainly
+use native fetch" signal from the codebase owner.
+
+**Adversarial and false-positive passes, and what they changed.** Both ran
+against the first implementation; between them they moved four things.
+
+The adversarial pass found a real soundness bug in the host-allowlist guard
+above, introduced by that same change: `hostCheckTarget` accepted *any*
+member read named `host`/`hostname`/`origin` and cleared the whole object,
+so `if (!ALLOWED.includes(q.host)) return` silenced `fetch(q.url)` — and,
+because guards clear every kind at once, `db.query('… ' + q.name)` three
+lines later. Fixed by requiring the object to be provably a parsed URL: an
+inline one-argument `new URL(x)`, or an identifier whose single definition
+initialises it from one. That keeps every spelling developers actually
+write while making a membership test on a request property prove something
+about that property alone.
+
+It also found that every `ssrf.*` registry entry listed `default` in its
+`name` pattern while `matchesModuleSink` never produced it — an
+`ImportDefaultSpecifier` has no `imported` node, so the matcher fell back to
+the *local* name and `import fetch from 'node-fetch'` matched only by
+coincidence. One line; `import f from 'node-fetch'` and `import ax from
+'axios'` now match.
+
+The false-positive pass returned two ship blockers, both fixed rule-locally
+rather than in the shared layer:
+
+- A fixed origin with a tainted path or query segment
+  (`fetch(\`${process.env.API_URL}/items/${req.params.id}\`)`) was reported
+  — the most common non-literal request in any codebase, and *precisely
+  what the rule's own message recommends*. `authorityIsFixed` now walks the
+  template or `+` chain and reports only when input can still reach the
+  authority. Deliberately not moved into the shared `url` kind: an
+  unescaped segment on a fixed origin is still a path-traversal and
+  open-redirect concern, and those rules should keep seeing it.
+- Member-rooted sinks matched a receiver *name* with no binding check, so
+  `this.http.get(path)` (Angular HttpClient, Nest HttpService) and injected
+  or doubled clients reported at full confidence. The rule now requires a
+  plain identifier receiver — a module namespace always is one. The
+  residual (a project-local module bound to the bare name `http`/`axios`/
+  `got`) is accepted at the same bar `sql.query` and `shell.shelljs.exec`
+  already ship at, with `registry.disable` as the per-project lever.
+
+Plus one narrowing of its own class: browser sources never reach these
+sinks. `fetch(location.origin + '/api/ping')` is not SSRF — no server makes
+that request — and reporting it printed "the server requests that URL"
+about a file with no server in it.
+
+Both passes then ran again against the fixed rule, and the second round
+found three more things — two false-positive families closed
+(`new URL(literal-prefixed path, base)`, and relative references like
+`fetch('/api/items/' + id)`, neither of which has an authority an attacker
+can reach) and one more soundness hole in `authorityIsFixed` itself, worth
+recording because it is the exact failure mode a lexical check invites:
+
+```js
+const proto = req.secure ? 'https:' : 'http:'
+fetch(`${proto}//${req.query.host}/x`)      // was unreported
+```
+
+Any untainted interpolation set "a base has been seen", after which the
+first literal `/` closed the authority — so the `//` of a scheme split
+across a hole was read as the *end* of an authority that had never begun,
+and a plain host injection read as fixed. Choosing the scheme from
+`req.secure` or `x-forwarded-proto` is ordinary behind a proxy. Fixed: a
+leading `//` in static text opens an authority rather than closing one.
+The inline `${scheme}://${host}/x` spelling was already defended.
+
+Left open and documented rather than fixed: a path that arrives behind an
+identifier or a parameter (`` fetch(`${BASE}${path}`) `` in a project fetch
+wrapper) still reports. The honest narrowing needs the callee's parameter
+bound to the caller's argument, which reportReachableSinks does not hand to
+a rule; and the shape is genuinely ambiguous — `api('@evil.com/x')`
+re-hosts it — so the workaround (write the `/` in the template) is also the
+better code. That trade is the whole reason the check lives in the rule
+rather than the shared layer, where it would have had to be decided once
+for every kind.
+
+### A02 crypto: `no-weak-key-size` — shipped 2026-08-25
+
+The inventory's highest-scoring candidate (150.0) and its cheapest: a
+numeric comparison at a call site, no taint, no engine work, no shared-layer
+change. `node:crypto` only — `generateKeyPair`/`generateKeyPairSync`
+(`modulusLength < 2048` for `rsa`/`rsa-pss`/`dsa`, `namedCurve` below 224
+bits for `ec`) and `createDiffieHellman` with a numeric prime length. The
+`ed25519`/`x25519`/`ed448`/`x448` types have no size parameter and are never
+matched.
+
+Two decisions worth recording.
+
+**Curve size is read from the name, not from an allowlist.** Every curve in
+OpenSSL's list carries its field size as the only three-digit run in its
+name, so `secp112r1` → 112 and `P-521` → 521 with one regex. The obvious
+alternative — an allowlist of P-256/P-384/P-521 and flag everything else as
+"non-standard" — would report `secp256k1` and `brainpoolP256r1`, which are
+256-bit curves and not the weakness CWE-326 describes. A rule that fires on
+the entire Bitcoin/Ethereum ecosystem for a taxonomy preference is how a
+`false_positive_risk: 1` rule stops being one. A curve name with no readable
+size is left alone rather than guessed at.
+
+**Third-party generation deferred, not half-implemented.** node-forge
+(`forge.pki.rsa.generateKeyPair({ bits })`, plus a positional
+`(bits, e, cb)` form), node-rsa (`new NodeRSA({ b: 512 })`, a constructor
+with a one-letter option key) and WebCrypto's `subtle.generateKey` each need
+their own callee *and* argument shape. Same call no-ssrf made for
+puppeteer/playwright: documented as a gap in the rule readme. Neither
+library is in this codebase.
+
+The adversarial pass found two misses, both in the callee matcher rather
+than the comparison, both fixed: a renamed destructure or named import
+(`const { generateKeyPairSync: gen } = require('crypto')`) matched on the
+*local* name and so did not match at all — the binding is already resolved
+for the provenance check, so reading the imported name off it is free; and
+a computed member callee (`crypto['generateKeyPairSync']`) was dropped.
+Accepted misses, asserted in the corpus so a future change has to notice
+them: an options object behind a variable, a same-file helper wrapping the
+call, and a size from config. That is the established posture for every
+matcher-shaped rule here (no-des-3des, no-md5, no-jwt-algorithm-confusion) —
+the taint engine exists for flows, and a key size is not a flow.
+
+The false-positive pass returned nothing to fix, which was the expectation
+for a rule of this shape. The corpus it produced is still the useful
+artifact: `createPublicKey`/`createPrivateKey` (import, not generation),
+`getDiffieHellman('modp14')` and `createDiffieHellman(existingPrime, gen)`
+(loading a group, not generating one), symmetric key material
+(`generateKeySync('aes', { length: 256 })`, `scryptSync(pw, salt, 32)` — 32
+bytes of AES key is not a 32-bit modulus), and `generateKeyPair` on a KMS
+client, a wallet library or a test double. The last family is the reason the
+rule requires node:crypto provenance in the first place, mirroring
+no-jwt-algorithm-confusion's `isFromJwtModule`.
+
+One thing the rule deliberately does not do: detect test fixtures. A 512-bit
+key generated for test speed reports exactly like any other, and the readme
+says so. "Is this file a test" is not statically knowable, and a security
+rule that guesses at intent loses trust in both directions.
+
+### A01 access control: `no-zip-slip` — shipped 2026-08-25
+
+Picked out of turn. Its priority score (40.0) is a long way below the
+candidates at the top of the list, and it was chosen on a different
+criterion: a stack-relevance sweep of the 60 `@kaliber/build` projects on
+disk found real archive extraction in `landal-jobs` and `landal-jobs-sanity6`
+(`scripts/download-location-info.js` stream-parses a remote ZIP with
+`unzipper.Parse()`; `scripts/download-geoip-database.js` — present in
+thirteen projects — runs `tar.x` over a downloaded tarball). None of the
+top-scoring candidates had a single real call site in the fleet. A rule that
+fires on code we actually write beats a rule that scores well in a
+spreadsheet.
+
+Neither of those call sites is vulnerable, which shaped the rule more than
+anything else. The landal script matches one known entry by name
+(`entry.path === csvFilename`) and drains the rest — it never uses an
+entry's own name as a filesystem destination. The geoip scripts pass
+`onentry` to collect names and let node-tar do the extracting. A first-day
+false positive on either would have destroyed the reason the rule was picked,
+so both shapes are in `false-positive.test.js` and the rule was run against
+the real files (and every other archive-handling file in the fleet: 14 files,
+13 projects, zero findings).
+
+**The library-call sinks in the inventory entry turned out to be wrong, and
+were dropped.** The entry lists `adm-zip extractAllTo / extractEntryTo` and
+`tar.x / tar.extract without a filter` as sinks. Checking the actual
+installed packages says otherwise: `adm-zip@0.5.18`/`@0.6.0` run every entry
+name through `canonical()` + `sanitize()` before writing; `tar@7.5.22`
+strips absolute paths and refuses `..` entries unless `preservePaths` says
+otherwise; `unzipper@0.12.5`'s `Extract` and `Open.*.extract` both do an
+explicit `path.relative` containment check under a comment naming zip slip.
+Flagging a bare `tar.x({ cwd })` would have made the rule wrong about the
+library used in thirteen of our own projects. Two more libraries turned out
+the same way on checking: yauzl runs `validateFileName()` on every entry
+before emitting it (rejects `..`, absolute paths and backslashes, since
+2.7.0), and node-stream-zip throws `Malicious entry` at central-directory
+read time (since 1.4.0). So the sink set is (a) code that joins an entry's
+own name onto a destination itself, and (b) the two options that switch a
+built-in check off: `preservePaths: true` (tar) and
+`skipEntryNameValidation: true` (node-stream-zip).
+
+The inventory's sanitizer note ("libraries that containment-check by default
+(modern `tar` does; document the version)") is the part that survived, and
+the version story is messier than the note implies. The 2021 advisory chain
+(CVE-2021-32803/32804/37701/37712/37713) closes at 4.4.18 / 5.0.10 / 6.1.9 —
+but node-tar shipped a further run of containment bypasses in 2025–2026,
+last fixed in 7.5.11 and 7.5.16. The readme states it as: bare `tar.x` is
+the correct way to extract and is not reported, *and* "we use tar's default"
+is necessary rather than sufficient — which version is installed is
+`npm audit`'s question, not a linter's (A06 is out of scope by design).
+
+One tar detail worth recording because the original spec had it the other
+way round: **`onentry` is not a check.** node-tar calls it with entries that
+already passed `filter`, and it cannot refuse anything (it was deprecated in
+7.4 in favour of the equally non-blocking `onReadEntry`). So a `filter`
+silences `preservePaths: true` and an `onentry` does not — asserted both
+ways in `test.js`.
+
+Entry provenance is what keeps this cheap and quiet. An identifier counts as
+an archive entry only if it is the parameter of an `'entry'` handler, of an
+`onentry`/`onEntry`/`onReadEntry` option, or of an iteration over
+`directory.files` / `zip.getEntries()` — that last one gated on an archive
+library being imported in the file, because `.files` is otherwise far too
+common. Without that gate every `path.join(dir, file.name)` in the codebase
+would be a finding, which is `no-path-traversal`'s territory anyway.
+
+The containment check is recognised generously and on purpose: a
+`startsWith`, a `path.relative`, a `path.basename`, or a call whose name
+says it validates, anywhere in an enclosing function, silences the report —
+as does a `filter` on a tar call. The rule does not verify that
+the check is correct, exactly as no-jwt-algorithm-confusion does not verify
+an `algorithms` list. The asymmetry is the argument: firing at a developer
+who visibly checked is how a rule gets disabled, and a disabled rule misses
+the far more common case where nobody checked at all. The known consequence
+— `if (entry.path.startsWith('__MACOSX')) return` silences a genuinely
+vulnerable handler — is asserted in the adversarial corpus.
+
+The rule still reports hand-rolled extraction in yauzl and node-stream-zip,
+whose entry names are already validated by the time the handler sees them.
+That is defence in depth, not an inconsistency, and the readme argues it: a
+library extraction call has no user code to fix, while a hand-rolled
+`path.join(dest, entry.fileName)` is safe only by virtue of a default the
+author did not write and can switch off three different ways — and neither
+library validates symlink *targets* at all.
+
+Not attempted, and documented as gaps rather than half-implemented: symlink
+and hardlink entries whose target escapes (a check on the name cannot see
+it — this is the live unpatched bug class in extract-zip and decompress
+today), a guard that is present but wrong (the sibling-prefix
+`indexOf(dest) === 0`, which is exactly what unzipper shipped until 0.12.5
+and what decompress still ships), extraction inside a dependency, zip bombs
+(CWE-409, a different weakness the inventory puts out of scope), and
+hand-rolled writes over `decompress`'s resolved `files` array, which arrives
+as a bare identifier with nothing to match on.
