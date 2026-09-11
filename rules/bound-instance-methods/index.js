@@ -32,6 +32,7 @@ module.exports = {
 
       AssignmentExpression(node) {
         if (!isAssignmentToThis(node)) return
+        if (!refersToInstance(node)) return
 
         reportUnboundThis(node, node.right)
       },
@@ -53,6 +54,45 @@ function isPlainMethod(node) {
 
 function isAssignmentToThis(node) {
   return node.left.type === 'MemberExpression' && node.left.object.type === 'ThisExpression'
+}
+
+/**
+ * `this` only means the instance inside a non-static method body or a field
+ * initializer. Plain functions, object methods, static methods, static blocks
+ * and module scope each rebind it, arrow functions do not.
+ */
+function refersToInstance(node) {
+  const owner = findThisOwner(node)
+  if (!owner) return false
+
+  if (owner.type === 'PropertyDefinition') return !owner.static
+
+  return isInstanceMethodBody(owner)
+}
+
+function findThisOwner(node) {
+  for (let current = node.parent; current; current = current.parent) {
+    if (current.type === 'ArrowFunctionExpression') continue
+    if (rebindsThis(current)) return current
+  }
+
+  return null
+}
+
+function rebindsThis(node) {
+  return (
+    node.type === 'FunctionExpression' ||
+    node.type === 'FunctionDeclaration' ||
+    node.type === 'StaticBlock' ||
+    node.type === 'PropertyDefinition'
+  )
+}
+
+function isInstanceMethodBody(node) {
+  if (node.type !== 'FunctionExpression') return false
+
+  const member = node.parent
+  return member.type === 'MethodDefinition' && !member.static
 }
 
 function isFunctionExpression(node) {

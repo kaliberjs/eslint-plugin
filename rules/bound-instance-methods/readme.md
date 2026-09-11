@@ -46,6 +46,30 @@ class Menu {
 
 Assigning a value that is not a function is untouched — `this.name = name` stays as it is.
 
+`this` is only the instance inside a non-static method body or a field initializer. Everywhere else it means something else, and the rule leaves it alone:
+
+```js
+class Menu {
+  constructor() {
+    function helper() {
+      this.toggle = function () {}    // `this` is not the menu
+    }
+
+    const o = {
+      helper() { this.toggle = function () {} }   // `this` is `o`
+    }
+  }
+
+  static create() {
+    this.toggle = function () {}      // `this` is the class
+  }
+
+  static {
+    this.toggle = function () {}      // `this` is the class
+  }
+}
+```
+
 ### ❌ Invalid
 
 ```js
