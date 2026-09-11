@@ -11,79 +11,29 @@ test('parses JSX with the shared config', () => {
   assert.deepEqual(fatalMessages, [])
 })
 
-test('class methods must be arrow function properties', () => {
-  const messages = new Linter().verify(
-    `class Good {
-      constructor() {};
-
-      get x() { return 1 };
-
-      static make() {};
-      static create = function () {};
-
-      *gen() {};
-      agen = function* () {};
-      ok = () => {};
-    }`,
-    config,
-    'test.js'
-  )
-  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
-
-  assert.deepEqual(results.map(message => message.message), [])
-})
-
-test('class methods not must be named or anonymous functions', () => {
+// RuleTester takes the rule object directly, so rules/bound-instance-methods/test.js
+// keeps passing when the shared config never enables the rule. This is the only test
+// that fails if the `@kaliber/bound-instance-methods` entry is dropped from the config.
+test('the shared config enables bound-instance-methods', () => {
   const messages = new Linter().verify(
     `class Bad {
       bad() {};
-      worse = function () {};
-    }`,
-    config,
-    'test.js'
-  )
-  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
+      agen = function* () {};
 
-  assert.deepEqual(results.map(message => message.message), [
-    'Use an arrow function class property so `this` is bound: `name = () => {}`',
-    'Use an arrow function so `this` is bound: `name = () => {}`',
-  ])
-})
-
-test('`this` assignments must be arrow functions', () => {
-  const messages = new Linter().verify(
-    `class Good {
       constructor() {
-        this.agen = agen.bind(this)
-        this.gen = function* () {}
-        this.ok = () => {}
+        this.worse = value;
 
-        function* agen() {}
+        function value() {};
       }
     }`,
     config,
     'test.js'
   )
-  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
+  const results = messages.filter(message => message.ruleId === '@kaliber/bound-instance-methods')
 
-  assert.deepEqual(results.map(message => message.message), [])
-})
-
-test('`this` assignments must not be named or anonymous functions', () => {
-  const messages = new Linter().verify(
-    `class Bad {
-      constructor() {
-        this.bad = function () {}
-        this.worse = function named() {}
-      }
-    }`,
-    config,
-    'test.js'
-  )
-  const results = messages.filter(message => message.ruleId === 'no-restricted-syntax')
-
-  assert.deepEqual(results.map(message => message.message), [
-    'Use an arrow function so `this` is bound: `this.name = () => {}`',
-    'Use an arrow function so `this` is bound: `this.name = () => {}`',
+  assert.deepEqual(results.map(message => message.messageId), [
+    'useArrowFunction',
+    'bindGenerator',
+    'bindReference',
   ])
 })
