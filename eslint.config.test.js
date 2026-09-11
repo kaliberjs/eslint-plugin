@@ -21,8 +21,6 @@ test('class methods must be arrow function properties', () => {
       static make() {};
       static create = function () {};
 
-      *gen() {};
-      agen = function* () {};
       ok = () => {};
     }`,
     config,
@@ -38,6 +36,8 @@ test('class methods not must be named or anonymous functions', () => {
     `class Bad {
       bad() {};
       worse = function () {};
+      *gen() {};
+      agen = function* () {};
     }`,
     config,
     'test.js'
@@ -47,6 +47,8 @@ test('class methods not must be named or anonymous functions', () => {
   assert.deepEqual(results.map(message => message.message), [
     'Use an arrow function class property so `this` is bound: `name = () => {}`',
     'Use an arrow function so `this` is bound: `name = () => {}`',
+    'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
+    'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
   ])
 })
 
@@ -54,11 +56,8 @@ test('`this` assignments must be arrow functions', () => {
   const messages = new Linter().verify(
     `class Good {
       constructor() {
-        this.agen = agen.bind(this)
-        this.gen = function* () {}
-        this.ok = () => {}
-
-        function* agen() {}
+        this.agen = agen.bind(this);
+        this.ok = () => {};
       }
     }`,
     config,
@@ -73,8 +72,11 @@ test('`this` assignments must not be named or anonymous functions', () => {
   const messages = new Linter().verify(
     `class Bad {
       constructor() {
-        this.bad = function () {}
-        this.worse = function named() {}
+        this.worse = function named() {};
+        this.bad1 = function () {};
+        this.bad2 = func;
+        this.bad4 = generatorFunc;
+        this.gen = function* () {};
       }
     }`,
     config,
@@ -85,5 +87,6 @@ test('`this` assignments must not be named or anonymous functions', () => {
   assert.deepEqual(results.map(message => message.message), [
     'Use an arrow function so `this` is bound: `this.name = () => {}`',
     'Use an arrow function so `this` is bound: `this.name = () => {}`',
+    'A generator cannot be an arrow function, bind `this` in the constructor: `this.name = name.bind(this)`',
   ])
 })
