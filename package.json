@@ -9,7 +9,7 @@
     "lint:fix": "eslint --config eslint.self.config.js --fix .",
     "migrate": "node bin/migrate-to-flat-config.js"
   },
-  "version": "2.2.1",
+  "version": "2.3.0",
   "dependencies": {
     "@eslint/compat": "^2.1.0",
     "@eslint/js": "^10.0.0",
