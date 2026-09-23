@@ -75,6 +75,7 @@ module.exports = [
       '@kaliber/jsx-key': 'warn',
       '@kaliber/import-sort': 'warn',
       '@kaliber/stable-query-client': 'warn',
+      '@kaliber/no-inline-jsdoc-param-object': 'warn',
 
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],

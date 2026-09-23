@@ -6,6 +6,12 @@ module.exports = {
   isAnonymousFunction,
   isFunctionNode, isPascalCase,
   isInsideComponent, isArrowConciseBody, isUseStateCall,
+  getIndentation,
+}
+
+// the whitespace a fixer needs to repeat when it expands a node over several lines
+function getIndentation(sourceCode, node) {
+  return sourceCode.lines[node.loc.start.line - 1].match(/^[ \t]*/)[0]
 }
 
 function getPropertyName(property) {
