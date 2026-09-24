@@ -77,6 +77,17 @@ module.exports = [
       '@kaliber/stable-query-client': 'warn',
       '@kaliber/bound-instance-methods': 'warn',
 
+      '@kaliber/data-x-required': 'warn',
+      '@kaliber/data-x-latin-only': 'warn',
+      '@kaliber/data-x-clickout-prefix': 'warn',
+      '@kaliber/data-x-unique-id': 'warn',
+      '@kaliber/data-x-cta-prefix': 'warn',
+      '@kaliber/data-x-onpage-action-format': 'warn',
+      '@kaliber/data-x-context': 'warn',
+      '@kaliber/data-x-toggle-prefix': 'warn',
+      '@kaliber/data-x-sectioning-elements': 'warn',
+      '@kaliber/data-x-form-naming': 'warn',
+
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
       '@stylistic/indent': ['warn', 2, {
