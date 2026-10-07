@@ -1,13 +1,14 @@
 const docsUrl = require('../../machinery/docsUrl')
 const { staticValue } = require('../../machinery/static-value')
-const { keyOf, pathOf, fieldsOf, accessOf } = require('../../machinery/firebase-rules')
+const { keyOf, pathOf, fieldsOf, isOpenToClients } = require('../../machinery/firebase-rules')
 
 // A record any signed-in client can write, with a field that names its owner.
 // Unless a rule ties that field to `auth.uid`, the client can write someone
 // else's uid into it, and whatever reads the record acts for that user.
 
-const uidField = /^(uid|userUid|userId|ownerUid|ownerId)$/
+const ownerFieldNames = ['uid', 'userUid', 'userId', 'ownerUid', 'ownerId']
 
+/** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
   meta: {
     type: 'problem',
@@ -39,16 +40,16 @@ module.exports = {
 
         const write = staticValue(node.value, sourceCode, env)
 
-        if (!accessOf(write.value)) return
+        if (!isOpenToClients(write.value)) return
 
         for (const field of fieldsOf(node, sourceCode)) {
           const name = keyOf(field, sourceCode)
 
-          if (!uidField.test(name)) continue
+          if (!isOwnerField(name)) continue
 
           const validation = staticValue(field.value, sourceCode, env)
 
-          if (validation.unresolved || mentionsAuthUid(validation.value)) continue
+          if (validation.unresolved || checksAuthUid(validation.value)) continue
 
           context.report({ node: field, messageId: 'unboundUid', data: { field: name, path: pathOf(node, sourceCode).join('/') } })
         }
@@ -57,10 +58,26 @@ module.exports = {
   },
 }
 
-function mentionsAuthUid(validation) {
+/**
+ * @param {string | null} name - a field key
+ * @returns {name is string} whether the field names the user a record belongs to
+ */
+function isOwnerField(name) {
+  return name !== null && ownerFieldNames.includes(name)
+}
+
+/**
+ * @param {unknown} validation - a folded field rule, often `{ '.validate': '…' }`
+ * @returns {boolean}
+ */
+function checksAuthUid(validation) {
   return stringsOf(validation).some(text => text.includes('auth.uid'))
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string[]} every string in `value`, searched through nested objects
+ */
 function stringsOf(value) {
   if (typeof value === 'string') return [value]
   if (value && typeof value === 'object') return Object.values(value).flatMap(stringsOf)

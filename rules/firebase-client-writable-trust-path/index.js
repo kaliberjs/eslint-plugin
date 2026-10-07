@@ -1,6 +1,6 @@
 const docsUrl = require('../../machinery/docsUrl')
 const { staticValue } = require('../../machinery/static-value')
-const { keyOf, pathOf, fieldsOf, accessOf } = require('../../machinery/firebase-rules')
+const { keyOf, pathOf, fieldsOf, isOpenToClients } = require('../../machinery/firebase-rules')
 
 // A Firebase Realtime Database rules file, written as JavaScript that builds
 // the rules object. A `.write` that any signed-in client passes lets that
@@ -9,8 +9,12 @@ const { keyOf, pathOf, fieldsOf, accessOf } = require('../../machinery/firebase-
 // a claim nobody checked. Single-file and lenient: a value that does not fold
 // to a constant is skipped, or reported as `unresolved` when asked.
 
+const camelCaseBoundary = /([a-z0-9])([A-Z])/g
+const nonAlphanumerics = /[^a-z0-9]+/
+
 const trustWords = ['verified', 'approved', 'trusted', 'admin', 'confirmed', 'paid', 'validated', 'internal', 'system', 'employee']
 
+/** @type {import('eslint').Rule.RuleModule & { trustWords: string[] }} */
 module.exports = {
   trustWords,
   meta: {
@@ -46,26 +50,42 @@ module.exports = {
 
         const write = staticValue(node.value, sourceCode, env)
 
-        if (write.unresolved) {
-          if (reportUnresolved) context.report({ node, messageId: 'unresolved', data: { reason: write.unresolved } })
-          return
-        }
-        if (!accessOf(write.value)) return
+        if (write.unresolved && reportUnresolved) context.report({ node, messageId: 'unresolved', data: { reason: write.unresolved } })
+        if (write.unresolved || !isOpenToClients(write.value)) return
 
         const path = pathOf(node, sourceCode)
-        const fields = fieldsOf(node, sourceCode).map(field => keyOf(field, sourceCode)).filter(Boolean)
-        const names = [...path, ...fields].filter(name => claimsTrust(name, words))
+        const fieldNames = fieldsOf(node, sourceCode).map(field => keyOf(field, sourceCode)).filter(name => name !== null)
+        const trustClaimingNames = [...path, ...fieldNames].filter(name => claimsTrust(name, words))
 
-        if (names.length) context.report({ node, messageId: 'trustPath', data: { path: path.join('/'), names: names.join(', '), value: String(write.value) } })
+        if (trustClaimingNames.length === 0) return
+
+        context.report({
+          node,
+          messageId: 'trustPath',
+          data: { path: path.join('/'), names: trustClaimingNames.join(', '), value: String(write.value) },
+        })
       },
     }
   },
 }
 
+/**
+ * @param {string} name - a path segment or field key
+ * @param {string[]} words - lowercase trust words
+ * @returns {boolean} whether one of the name's words is a trust word
+ */
 function claimsTrust(name, words) {
   return wordsOf(name).some(word => words.includes(word))
 }
 
+/**
+ * @example
+ * wordsOf('isEmployee')     // ['is', 'employee']
+ * wordsOf('verified-queue') // ['verified', 'queue']
+ *
+ * @param {string} name
+ * @returns {string[]} the name's lowercase words, split on camelCase and non-alphanumerics
+ */
 function wordsOf(name) {
-  return String(name).replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+  return name.replace(camelCaseBoundary, '$1 $2').toLowerCase().split(nonAlphanumerics).filter(Boolean)
 }

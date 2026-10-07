@@ -5,35 +5,79 @@ const { staticValue } = require('./static-value')
 // that builds the rules object. Rule values are folded with staticValue; the
 // access checks are textual, on the folded rule expression.
 
-module.exports = { keyOf, pathOf, fieldsOf, accessOf, clientDisjunctsOf }
+module.exports = { keyOf, pathOf, fieldsOf, accessOf, isOpenToClients, audienceOf, clientDisjunctsOf }
 
 const ruleKeys = new Set(['.read', '.write', '.validate', '.indexOn'])
+const signedInCheck = /auth\s*!==?\s*null/
+const bareSignedInCheck = /^auth\s*!==?\s*null$/
+const namedClientCheck = /auth\.(uid|token)/
 
 /**
- * Who a folded `.read` or `.write` lets in without naming them:
- * - `anyone`: a disjunct that is `true`
- * - `signed-in`: a disjunct with `auth != null` and no `auth.uid` or `auth.token`
- * - `null`: neither
+ * Who a folded `.read` or `.write` lets in without naming them.
  *
- * With `{ unconditional: true }` the signed-in disjunct must be `auth != null`
- * and nothing else, the shape that grants every request.
+ * @example
+ * accessOf('auth != null && newData.exists()')                          // 'signed-in'
+ * accessOf('auth != null && newData.exists()', { unconditional: true }) // null
+ * accessOf("auth.uid === 'worker' || true")                             // 'anyone'
+ *
+ * @param {unknown} value - a folded rule value
+ * @param {{ unconditional?: boolean }} [options] - with `unconditional`, the
+ *   signed-in disjunct must be `auth != null` and nothing else, the shape that
+ *   grants every request
+ * @returns {Access | null} `anyone` for a `true` disjunct, `signed-in` for
+ *   `auth != null` without `auth.uid` or `auth.token`, `null` for neither
  */
 function accessOf(value, { unconditional = false } = {}) {
   const disjuncts = clientDisjunctsOf(value)
 
   if (disjuncts.includes('true')) return 'anyone'
-  if (disjuncts.some(x => !unconditional || /^auth\s*!==?\s*null$/.test(x))) return 'signed-in'
+  if (disjuncts.some(disjunct => !unconditional || bareSignedInCheck.test(disjunct))) return 'signed-in'
 
   return null
 }
 
+/**
+ * @param {unknown} value - a folded rule value
+ * @returns {boolean} whether the rule lets some client in without naming it
+ */
+function isOpenToClients(value) {
+  return accessOf(value) !== null
+}
+
+/**
+ * @param {Access} access
+ * @returns {string} who the access reaches, for a report message
+ */
+function audienceOf(access) {
+  return access === 'anyone' ? 'anyone' : 'any signed-in client'
+}
+
+/**
+ * The top-level `||` branches of a folded rule that let a client in without
+ * naming it: `true`, or `auth != null` without `auth.uid` or `auth.token`.
+ *
+ * @param {unknown} value - a folded rule value
+ * @returns {string[]}
+ */
 function clientDisjunctsOf(value) {
   if (value === true) return ['true']
   if (typeof value !== 'string') return []
 
-  return disjunctsOf(value).filter(x => x === 'true' || (/auth\s*!==?\s*null/.test(x) && !/auth\.(uid|token)/.test(x)))
+  return disjunctsOf(value).filter(letsClientIn)
 }
 
+/**
+ * @param {string} disjunct
+ * @returns {boolean} `true`, or a signed-in check that names no uid or token claim
+ */
+function letsClientIn(disjunct) {
+  return disjunct === 'true' || (signedInCheck.test(disjunct) && !namedClientCheck.test(disjunct))
+}
+
+/**
+ * @param {string} expression
+ * @returns {string[]} the top-level `||` branches, flattened, outer parentheses removed
+ */
 function disjunctsOf(expression) {
   const text = unwrapParentheses(expression.trim())
   const parts = []
@@ -50,9 +94,13 @@ function disjunctsOf(expression) {
   }
   parts.push(text.slice(start))
 
-  return parts.length === 1 ? parts.map(x => x.trim()) : parts.flatMap(disjunctsOf)
+  return parts.length === 1 ? parts.map(part => part.trim()) : parts.flatMap(disjunctsOf)
 }
 
+/**
+ * @param {string} text
+ * @returns {string} `text` without parentheses that wrap all of it
+ */
 function unwrapParentheses(text) {
   if (!text.startsWith('(') || !text.endsWith(')')) return text
 
@@ -67,13 +115,20 @@ function unwrapParentheses(text) {
   return unwrapParentheses(text.slice(1, -1).trim())
 }
 
-// The enclosing object keys up to the nearest function, outermost first,
-// without the `rules` root and anything above it.
+/**
+ * The enclosing object keys up to the nearest function, outermost first,
+ * without the `rules` root and anything above it. A key that does not fold
+ * is `?`.
+ *
+ * @param {import('eslint').Rule.Node} node
+ * @param {SourceCode} sourceCode
+ * @returns {string[]}
+ */
 function pathOf(node, sourceCode) {
   const keys = []
 
-  for (let x = node.parent; x && !isFunctionNode(x); x = x.parent) {
-    if (x.type === 'Property') keys.unshift(keyOf(x, sourceCode) ?? '?')
+  for (let ancestor = node.parent; ancestor && !isFunctionNode(ancestor); ancestor = ancestor.parent) {
+    if (ancestor.type === 'Property') keys.unshift(keyOf(ancestor, sourceCode) ?? '?')
   }
 
   const root = keys.lastIndexOf('rules')
@@ -81,16 +136,37 @@ function pathOf(node, sourceCode) {
   return root === -1 ? keys : keys.slice(root + 1)
 }
 
-// The data fields beside a rule: its sibling keys that are not rules.
+/**
+ * The data fields beside a rule: its sibling keys that are not rules.
+ *
+ * @param {RuleProperty} node - a `.read`, `.write` or `.validate` property
+ * @param {SourceCode} sourceCode
+ * @returns {Property[]}
+ */
 function fieldsOf(node, sourceCode) {
+  if (node.parent.type !== 'ObjectExpression') return []
+
   return node.parent.properties
-    .filter(x => x.type === 'Property' && x !== node && !ruleKeys.has(keyOf(x, sourceCode)))
+    .filter(/** @returns {sibling is Property} */ sibling => sibling.type === 'Property')
+    .filter(sibling => sibling !== node && !ruleKeys.has(keyOf(sibling, sourceCode) ?? ''))
 }
 
+/**
+ * @param {Property} property
+ * @param {SourceCode} sourceCode
+ * @returns {string | null} the key's name, or `null` for a computed key that does not fold to a string
+ */
 function keyOf(property, sourceCode) {
-  if (!property.computed) return property.key.type === 'Identifier' ? property.key.name : String(property.key.value)
+  const { key } = property
 
-  const key = staticValue(property.key, sourceCode)
+  if (!property.computed) return key.type === 'Identifier' ? key.name : key.type === 'Literal' ? String(key.value) : null
 
-  return typeof key.value === 'string' ? key.value : null
+  const folded = staticValue(key, sourceCode)
+
+  return typeof folded.value === 'string' ? folded.value : null
 }
+
+/** @typedef {'anyone' | 'signed-in'} Access */
+/** @typedef {import('eslint').SourceCode} SourceCode */
+/** @typedef {import('estree').Property} Property */
+/** @typedef {Property & import('eslint').Rule.NodeParentExtension} RuleProperty */

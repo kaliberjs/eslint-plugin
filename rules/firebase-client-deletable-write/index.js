@@ -1,12 +1,16 @@
 const docsUrl = require('../../machinery/docsUrl')
 const { staticValue } = require('../../machinery/static-value')
-const { keyOf, pathOf, clientDisjunctsOf } = require('../../machinery/firebase-rules')
+const { keyOf, pathOf, clientDisjunctsOf, audienceOf } = require('../../machinery/firebase-rules')
+
+const writesSomething = /(?<!!\s*)newData\.exists\(\)/
+const writesOnlyWhereEmpty = /!\s*data\.exists\(\)/
 
 // A `.write` grants deletes too: a delete is a write of null, and `.validate`
 // does not run on it. A disjunct that lets any client in without requiring
 // `newData.exists()` (something is written) or `!data.exists()` (nothing was
 // there) lets that client remove the node and everything under it.
 
+/** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
   meta: {
     type: 'problem',
@@ -37,18 +41,27 @@ module.exports = {
         if (keyOf(node, sourceCode) !== '.write') return
 
         const write = staticValue(node.value, sourceCode, env)
-        const deleting = clientDisjunctsOf(write.value).filter(disjunct => !excludesDelete(disjunct))
+        const deletingDisjuncts = clientDisjunctsOf(write.value).filter(canDelete)
 
-        if (!deleting.length) return
+        if (deletingDisjuncts.length === 0) return
 
-        const who = deleting.includes('true') ? 'anyone' : 'any signed-in client'
+        const access = deletingDisjuncts.includes('true') ? 'anyone' : 'signed-in'
 
-        context.report({ node, messageId: 'deletable', data: { path: pathOf(node, sourceCode).join('/'), who, value: String(write.value) } })
+        context.report({
+          node,
+          messageId: 'deletable',
+          data: { path: pathOf(node, sourceCode).join('/'), who: audienceOf(access), value: String(write.value) },
+        })
       },
     }
   },
 }
 
-function excludesDelete(disjunct) {
-  return /(?<!!\s*)newData\.exists\(\)/.test(disjunct) || /!\s*data\.exists\(\)/.test(disjunct)
+/**
+ * @param {string} disjunct - one `||` branch of a folded `.write`
+ * @returns {boolean} whether the branch requires neither something written
+ *   (`newData.exists()`) nor nothing there (`!data.exists()`)
+ */
+function canDelete(disjunct) {
+  return !writesSomething.test(disjunct) && !writesOnlyWhereEmpty.test(disjunct)
 }
