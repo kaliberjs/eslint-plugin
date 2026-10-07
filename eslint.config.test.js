@@ -37,3 +37,28 @@ test('the shared config enables bound-instance-methods', () => {
     'bindReference',
   ])
 })
+
+// Same reason as above, for the four Firebase rules-file rules.
+test('the shared config enables the Firebase rules', () => {
+  const messages = new Linter().verify(
+    `module.exports = () => ({ rules: {
+      static: { '.read': true, private: { '.read': false } },
+      queue: { $key: {
+        '.write': 'auth != null',
+        isAdmin: { '.validate': 'newData.isBoolean()' },
+        uid: { '.validate': 'newData.isString()' },
+      } },
+    } })
+    `,
+    config,
+    'createFirebaseRules.js'
+  )
+  const results = messages.filter(message => message.ruleId.startsWith('@kaliber/firebase-'))
+
+  assert.deepEqual(results.map(message => message.ruleId).sort(), [
+    '@kaliber/firebase-client-deletable-write',
+    '@kaliber/firebase-client-writable-trust-path',
+    '@kaliber/firebase-shadowed-rule',
+    '@kaliber/firebase-unbound-uid',
+  ])
+})
