@@ -56,6 +56,7 @@ test('the shared config enables the Firebase rules', () => {
   const results = messages.filter(message => message.ruleId.startsWith('@kaliber/firebase-'))
 
   assert.deepEqual(results.map(message => message.ruleId).sort(), [
+    '@kaliber/firebase-children-required',
     '@kaliber/firebase-client-deletable-write',
     '@kaliber/firebase-client-writable-trust-path',
     '@kaliber/firebase-other-required',

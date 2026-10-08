@@ -100,6 +100,7 @@ function shapeOf(node, sourceCode) {
   return {
     node, fields,
     wildcards: keys.filter(key => key.name?.startsWith('$')),
+    validate: keys.find(key => key.name === '.validate') ?? null,
     at: node.parent.type === 'Property' ? node.parent.key : node,
     location: pathOf(node, sourceCode).join('/') || 'the root',
     openToClients: writes.some(write => write.access),
@@ -333,9 +334,10 @@ function keyOf(property, sourceCode) {
  *   location: string,
  *   fields: Field[],
  *   wildcards: Field[],
+ *   validate: Field | null,
  *   openToClients: boolean,
  * }} Shape
  *   `at` is the key that holds the shape, or the object itself, to report at; `fields` are its
- *   data keys, `wildcards` its `$` keys; `openToClients` whether a `.write` on it or above it lets
- *   some client in
+ *   data keys, `wildcards` its `$` keys, `validate` its own `.validate`; `openToClients` whether a
+ *   `.write` on it or above it lets some client in
  */

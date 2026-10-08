@@ -93,6 +93,7 @@ module.exports = [
       '@kaliber/firebase-shadowed-rule': 'warn',
       '@kaliber/firebase-unbound-uid': 'warn',
       '@kaliber/firebase-other-required': 'warn',
+      '@kaliber/firebase-children-required': 'warn',
 
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
