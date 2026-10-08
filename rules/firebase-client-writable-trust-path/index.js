@@ -28,25 +28,19 @@ module.exports = {
     messages: {
       trustPath: '`.write` at {{path}} lets any signed-in client create data under a ' +
         'trust-claiming name ({{names}}): {{value}}',
-      unresolved: '`.write` not resolved: {{reason}}',
     },
     schema: optionsSchema({
       words: { type: 'array', items: { type: 'string' }, uniqueItems: true },
-      reportUnresolved: { type: 'boolean' },
     }),
   },
 
   create(context) {
-    const { words = trustWords, reportUnresolved = false } = context.options[0] ?? {}
+    const { words = trustWords } = context.options[0] ?? {}
 
     return forEachAccessRule(context, rule => {
       const { node, key, value, unresolved, path, fields, location } = rule
 
-      if (key !== '.write') return
-      if (unresolved && reportUnresolved) {
-        context.report({ node, messageId: 'unresolved', data: { reason: unresolved } })
-      }
-      if (unresolved || !isOpenToClients(value)) return
+      if (key !== '.write' || unresolved || !isOpenToClients(value)) return
 
       const names = [...path, ...fields.map(field => field.name)]
       const trustClaimingNames = names.filter(name => name !== null && claimsTrust(name, words))

@@ -267,7 +267,7 @@ function keyOf(property, sourceCode) {
 /** @typedef {import('eslint').Rule.Node} RuleNode */
 /** @typedef {import('eslint').SourceCode} SourceCode */
 /** @typedef {Property & import('eslint').Rule.NodeParentExtension} RuleProperty */
-/** @typedef {{ value?: unknown, unresolved?: string }} Folded */
+/** @typedef {{ value?: unknown, unresolved?: boolean }} Folded */
 /** @typedef {'anyone' | 'signed-in'} Access */
 /** @typedef {'.read' | '.write'} AccessKey */
 /** @typedef {{ node: Property, name: string | null }} Field */
@@ -278,7 +278,7 @@ function keyOf(property, sourceCode) {
  *   node: RuleProperty,
  *   key: AccessKey,
  *   value: unknown,
- *   unresolved?: string,
+ *   unresolved?: boolean,
  *   path: string[],
  *   location: string,
  *   fields: Field[],

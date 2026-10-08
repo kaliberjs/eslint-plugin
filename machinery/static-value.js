@@ -4,12 +4,15 @@ module.exports = { staticValue }
 
 const maxDepth = 30
 
+/** @type {Folded} */
+const unresolvable = Object.freeze({ unresolved: true })
+
 /**
  * Folds an expression to the value it has when the file is loaded, through ESLint's scope
  * analysis: literals, object literals, templates, `+`, `===`, `!==`, `&&`, `||`, conditionals,
  * `const` bindings, `process.env.X` read from `env`, and same-file helpers whose body is one
  * returned expression, called with their arguments bound to their parameters. Returns `{ value }`,
- * or `{ unresolved }` with the reason folding stopped.
+ * or `{ unresolved: true }` for anything else.
  *
  * @example
  * // function hasAuth() { return `auth != null` }
@@ -30,7 +33,7 @@ function staticValue(node, sourceCode, env = {}) {
  * @returns {Folded}
  */
 function resolve(node, folding) {
-  if (folding.depth > maxDepth) return { unresolved: 'other' }
+  if (folding.depth > maxDepth) return unresolvable
 
   const deeper = { ...folding, depth: folding.depth + 1 }
 
@@ -44,7 +47,7 @@ function resolve(node, folding) {
     case 'MemberExpression': return member(node, folding.env)
     case 'CallExpression': return call(node, deeper)
     case 'ObjectExpression': return object(node, deeper)
-    default: return { unresolved: 'other' }
+    default: return unresolvable
   }
 }
 
@@ -58,7 +61,7 @@ function object(node, folding) {
   const result = {}
 
   for (const property of node.properties) {
-    if (property.type !== 'Property') return { unresolved: 'other' }
+    if (property.type !== 'Property') return unresolvable
 
     /** @type {Folded} */
     const key = property.computed
@@ -98,7 +101,7 @@ function template(node, folding) {
  * @returns {Folded}
  */
 function binary(node, folding) {
-  if (node.left.type === 'PrivateIdentifier') return { unresolved: 'other' }
+  if (node.left.type === 'PrivateIdentifier') return unresolvable
 
   const left = resolve(node.left, folding)
   const right = resolve(node.right, folding)
@@ -110,7 +113,7 @@ function binary(node, folding) {
     case '+': return { value: /** @type {any} */ (left.value) + right.value }
     case '===': return { value: left.value === right.value }
     case '!==': return { value: left.value !== right.value }
-    default: return { unresolved: 'other' }
+    default: return unresolvable
   }
 }
 
@@ -152,9 +155,7 @@ function conditional(node, folding) {
 function member(node, env) {
   const { object, property } = node
 
-  if (!isProcessEnv(object) || node.computed || property.type !== 'Identifier') {
-    return { unresolved: 'member' }
-  }
+  if (!isProcessEnv(object) || node.computed || property.type !== 'Identifier') return unresolvable
 
   return { value: env[property.name] }
 }
@@ -180,21 +181,10 @@ function identifier(node, folding) {
   if (bound) return bound
 
   const definition = variable?.defs[0]
+  const isConstant = definition?.type === 'Variable' && definition.node.id.type === 'Identifier'
+  const init = isConstant ? definition.node.init : null
 
-  if (!definition) return { unresolved: 'other' }
-  if (definition.type === 'Parameter') return { unresolved: 'option' }
-  if (definition.type === 'ImportBinding') return { unresolved: 'import' }
-  if (definition.type !== 'Variable') return { unresolved: 'other' }
-
-  const { id, init } = definition.node
-
-  if (id.type !== 'Identifier') {
-    return { unresolved: isImported(init, folding.sourceCode) ? 'import' : 'other' }
-  }
-  if (!init) return { unresolved: 'other' }
-  if (isRequire(init)) return { unresolved: 'import' }
-
-  return resolve(init, folding)
+  return init ? resolve(init, folding) : unresolvable
 }
 
 /**
@@ -203,24 +193,19 @@ function identifier(node, folding) {
  * @returns {Folded}
  */
 function call(node, folding) {
-  if (node.callee.type !== 'Identifier') return { unresolved: 'member call' }
+  if (node.callee.type !== 'Identifier') return unresolvable
 
   const definition = variableOf(node.callee, folding.sourceCode)?.defs[0]
-
-  if (!definition) return { unresolved: 'other' }
-  if (definition.type === 'Parameter') return { unresolved: 'option' }
-  if (isImportedFunction(definition, folding.sourceCode)) return { unresolved: 'import' }
-
-  const helper = functionOf(definition)
+  const helper = definition && functionOf(definition)
   const returnedExpression = helper && returnedOf(helper)
 
-  if (!helper || !returnedExpression) return { unresolved: 'other' }
+  if (!helper || !returnedExpression) return unresolvable
 
   const helperScope = folding.sourceCode.getScope(helper)
   const bindings = new Map(folding.bindings)
 
   for (const [i, parameter] of helper.params.entries()) {
-    if (parameter.type !== 'Identifier') return { unresolved: 'other' }
+    if (parameter.type !== 'Identifier') return unresolvable
 
     const argument = node.arguments[i]
     const argumentValue = argument ? resolve(argument, folding) : { value: undefined }
@@ -241,46 +226,6 @@ function variableOf(node, sourceCode) {
   const { references } = sourceCode.getScope(node)
 
   return references.find(reference => reference.identifier === node)?.resolved ?? null
-}
-
-/**
- * `require(…)`, or a binding whose own initializer is one.
- *
- * @param {Node | null | undefined} node
- * @param {SourceCode} sourceCode
- */
-function isImported(node, sourceCode) {
-  if (isRequire(node)) return true
-  if (node?.type !== 'Identifier') return false
-
-  const definition = variableOf(node, sourceCode)?.defs[0]
-
-  return definition?.type === 'Variable' && isRequire(definition.node.init)
-}
-
-/**
- * `require(…)` or `require(…).member`.
- *
- * @param {Node | null | undefined} node
- */
-function isRequire(node) {
-  const call = node?.type === 'MemberExpression' ? node.object : node
-
-  return call?.type === 'CallExpression' &&
-    call.callee.type === 'Identifier' && call.callee.name === 'require'
-}
-
-/**
- * @param {Definition} definition
- * @param {SourceCode} sourceCode
- */
-function isImportedFunction(definition, sourceCode) {
-  if (definition.type === 'ImportBinding') return true
-  if (definition.type !== 'Variable') return false
-
-  const { id, init } = definition.node
-
-  return isRequire(init) || (id.type === 'ObjectPattern' && isImported(init, sourceCode))
 }
 
 /**
@@ -315,8 +260,7 @@ function returnedOf(fn) {
 /** @typedef {import('eslint').Scope.Variable} Variable */
 /** @typedef {import('eslint').Scope.Definition} Definition */
 /** @typedef {Record<string, string | undefined>} Env */
-/** @typedef {'option' | 'import' | 'member' | 'member call' | 'other'} Reason */
-/** @typedef {{ value?: unknown, unresolved?: Reason }} Folded */
+/** @typedef {{ value?: unknown, unresolved?: boolean }} Folded */
 /** @typedef {Map<Variable | null, Folded>} Bindings */
 /**
  * What folding carries down: the parameter values of the helpers being folded, and its depth.

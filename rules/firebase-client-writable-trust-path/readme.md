@@ -30,7 +30,6 @@ Rules files are JavaScript, so values are folded first: constants, templates, co
 
 - `env`: values for `process.env.X`, e.g. `{ CONFIG_ENV: 'prd' }`. Unset keys fold to `undefined`.
 - `words`: replaces the trust words. Lowercase, whole words.
-- `reportUnresolved`: also report a `.write` that can't be folded, with the reason.
 
 ## Limitations
 

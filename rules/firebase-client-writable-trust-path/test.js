@@ -84,12 +84,6 @@ module.exports = () => ({ rules: { confirmedIds: { '.write': \`\${isWorker} || a
       errors: [{ messageId: 'trustPath' }],
     },
     {
-      name: 'an unresolved value, reported when asked',
-      code: `module.exports = ({ isService }) => ({ rules: { verified: { '.write': isService } } })`,
-      options: [{ reportUnresolved: true }],
-      errors: [{ messageId: 'unresolved', data: { reason: 'option' } }],
-    },
-    {
       name: 'a signed-in create beside a field that claims employment',
       code: `${helpers}
 module.exports = () => ({ rules: { applications: { $key: {
