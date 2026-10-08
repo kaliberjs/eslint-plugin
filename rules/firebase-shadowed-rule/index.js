@@ -4,8 +4,9 @@ const { staticValue } = require('../../machinery/static-value')
 const { keyOf, pathOf, accessOf, audienceOf } = require('../../machinery/firebase-rules')
 
 // `.read` and `.write` cascade: once an ancestor grants access, nothing below
-// it can take that access away. A narrower rule further down reads like a
-// restriction and has no effect.
+// it can take that access away
+// (https://firebase.google.com/docs/database/security/core-syntax). A narrower
+// rule further down reads like a restriction and has no effect.
 
 /** @type {Record<Access, number>} */
 const reach = { anyone: 2, 'signed-in': 1 }
@@ -20,6 +21,7 @@ module.exports = {
     },
     messages: {
       shadowed: '`{{key}}` at {{path}} has no effect: `{{key}}` at {{ancestor}} already grants {{who}} access to everything below it.',
+      revokesNothing: '`{{key}}: false` at {{path}} has no effect: whenever `{{key}}` at {{ancestor}} grants access, it reaches everything below it: {{condition}}',
     },
     schema: [
       {
@@ -46,19 +48,28 @@ module.exports = {
 
         if (rule.unresolved) return
 
+        const path = pathOf(node, sourceCode).join('/')
         const grant = widestGrantAbove(node, key, sourceCode, env)
 
-        if (!grant || !grantsLessThan(rule.value, grant.access)) return
+        if (grant && grantsLessThan(rule.value, grant.access)) {
+          context.report({
+            node,
+            messageId: 'shadowed',
+            data: { key, path, ancestor: locationOf(grant.rule, sourceCode), who: audienceOf(grant.access) },
+          })
+          return
+        }
+
+        if (!isClosed(rule.value)) return
+
+        const conditionalGrant = nearestConditionalGrantAbove(node, key, sourceCode, env)
+
+        if (!conditionalGrant) return
 
         context.report({
           node,
-          messageId: 'shadowed',
-          data: {
-            key,
-            path: pathOf(node, sourceCode).join('/'),
-            ancestor: pathOf(grant.rule, sourceCode).join('/') || 'the root',
-            who: audienceOf(grant.access),
-          },
+          messageId: 'revokesNothing',
+          data: { key, path, ancestor: locationOf(conditionalGrant.rule, sourceCode), condition: String(conditionalGrant.value) },
         })
       },
     }
@@ -82,10 +93,46 @@ function widestGrantAbove(node, key, sourceCode, env) {
 }
 
 /**
+ * The nearest rule with the same key above `node` that folds to something other than `false`.
+ *
  * @param {import('eslint').Rule.Node} node
  * @param {'.read' | '.write'} key
  * @param {import('eslint').SourceCode} sourceCode
- * @returns {RuleProperty[]} the rules with the same key in the objects enclosing `node`, up to the nearest function
+ * @param {Record<string, string>} env
+ * @returns {{ rule: RuleProperty, value: unknown } | null}
+ */
+function nearestConditionalGrantAbove(node, key, sourceCode, env) {
+  for (const rule of rulesAbove(node, key, sourceCode)) {
+    const folded = staticValue(rule.value, sourceCode, env)
+
+    if (!folded.unresolved && !isClosed(folded.value)) return { rule, value: folded.value }
+  }
+
+  return null
+}
+
+/**
+ * @param {unknown} value - a folded rule value
+ * @returns {boolean} whether the rule is `false`, granting nothing
+ */
+function isClosed(value) {
+  return value === false || value === 'false'
+}
+
+/**
+ * @param {RuleProperty} rule
+ * @param {import('eslint').SourceCode} sourceCode
+ * @returns {string} the rule's path, or `the root`
+ */
+function locationOf(rule, sourceCode) {
+  return pathOf(rule, sourceCode).join('/') || 'the root'
+}
+
+/**
+ * @param {import('eslint').Rule.Node} node
+ * @param {'.read' | '.write'} key
+ * @param {import('eslint').SourceCode} sourceCode
+ * @returns {RuleProperty[]} the rules with the same key in the objects enclosing `node`, nearest first, up to the nearest function
  */
 function rulesAbove(node, key, sourceCode) {
   const rules = []

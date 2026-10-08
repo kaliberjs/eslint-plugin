@@ -7,7 +7,6 @@ const { staticValue } = require('./static-value')
 
 module.exports = { keyOf, pathOf, fieldsOf, accessOf, isOpenToClients, audienceOf, clientDisjunctsOf }
 
-const ruleKeys = new Set(['.read', '.write', '.validate', '.indexOn'])
 const signedInCheck = /auth\s*!==?\s*null/
 const bareSignedInCheck = /^auth\s*!==?\s*null$/
 const namedClientCheck = /auth\.(uid|token)/
@@ -137,7 +136,20 @@ function pathOf(node, sourceCode) {
 }
 
 /**
- * The data fields beside a rule: its sibling keys that are not rules.
+ * A data key can't contain `.` or `$`
+ * (https://firebase.google.com/docs/database/usage/limits), so in a rules
+ * object a key that starts with `.` is a rule and one that starts with `$` is a
+ * wildcard.
+ *
+ * @param {string} key
+ * @returns {boolean}
+ */
+function isDataKey(key) {
+  return !key.startsWith('.') && !key.startsWith('$')
+}
+
+/**
+ * The data fields beside a rule: its sibling keys that are neither rules nor wildcards.
  *
  * @param {RuleProperty} node - a `.read`, `.write` or `.validate` property
  * @param {SourceCode} sourceCode
@@ -148,7 +160,7 @@ function fieldsOf(node, sourceCode) {
 
   return node.parent.properties
     .filter(/** @returns {sibling is Property} */ sibling => sibling.type === 'Property')
-    .filter(sibling => sibling !== node && !ruleKeys.has(keyOf(sibling, sourceCode) ?? ''))
+    .filter(sibling => sibling !== node && isDataKey(keyOf(sibling, sourceCode) ?? ''))
 }
 
 /**
