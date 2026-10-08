@@ -54,10 +54,7 @@ function isOwnerField(name) {
   return name !== null && ownerFieldNames.includes(name)
 }
 
-/**
- * @param {unknown} validation - a folded field rule, often `{ '.validate': '…' }`
- * @returns {boolean}
- */
+/** @param {unknown} validation - a folded field rule, often `{ '.validate': '…' }` */
 function checksAuthUid(validation) {
   return stringsOf(validation).some(text => text.includes('auth.uid'))
 }

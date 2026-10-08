@@ -8,7 +8,8 @@ const maxDepth = 30
  * Folds an expression to the value it has when the file is loaded, through ESLint's scope
  * analysis: literals, object literals, templates, `+`, `===`, `!==`, `&&`, `||`, conditionals,
  * `const` bindings, `process.env.X` read from `env`, and same-file helpers whose body is one
- * returned expression, called with their arguments bound to their parameters.
+ * returned expression, called with their arguments bound to their parameters. Returns `{ value }`,
+ * or `{ unresolved }` with the reason folding stopped.
  *
  * @example
  * // const hasAuth = () => `auth != null`
@@ -18,7 +19,6 @@ const maxDepth = 30
  * @param {Node} node
  * @param {SourceCode} sourceCode
  * @param {Env} [env] - values for `process.env.X`; an unset key folds to `undefined`
- * @returns {Folded} `{ value }`, or `{ unresolved }` with the reason folding stopped
  */
 function staticValue(node, sourceCode, env = {}) {
   return resolve(node, { sourceCode, env, bindings: new Map(), depth: 0 })
@@ -163,10 +163,7 @@ function member(node, env) {
   return { value: env[property.name] }
 }
 
-/**
- * @param {Node} node
- * @returns {boolean}
- */
+/** @param {Node} node */
 function isProcessEnv(node) {
   return node.type === 'MemberExpression' &&
     node.object.type === 'Identifier' && node.object.name === 'process' &&
@@ -239,9 +236,10 @@ function call(node, folding) {
 }
 
 /**
+ * The variable `node` refers to, from the innermost scope out.
+ *
  * @param {import('estree').Identifier} node
  * @param {SourceCode} sourceCode
- * @returns {Variable | null} the variable `node` refers to, from the innermost scope out
  */
 function variableOf(node, sourceCode) {
   /** @type {import('eslint').Scope.Scope | null} */
@@ -262,7 +260,6 @@ function variableOf(node, sourceCode) {
  *
  * @param {Node | null | undefined} node
  * @param {SourceCode} sourceCode
- * @returns {boolean}
  */
 function isImported(node, sourceCode) {
   if (isRequire(node)) return true
@@ -277,7 +274,6 @@ function isImported(node, sourceCode) {
  * `require(…)` or `require(…).member`.
  *
  * @param {Node | null | undefined} node
- * @returns {boolean}
  */
 function isRequire(node) {
   const call = node?.type === 'MemberExpression' ? node.object : node
@@ -289,7 +285,6 @@ function isRequire(node) {
 /**
  * @param {Definition} definition
  * @param {SourceCode} sourceCode
- * @returns {boolean}
  */
 function isImportedFunction(definition, sourceCode) {
   if (definition.type === 'ImportBinding') return true
@@ -301,8 +296,9 @@ function isImportedFunction(definition, sourceCode) {
 }
 
 /**
+ * The function a declaration or `const` defines.
+ *
  * @param {Definition} definition
- * @returns {import('estree').Function | null} the function a declaration or `const` defines
  */
 function functionOf(definition) {
   const declared =
@@ -317,7 +313,6 @@ function functionOf(definition) {
  * The expression a function returns, when its body is that one expression.
  *
  * @param {import('estree').Function} fn
- * @returns {import('estree').Expression | null | undefined}
  */
 function returnedOf(fn) {
   if (fn.body.type !== 'BlockStatement') return fn.body

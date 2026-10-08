@@ -70,7 +70,8 @@ function accessRule(node, key, sourceCode, fold) {
 }
 
 /**
- * Who a folded `.read` or `.write` lets in without naming them.
+ * Who a folded `.read` or `.write` lets in without naming them: `anyone` for a `true` disjunct,
+ * `signed-in` for `auth != null` without `auth.uid` or `auth.token`, `null` for neither.
  *
  * @example
  * accessOf('auth != null && newData.exists()')                          // 'signed-in'
@@ -80,8 +81,6 @@ function accessRule(node, key, sourceCode, fold) {
  * @param {unknown} value - a folded rule value
  * @param {{ unconditional?: boolean }} [options] - with `unconditional`, the signed-in disjunct
  *   must be `auth != null` and nothing else, the shape that grants every request
- * @returns {Access | null} `anyone` for a `true` disjunct, `signed-in` for `auth != null` without
- *   `auth.uid` or `auth.token`, `null` for neither
  */
 function accessOf(value, { unconditional = false } = {}) {
   const disjuncts = clientDisjunctsOf(value)
@@ -93,16 +92,18 @@ function accessOf(value, { unconditional = false } = {}) {
 }
 
 /**
+ * Whether the rule lets some client in without naming it.
+ *
  * @param {unknown} value - a folded rule value
- * @returns {boolean} whether the rule lets some client in without naming it
  */
 function isOpenToClients(value) {
   return accessOf(value) !== null
 }
 
 /**
+ * Who the access reaches, for a report message.
+ *
  * @param {Access} access
- * @returns {string} who the access reaches, for a report message
  */
 function audienceOf(access) {
   return access === 'anyone' ? 'anyone' : 'any signed-in client'
@@ -113,7 +114,6 @@ function audienceOf(access) {
  * or `auth != null` without `auth.uid` or `auth.token`.
  *
  * @param {unknown} value - a folded rule value
- * @returns {string[]}
  */
 function clientDisjunctsOf(value) {
   if (value === true) return ['true']
@@ -123,8 +123,9 @@ function clientDisjunctsOf(value) {
 }
 
 /**
+ * `true`, or a signed-in check that names no uid or token claim.
+ *
  * @param {string} disjunct
- * @returns {boolean} `true`, or a signed-in check that names no uid or token claim
  */
 function letsClientIn(disjunct) {
   return disjunct === 'true' ||
@@ -178,7 +179,6 @@ function unwrapParentheses(text) {
  *
  * @param {RuleNode} node
  * @param {SourceCode} sourceCode
- * @returns {string[]}
  */
 function pathOf(node, sourceCode) {
   const keys = ancestorsOf(node)
@@ -196,7 +196,6 @@ function pathOf(node, sourceCode) {
  * @param {RuleNode} node
  * @param {AccessKey} key
  * @param {SourceCode} sourceCode
- * @returns {RuleProperty[]}
  */
 function rulesAbove(node, key, sourceCode) {
   return ancestorsOf(node.parent ?? node)
@@ -206,8 +205,9 @@ function rulesAbove(node, key, sourceCode) {
 }
 
 /**
+ * The nodes enclosing `node`, nearest first, up to the nearest function.
+ *
  * @param {RuleNode} node
- * @returns {RuleNode[]} the nodes enclosing `node`, nearest first, up to the nearest function
  */
 function ancestorsOf(node) {
   const ancestors = []
@@ -222,7 +222,6 @@ function ancestorsOf(node) {
  *
  * @param {RuleProperty} node
  * @param {SourceCode} sourceCode
- * @returns {Field[]}
  */
 function fieldsOf(node, sourceCode) {
   if (node.parent.type !== 'ObjectExpression') return []
@@ -239,17 +238,16 @@ function fieldsOf(node, sourceCode) {
  * wildcard.
  *
  * @param {string | null} key
- * @returns {boolean}
  */
 function isDataKey(key) {
   return !key?.startsWith('.') && !key?.startsWith('$')
 }
 
 /**
+ * The key's name, or `null` for a computed key that does not fold to a string.
+ *
  * @param {Property} property
  * @param {SourceCode} sourceCode
- * @returns {string | null} the key's name, or `null` for a computed key that does not fold to a
- *   string
  */
 function keyOf(property, sourceCode) {
   if (!property.computed) return String(getPropertyName(property.key))

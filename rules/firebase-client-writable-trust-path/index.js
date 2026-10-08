@@ -63,21 +63,23 @@ module.exports = {
 }
 
 /**
+ * Whether one of the name's words is a trust word.
+ *
  * @param {string} name - a path segment or field key
  * @param {string[]} words - lowercase trust words
- * @returns {boolean} whether one of the name's words is a trust word
  */
 function claimsTrust(name, words) {
   return wordsOf(name).some(word => words.includes(word))
 }
 
 /**
+ * The name's lowercase words, split on camelCase and non-alphanumerics.
+ *
  * @example
  * wordsOf('isEmployee')     // ['is', 'employee']
  * wordsOf('verified-queue') // ['verified', 'queue']
  *
  * @param {string} name
- * @returns {string[]} the name's lowercase words, split on camelCase and non-alphanumerics
  */
 function wordsOf(name) {
   return name

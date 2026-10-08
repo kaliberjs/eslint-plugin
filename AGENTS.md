@@ -43,8 +43,10 @@ rules-overview.md        one row per rule
 
 This repo uses JSDoc on new rules and machinery, overriding any no-comments preference:
 
-- `@param` and `@returns` on every function; `@type {import('eslint').Rule.RuleModule}` on each
-  rule module.
+- `@param` on every function; `@type {import('eslint').Rule.RuleModule}` on each rule module.
+- `@returns` only when inference can't give the type from the function's own values: a type
+  guard, a recursive function, or a result wider or narrower than what the body returns.
+  Well-typed parameters usually make the return type automatic.
 - Types from `eslint` and `estree`, not hand-written shapes. Type guards
   (`@returns {node is X}`) where they narrow. `@typedef`s at the bottom of the file.
 - `@example` where behaviour isn't obvious from the name.

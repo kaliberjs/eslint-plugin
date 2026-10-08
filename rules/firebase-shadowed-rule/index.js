@@ -77,25 +77,24 @@ function widestUnconditionalGrant(rules) {
     .sort((a, b) => reachOf(b.access) - reachOf(a.access))[0]
 }
 
-/**
- * @param {unknown} value - a folded rule value
- * @returns {Access | null}
- */
+/** @param {unknown} value - a folded rule value */
 function unconditionalAccessOf(value) {
   return accessOf(value, { unconditional: true })
 }
 
 /**
+ * 2 for anyone, 1 for any signed-in client, 0 for less.
+ *
  * @param {Access | null} access
- * @returns {number} 2 for anyone, 1 for any signed-in client, 0 for less
  */
 function reachOf(access) {
   return access ? reach[access] : 0
 }
 
 /**
+ * Whether the rule is `false`, granting nothing.
+ *
  * @param {unknown} value - a folded rule value
- * @returns {boolean} whether the rule is `false`, granting nothing
  */
 function isClosed(value) {
   return value === false || value === 'false'

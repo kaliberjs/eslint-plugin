@@ -46,9 +46,10 @@ module.exports = {
 }
 
 /**
+ * Whether the branch requires neither something written (`newData.exists()`) nor nothing there
+ * (`!data.exists()`).
+ *
  * @param {string} disjunct - one `||` branch of a folded `.write`
- * @returns {boolean} whether the branch requires neither something written
- *   (`newData.exists()`) nor nothing there (`!data.exists()`)
  */
 function canDelete(disjunct) {
   return !writesSomething.test(disjunct) && !writesOnlyWhereEmpty.test(disjunct)
