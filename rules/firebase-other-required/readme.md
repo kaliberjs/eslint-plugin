@@ -25,11 +25,6 @@ $key: { email: isString(), language: isString(), '$other': validate(false) }
 
 `validate(isService)` instead of `validate(false)` lets only that service write other keys.
 
-## Options
-
-- `env`: as in
-  [firebase-client-writable-trust-path](../firebase-client-writable-trust-path/readme.md#options).
-
 ## Limitations
 
 - A `$other` rule that can't be folded, such as an imported helper, is trusted.

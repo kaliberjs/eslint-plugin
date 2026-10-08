@@ -26,11 +26,6 @@ signed-in client empty the queue. Anonymous sign-in counts as signed in.
 }
 ```
 
-## Options
-
-- `env`: as in
-  [firebase-client-writable-trust-path](../firebase-client-writable-trust-path/readme.md#options).
-
 ## Limitations
 
 - A public webhook endpoint (`.write: true`) is reported even when public writes are intended;

@@ -30,6 +30,10 @@ module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} &&
       code: `module.exports = () => ({ rules: { '.write': false } })`,
     },
     {
+      name: 'a rule that does not parse is skipped',
+      code: `module.exports = () => ({ rules: { queue: { '.write': 'auth != null &&' } } })`,
+    },
+    {
       name: 'a value from an option is skipped',
       code: `module.exports = ({ isService }) => ({ rules: { queue: { '.write': isService } } })`,
     },
@@ -67,11 +71,10 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
       errors: [{ messageId: 'deletable' }],
     },
     {
-      name: 'a dev-only branch, linted for dev',
+      name: 'the production branch of an environment check',
       code: `module.exports = () => ({ rules: { queue: {
-  '.write': process.env.CONFIG_ENV === 'dev' ? 'auth != null' : false,
+  '.write': process.env.CONFIG_ENV === 'dev' ? false : 'auth != null',
 } } })`,
-      options: [{ env: { CONFIG_ENV: 'dev' } }],
       errors: [{ messageId: 'deletable' }],
     },
   ],

@@ -1,7 +1,5 @@
 const docsUrl = require('../../machinery/docsUrl')
-const {
-  forEachAccessRule, optionsSchema, isOpenToClients,
-} = require('../../machinery/firebase-rules')
+const { forEachAccessRule } = require('../../machinery/firebase-rules')
 
 // A `.write` that any signed-in client passes lets that client create the node itself. When the
 // node's path or its sibling fields claim trust (`verified-queue`, `isEmployee`), a worker that
@@ -24,19 +22,28 @@ module.exports = {
       trustPath: '`.write` at {{path}} lets any signed-in client create data under a ' +
         'trust-claiming name ({{names}}): {{value}}',
     },
-    schema: optionsSchema(
-      { words: { type: 'array', items: { type: 'string' }, minItems: 1, uniqueItems: true } },
-      ['words'],
-    ),
+    schema: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 1,
+      items: [{
+        type: 'object',
+        properties: {
+          words: { type: 'array', items: { type: 'string' }, minItems: 1, uniqueItems: true },
+        },
+        required: ['words'],
+        additionalProperties: false,
+      }],
+    },
   },
 
   create(context) {
     const { words } = context.options[0]
 
     return forEachAccessRule(context, rule => {
-      const { node, key, value, unresolved, path, fields, location } = rule
+      const { node, key, value, access, path, fields, location } = rule
 
-      if (key !== '.write' || unresolved || !isOpenToClients(value)) return
+      if (key !== '.write' || !access) return
 
       const names = [...path, ...fields.map(field => field.name)]
       const trustClaimingNames = names.filter(name => name !== null && claimsTrust(name, words))

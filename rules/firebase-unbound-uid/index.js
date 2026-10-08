@@ -1,7 +1,6 @@
 const docsUrl = require('../../machinery/docsUrl')
-const {
-  forEachAccessRule, optionsSchema, isOpenToClients,
-} = require('../../machinery/firebase-rules')
+const { forEachAccessRule } = require('../../machinery/firebase-rules')
+const { staticValue } = require('../../machinery/static-value')
 
 // A record any signed-in client can write, with a field that names its owner. Unless a rule
 // ties that field to `auth.uid`, the client can write someone else's uid into it, and whatever
@@ -23,17 +22,17 @@ module.exports = {
       unboundUid: '`{{field}}` at {{path}} is written by any signed-in client and never checked ' +
         'against `auth.uid`, so a client can write it in another user\'s name.',
     },
-    schema: optionsSchema(),
+    schema: [],
   },
 
   create(context) {
-    return forEachAccessRule(context, ({ key, value, fields, fold, location }) => {
-      if (key !== '.write' || !isOpenToClients(value)) return
+    return forEachAccessRule(context, ({ key, access, fields, location }) => {
+      if (key !== '.write' || !access) return
 
       for (const field of fields) {
         if (!isOwnerField(field.name)) continue
 
-        const validation = fold(field.node.value)
+        const validation = staticValue(field.node.value, context.sourceCode)
 
         if (validation.unresolved || checksAuthUid(validation.value)) continue
 

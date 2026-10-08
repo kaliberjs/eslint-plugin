@@ -1,7 +1,5 @@
 const docsUrl = require('../../machinery/docsUrl')
-const {
-  forEachAccessRule, optionsSchema, clientDisjunctsOf, audienceOf,
-} = require('../../machinery/firebase-rules')
+const { forEachAccessRule, audienceOf } = require('../../machinery/firebase-rules')
 
 // A delete is a write of null, and `.validate` does not run on it. A disjunct that lets any
 // client in without requiring `newData.exists()` (something is written) or `!data.exists()`
@@ -23,14 +21,14 @@ module.exports = {
       deletable: '`.write` at {{path}} lets {{who}} delete or overwrite this node and ' +
         'everything under it: {{value}}',
     },
-    schema: optionsSchema(),
+    schema: [],
   },
 
   create(context) {
-    return forEachAccessRule(context, ({ node, key, value, location }) => {
+    return forEachAccessRule(context, ({ node, key, value, location, clientDisjuncts }) => {
       if (key !== '.write') return
 
-      const deletingDisjuncts = clientDisjunctsOf(value).filter(canDelete)
+      const deletingDisjuncts = clientDisjuncts.filter(canDelete)
 
       if (deletingDisjuncts.length === 0) return
 

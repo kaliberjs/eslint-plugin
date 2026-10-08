@@ -24,11 +24,6 @@ static: { '.read': true, questionnaires: { '.read': "auth.uid === 'serve'" } }
 static: { skills: { '.read': true }, questionnaires: { '.read': "auth.uid === 'serve'" } }
 ```
 
-## Options
-
-- `env`: as in
-  [firebase-client-writable-trust-path](../firebase-client-writable-trust-path/readme.md#options).
-
 ## Limitations
 
 - Ancestors are followed up to the enclosing function; a subtree built by a helper isn't

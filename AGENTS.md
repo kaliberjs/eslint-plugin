@@ -52,8 +52,10 @@ Before writing a helper, look for it in this order, and take the first that read
 - Fold static values with `machinery/static-value.js`, not a new evaluator.
 - Rules about one domain share a domain module that owns its vocabulary. Each rule then holds
   only its check. `machinery/firebase-rules.js` is the model: `forEachAccessRule(context, visit)`
-  hands every rule a folded `.read`/`.write` with its path, fields and ancestors, and
-  `optionsSchema(extra)` shares the common options.
+  hands every rule a folded `.read`/`.write` with its path, fields, ancestors and who it lets
+  in, and `forEachShape` does the same for validated objects.
+- A string that holds code in the language the parser knows is parsed, not split by hand:
+  `context.languageOptions.parser` turns a Firebase rule into the `||` branches it has.
 - Derive domain facts from the platform's own documented rules instead of hardcoding lists, and
   link the source beside the code. Example: `isDataKey` follows from Firebase's key rule (keys
   can't contain `.` or `$`) rather than listing `.read`, `.write`, ….

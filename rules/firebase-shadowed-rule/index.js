@@ -1,7 +1,5 @@
 const docsUrl = require('../../machinery/docsUrl')
-const {
-  forEachAccessRule, optionsSchema, accessOf, audienceOf,
-} = require('../../machinery/firebase-rules')
+const { forEachAccessRule, audienceOf } = require('../../machinery/firebase-rules')
 
 // `.read` and `.write` cascade: once an ancestor grants access, nothing below it can take that
 // access away (https://firebase.google.com/docs/database/security/core-syntax). A narrower rule
@@ -25,7 +23,7 @@ module.exports = {
       revokesNothing: '`{{key}}: false` at {{path}} has no effect: whenever `{{key}}` at ' +
         '{{ancestor}} grants access, it reaches everything below it: {{condition}}',
     },
-    schema: optionsSchema(),
+    schema: [],
   },
 
   create(context) {
@@ -35,10 +33,10 @@ module.exports = {
       if (unresolved) return
 
       const ancestors = rule.above().filter(ancestor => !ancestor.unresolved)
-      const [widest] = ancestors.toSorted((a, b) => reachOf(b.value) - reachOf(a.value))
+      const [widest] = ancestors.toSorted((a, b) => reachOf(b) - reachOf(a))
 
-      if (widest && reachOf(value) < reachOf(widest.value)) {
-        const who = audienceOf(unconditionalAccessOf(widest.value))
+      if (widest && reachOf(rule) < reachOf(widest)) {
+        const who = audienceOf(widest.unconditionalAccess)
 
         context.report({
           node,
@@ -66,18 +64,13 @@ module.exports = {
   },
 }
 
-/** @param {unknown} value - a folded rule value */
-function unconditionalAccessOf(value) {
-  return accessOf(value, { unconditional: true })
-}
-
 /**
  * How far the rule reaches unconditionally: 2 for anyone, 1 for any signed-in client, 0 for less.
  *
- * @param {unknown} value - a folded rule value
+ * @param {AccessRule} rule
  */
-function reachOf(value) {
-  return reaches.indexOf(unconditionalAccessOf(value))
+function reachOf(rule) {
+  return reaches.indexOf(rule.unconditionalAccess)
 }
 
 /**
@@ -90,3 +83,4 @@ function isClosed(value) {
 }
 
 /** @typedef {import('../../machinery/firebase-rules').Access} Access */
+/** @typedef {import('../../machinery/firebase-rules').AccessRule} AccessRule */

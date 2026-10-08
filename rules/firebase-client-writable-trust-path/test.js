@@ -31,11 +31,10 @@ module.exports = () => ({ rules: { services: { mail: { queue: { $key: {
       code: `module.exports = ({ isService }) => ({ rules: { verified: { '.write': isService } } })`,
     },
     {
-      name: 'a dev-only branch, linted for production',
+      name: 'a dev-only branch folds to production',
       code: `module.exports = () => ({ rules: { verified: {
   '.write': process.env.CONFIG_ENV === 'dev' ? 'auth != null' : false,
 } } })`,
-      options: [{ env: { CONFIG_ENV: 'prd' } }],
     },
     {
       name: 'an employee field beside a write that needs an employee claim',
@@ -83,11 +82,10 @@ module.exports = () => ({ rules: { confirmedIds: { '.write': \`\${isWorker} || a
       errors: [{ messageId: 'trustPath' }],
     },
     {
-      name: 'a dev-only branch, linted for dev',
+      name: 'the production branch of an environment check',
       code: `module.exports = () => ({ rules: { verified: {
-  '.write': process.env.CONFIG_ENV === 'dev' ? 'auth != null' : false,
+  '.write': process.env.CONFIG_ENV === 'dev' ? false : 'auth != null',
 } } })`,
-      options: [{ env: { CONFIG_ENV: 'dev' } }],
       errors: [{ messageId: 'trustPath' }],
     },
     {

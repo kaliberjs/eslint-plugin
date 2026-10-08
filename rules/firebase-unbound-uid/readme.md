@@ -24,11 +24,6 @@ queue: { $key: {
 } }
 ```
 
-## Options
-
-- `env`: as in
-  [firebase-client-writable-trust-path](../firebase-client-writable-trust-path/readme.md#options).
-
 ## Limitations
 
 - Only `uid` names count; `userId` or `applicantId` aren't checked.

@@ -15,8 +15,9 @@ Reports a `.write` when both hold:
 
 A worker that reads such a node as "already verified" acts on whatever a signed-in client wrote.
 
-Rules files are JavaScript, so values are folded first: constants, templates, conditionals,
-`process.env`, and same-file helpers that return one expression. Anything else is skipped.
+Rules files are JavaScript, so values are folded first: constants, templates, conditionals and
+same-file helpers that return one expression. `process.env` is unset, so a
+`CONFIG_ENV === 'dev'` branch folds to production. Anything else is skipped.
 
 ```js
 // ✗
@@ -36,7 +37,6 @@ the project's own words.
 ```
 
 - `words` (required): lowercase whole words that claim trust in this project.
-- `env`: values for `process.env.X`, e.g. `{ CONFIG_ENV: 'prd' }`. Unset keys fold to `undefined`.
 
 ## Limitations
 

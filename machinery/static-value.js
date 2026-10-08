@@ -10,7 +10,7 @@ const unresolvable = Object.freeze({ unresolved: true })
 /**
  * Folds an expression to the value it has when the file is loaded, through ESLint's scope
  * analysis: literals, object literals, templates, `+`, `===`, `!==`, `&&`, `||`, conditionals,
- * `const` bindings, `process.env.X` read from `env`, and same-file helpers whose body is one
+ * `const` bindings, `process.env.X` as unset, and same-file helpers whose body is one
  * returned expression, called with their arguments bound to their parameters. Returns `{ value }`,
  * or `{ unresolved: true }` for anything else.
  *
@@ -21,10 +21,9 @@ const unresolvable = Object.freeze({ unresolved: true })
  *
  * @param {Node} node
  * @param {SourceCode} sourceCode
- * @param {Env} [env] - values for `process.env.X`; an unset key folds to `undefined`
  */
-function staticValue(node, sourceCode, env = {}) {
-  return resolve(node, { sourceCode, env, bindings: new Map(), depth: 0 })
+function staticValue(node, sourceCode) {
+  return resolve(node, { sourceCode, bindings: new Map(), depth: 0 })
 }
 
 /**
@@ -44,7 +43,7 @@ function resolve(node, folding) {
     case 'LogicalExpression': return logical(node, deeper)
     case 'ConditionalExpression': return conditional(node, deeper)
     case 'Identifier': return identifier(node, deeper)
-    case 'MemberExpression': return member(node, folding.env)
+    case 'MemberExpression': return member(node)
     case 'CallExpression': return call(node, deeper)
     case 'ObjectExpression': return object(node, deeper)
     default: return unresolvable
@@ -146,18 +145,14 @@ function conditional(node, folding) {
 }
 
 /**
- * `process.env.X` folds to `env.X`; any other member access is unresolved.
+ * `process.env.X` folds as unset, so a `CONFIG_ENV === 'dev'` branch folds to production; any
+ * other member access is unresolved.
  *
  * @param {import('estree').MemberExpression} node
- * @param {Env} env
  * @returns {Folded}
  */
-function member(node, env) {
-  const { object, property } = node
-
-  if (!isProcessEnv(object) || node.computed || property.type !== 'Identifier') return unresolvable
-
-  return { value: env[property.name] }
+function member(node) {
+  return isProcessEnv(node.object) && !node.computed ? { value: undefined } : unresolvable
 }
 
 /** @param {Node} node */
@@ -259,11 +254,10 @@ function returnedOf(fn) {
 /** @typedef {import('eslint').SourceCode} SourceCode */
 /** @typedef {import('eslint').Scope.Variable} Variable */
 /** @typedef {import('eslint').Scope.Definition} Definition */
-/** @typedef {Record<string, string | undefined>} Env */
 /** @typedef {{ value?: unknown, unresolved?: boolean }} Folded */
 /** @typedef {Map<Variable | null, Folded>} Bindings */
 /**
  * What folding carries down: the parameter values of the helpers being folded, and its depth.
  *
- * @typedef {{ sourceCode: SourceCode, env: Env, bindings: Bindings, depth: number }} Folding
+ * @typedef {{ sourceCode: SourceCode, bindings: Bindings, depth: number }} Folding
  */
