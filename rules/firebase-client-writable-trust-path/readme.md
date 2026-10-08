@@ -9,7 +9,7 @@ whose name claims trust. [CWE-863](https://cwe.mitre.org/data/definitions/863.ht
 Reports a `.write` when both hold:
 
 - its value has a disjunct that is `true`, or `auth != null` without `auth.uid` or `auth.token`;
-- a path segment or sibling field contains one of the configured `words`. Names split on
+- a path segment or sibling field contains one of the `words`. Names split on
   camelCase and punctuation, so `verified` matches `verified-queue` and `employee` matches
   `isEmployee`.
 
@@ -29,14 +29,13 @@ same-file helpers that return one expression. `process.env` is unset, so a
 
 ## Options
 
-Off in the shared config: which names claim trust is the project's knowledge, so enable it with
-the project's own words.
+- `words`: lowercase whole words that claim trust. Defaults to `['verified', 'employee']`, the
+  words Kaliber's rules files use for claims a worker trusts (`verified-queue`, `isEmployee`). A
+  project replaces them with its own list:
 
 ```js
-'@kaliber/firebase-client-writable-trust-path': ['warn', { words: ['verified'] }]
+'@kaliber/firebase-client-writable-trust-path': ['warn', { words: ['verified', 'approved'] }]
 ```
-
-- `words` (required): lowercase whole words that claim trust in this project.
 
 ## Limitations
 

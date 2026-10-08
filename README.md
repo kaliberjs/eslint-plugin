@@ -29,7 +29,7 @@ module.exports = [
 | [`position-center`](rules/position-center/readme.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
 | [`stable-query-client`](rules/stable-query-client/readme.md) | A QueryClient created in a component body loses the whole query cache on every re-render |
 | [`todo-ticket-reference`](rules/todo-ticket-reference/readme.md) | Require TODO comments to reference a Jira ticket |
-| [`firebase-client-writable-trust-path`](rules/firebase-client-writable-trust-path/readme.md) | Firebase rules: no `.write` any signed-in client passes under a path or beside a field whose name claims trust. Off by default; a project enables it with its own `words` |
+| [`firebase-client-writable-trust-path`](rules/firebase-client-writable-trust-path/readme.md) | Firebase rules: no `.write` any signed-in client passes under a path or beside a field whose name claims trust (`verified`, `employee`; replace with `words`) |
 | [`firebase-client-deletable-write`](rules/firebase-client-deletable-write/readme.md) | Firebase rules: no `.write` that lets anyone, or any signed-in client, delete or overwrite a node |
 | [`firebase-shadowed-rule`](rules/firebase-shadowed-rule/readme.md) | Firebase rules: no `.read`/`.write` narrower than what an ancestor already grants — rules cascade, so it does nothing |
 | [`firebase-other-required`](rules/firebase-other-required/readme.md) | Firebase rules: validated fields need a `$other` rule that limits every other key |

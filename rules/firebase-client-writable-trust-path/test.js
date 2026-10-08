@@ -102,6 +102,29 @@ module.exports = () => ({ rules: { applications: { $key: {
   ],
 }))
 
+test('firebase-client-writable-trust-path', {
+  valid: [
+    {
+      name: 'a trust word that is not a default',
+      code: `module.exports = () => ({ rules: { queue: { $key: {
+  '.write': 'auth != null', isAdmin: { '.validate': 'newData.isBoolean()' },
+} } } })`,
+    },
+  ],
+  invalid: [
+    {
+      name: 'the default words: verified',
+      code: `module.exports = () => ({ rules: { 'verified-queue': { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+} } } })`,
+      errors: [{ messageId: 'trustPath', data: {
+        path: 'verified-queue/$key', names: 'verified-queue',
+        value: 'auth != null && newData.exists() && !data.exists()',
+      } }],
+    },
+  ],
+})
+
 /**
  * Adds the trust words to every case, beside any options the case has.
  *

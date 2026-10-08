@@ -89,6 +89,7 @@ module.exports = [
       '@kaliber/data-x-form-naming': 'warn',
 
       '@kaliber/firebase-client-deletable-write': 'warn',
+      '@kaliber/firebase-client-writable-trust-path': 'warn',
       '@kaliber/firebase-shadowed-rule': 'warn',
       '@kaliber/firebase-unbound-uid': 'warn',
       '@kaliber/firebase-other-required': 'warn',

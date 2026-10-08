@@ -45,7 +45,7 @@ test('the shared config enables the Firebase rules', () => {
       static: { '.read': true, private: { '.read': false } },
       queue: { $key: {
         '.write': 'auth != null',
-        isAdmin: { '.validate': 'newData.isBoolean()' },
+        isEmployee: { '.validate': 'newData.isBoolean()' },
         uid: { '.validate': 'newData.isString()' },
       } },
     } })
@@ -57,6 +57,7 @@ test('the shared config enables the Firebase rules', () => {
 
   assert.deepEqual(results.map(message => message.ruleId).sort(), [
     '@kaliber/firebase-client-deletable-write',
+    '@kaliber/firebase-client-writable-trust-path',
     '@kaliber/firebase-other-required',
     '@kaliber/firebase-shadowed-rule',
     '@kaliber/firebase-unbound-uid',

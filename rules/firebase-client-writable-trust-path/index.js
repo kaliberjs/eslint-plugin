@@ -3,9 +3,10 @@ const { forEachAccessRule } = require('../../machinery/firebase-rules')
 
 // A `.write` that any signed-in client passes lets that client create the node itself. When the
 // node's path or its sibling fields claim trust (`verified-queue`, `isEmployee`), a worker that
-// reads it may act on a claim nobody checked. Which names claim trust is the project's knowledge,
-// so the words come from configuration.
+// reads it may act on a claim nobody checked. The default words are the ones Kaliber's rules files
+// actually use for such claims; a project replaces them with `words`.
 
+const trustWords = ['verified', 'employee']
 const camelCaseBoundary = /([a-z0-9])([A-Z])/g
 const nonAlphanumerics = /[^a-z0-9]+/
 
@@ -22,23 +23,17 @@ module.exports = {
       trustPath: '`.write` at {{path}} lets any signed-in client create data under a ' +
         'trust-claiming name ({{names}}): {{value}}',
     },
-    schema: {
-      type: 'array',
-      minItems: 1,
-      maxItems: 1,
-      items: [{
-        type: 'object',
-        properties: {
-          words: { type: 'array', items: { type: 'string' }, minItems: 1, uniqueItems: true },
-        },
-        required: ['words'],
-        additionalProperties: false,
-      }],
-    },
+    schema: [{
+      type: 'object',
+      properties: {
+        words: { type: 'array', items: { type: 'string' }, minItems: 1, uniqueItems: true },
+      },
+      additionalProperties: false,
+    }],
   },
 
   create(context) {
-    const { words } = context.options[0]
+    const { words = trustWords } = context.options[0] ?? {}
 
     return forEachAccessRule(context, rule => {
       const { node, key, value, access, path, fields, location } = rule
