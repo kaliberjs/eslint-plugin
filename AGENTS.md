@@ -28,6 +28,23 @@ rules-overview.md        one row per rule
   become named constants (`writesSomething`), variables get domain names, never `x` or `fn`.
   Guard clauses first, then the happy path.
 
+## Less code, native first
+
+Before writing a helper, look for it in this order, and take the first that reads as well:
+
+1. ESLint's own API: `sourceCode.getAncestors(node)`, `sourceCode.getScope(node)`, a scope's
+   `references` (whose `resolved` is the variable), `context.options`.
+2. JavaScript and Node: `findLastIndex`, `toSorted`, `JSON.stringify`, … Anything in the Node
+   range ESLint requires (`engines` in `node_modules/eslint/package.json`) is fair game.
+3. `machinery/` and the domain module.
+4. Only then a new helper.
+
+- Prefer the shorter form when it reads as well: a `switch` over a table of one-line functions,
+  `JSON.stringify(value).includes(…)` over a recursive walk.
+- Cut what only serves research or measurement, not the people running the lint (a debug option,
+  labelled reasons nobody reads). Ask first when it was part of the spec.
+- After every pass, ask: same behaviour with fewer lines?
+
 ## Reuse before writing
 
 - Check `machinery/ast.js` first (`getPropertyName`, `isFunctionNode`, …). Add a helper there
@@ -81,6 +98,8 @@ pnpm lint   # eslint --config eslint.self.config.js .
 
 - Break the rule on purpose (drop a guard) and confirm a test fails; a test that can't fail is
   removed or rewritten.
+- For a refactor, diff the full lint output over real rules files before and after; it must be
+  byte-identical, not just the same count.
 - For a new rule, lint the real codebases you have locally, read-only, and report hits and
   noise before shipping. Keep client names and findings out of commits and PRs.
 - In a fresh worktree `pnpm install` may write `allowBuilds` placeholders into
