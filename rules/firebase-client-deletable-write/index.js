@@ -1,11 +1,10 @@
 const docsUrl = require('../../machinery/docsUrl')
 const { forEachAccessRule, audienceOf } = require('../../machinery/firebase-rules')
 
-// A delete is a write of null, and `.validate` does not run on it. A disjunct that lets any
-// client in without requiring `newData.exists()` (something is written) or `!data.exists()`
-// (nothing was there) lets that client remove the node and everything under it.
+// A disjunct that lets any client in without requiring `!data.exists()` (nothing was there) lets
+// that client replace what exists: overwrite it, or delete it with a write of null, which
+// `.validate` doesn't run on.
 
-const writesSomething = /(?<!!\s*)newData\.exists\(\)/
 const writesOnlyWhereEmpty = /!\s*data\.exists\(\)/
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -28,7 +27,7 @@ module.exports = {
     return forEachAccessRule(context, ({ node, key, value, location, clientDisjuncts }) => {
       if (key !== '.write') return
 
-      const deletingDisjuncts = clientDisjuncts.filter(canDelete)
+      const deletingDisjuncts = clientDisjuncts.filter(canReplaceExisting)
 
       if (deletingDisjuncts.length === 0) return
 
@@ -44,11 +43,10 @@ module.exports = {
 }
 
 /**
- * Whether the branch requires neither something written (`newData.exists()`) nor nothing there
- * (`!data.exists()`).
+ * Whether the branch doesn't require nothing there (`!data.exists()`).
  *
  * @param {string} disjunct - one `||` branch of a folded `.write`
  */
-function canDelete(disjunct) {
-  return !writesSomething.test(disjunct) && !writesOnlyWhereEmpty.test(disjunct)
+function canReplaceExisting(disjunct) {
+  return !writesOnlyWhereEmpty.test(disjunct)
 }

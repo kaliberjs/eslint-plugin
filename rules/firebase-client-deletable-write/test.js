@@ -30,6 +30,12 @@ module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} &&
       code: `module.exports = () => ({ rules: { '.write': false } })`,
     },
     {
+      name: 'a let binding is not folded: it may be reassigned',
+      code: `let rule = 'auth != null'
+rule = false
+module.exports = () => ({ rules: { queue: { '.write': rule } } })`,
+    },
+    {
       name: 'a rule that does not parse is skipped',
       code: `module.exports = () => ({ rules: { queue: { '.write': 'auth != null &&' } } })`,
     },
@@ -64,6 +70,11 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
       name: 'a public write under a key that does not resolve',
       code: `module.exports = ({ externalId }) => ({ rules: { external: { [externalId]: { '.write': true } } } })`,
       errors: [{ messageId: 'deletable', data: { path: 'external/?', who: 'anyone', value: 'true' } }],
+    },
+    {
+      name: 'a signed-in write that overwrites what exists',
+      code: `module.exports = () => ({ rules: { queue: { $key: { '.write': 'auth != null && newData.exists()' } } } })`,
+      errors: [{ messageId: 'deletable', data: { path: 'queue/$key', who: 'any signed-in client', value: 'auth != null && newData.exists()' } }],
     },
     {
       name: 'a signed-in write that only allows deletes',

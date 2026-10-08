@@ -6,9 +6,10 @@ it against `auth.uid`. [CWE-639](https://cwe.mitre.org/data/definitions/639.html
 
 ## Rule details
 
-Reports a field named after Firebase's `auth.uid` (`uid`, or ending in `Uid` like `userUid`) whose
-validation never mentions `auth.uid`, beside a `.write` any signed-in client passes. The client can
-then write a task in another user's name, and the worker that reads it acts for that user.
+Reports a field named after Firebase's `auth.uid` (`uid`, or ending in `Uid` like `userUid`)
+whose validation never binds it to `auth.uid` (`newData.val() === auth.uid`), beside a `.write`
+any signed-in client passes. The client can then write a task in another user's name, and the
+worker that reads it acts for that user.
 
 ```js
 // ✗

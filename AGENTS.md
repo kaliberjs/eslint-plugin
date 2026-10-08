@@ -54,8 +54,10 @@ Before writing a helper, look for it in this order, and take the first that read
   only its check. `machinery/firebase-rules.js` is the model: `forEachAccessRule(context, visit)`
   hands every rule a folded `.read`/`.write` with its path, fields, ancestors and who it lets
   in, and `forEachShape` does the same for validated objects.
-- A string that holds code in the language the parser knows is parsed, not split by hand:
-  `context.languageOptions.parser` turns a Firebase rule into the `||` branches it has.
+- A string that holds JavaScript is parsed, not split by hand. `machinery/firebase-rules.js`
+  resolves espree from ESLint itself (its dependency, not ours) and reads a Firebase rule's `||`
+  branches from the tree. The parser in `context.languageOptions` is wrapped by `RuleTester` and
+  can't parse a bare expression.
 - Derive domain facts from the platform's own documented rules instead of hardcoding lists, and
   link the source beside the code. Example: `isDataKey` follows from Firebase's key rule (keys
   can't contain `.` or `$`) rather than listing `.read`, `.write`, ….

@@ -8,6 +8,7 @@ const { staticValue } = require('../../machinery/static-value')
 // `uid`, `userUid`, `ownerUid`.
 
 const uidName = /^uid$|Uid$/
+const bindsToAuthUid = /newData\.val\(\)\s*===?\s*auth\.uid|auth\.uid\s*===?\s*newData\.val\(\)/
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
@@ -34,7 +35,7 @@ module.exports = {
 
         const validation = staticValue(field.node.value, context.sourceCode)
 
-        if (validation.unresolved || checksAuthUid(validation.value)) continue
+        if (validation.unresolved || isBoundToAuthUid(validation.value)) continue
 
         context.report({
           node: field.node,
@@ -55,6 +56,6 @@ function isOwnerField(name) {
 }
 
 /** @param {unknown} validation - a folded field rule, often `{ '.validate': '…' }` */
-function checksAuthUid(validation) {
-  return JSON.stringify(validation).includes('auth.uid')
+function isBoundToAuthUid(validation) {
+  return bindsToAuthUid.test(JSON.stringify(validation))
 }

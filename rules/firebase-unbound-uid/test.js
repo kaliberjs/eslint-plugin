@@ -57,6 +57,14 @@ module.exports = () => ({ rules: { services: { 'application-processing-service':
       errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'services/application-processing-service/queue/$key' } }],
     },
     {
+      name: 'a validation that mentions auth.uid without binding the uid to it',
+      code: `${helpers}
+module.exports = () => ({ rules: { queue: { $key: {
+  '.write': \`\${hasAuth()} && \${isCreate()}\`, uid: validate('auth.uid != null && newData.isString()'),
+} } } })`,
+      errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'queue/$key' } }],
+    },
+    {
       name: 'a userUid any client sets',
       code: `${helpers}
 module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} && \${isCreate()}\`, userUid: isString() } } } })`,

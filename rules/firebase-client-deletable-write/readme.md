@@ -6,9 +6,9 @@ node. [CWE-284](https://cwe.mitre.org/data/definitions/284.html) ·
 
 ## Rule details
 
-A delete is a write of `null`, and `.validate` doesn't run on it. Reports a `.write` with a
-disjunct that lets a client in (`true`, or `auth != null` without `auth.uid` or `auth.token`)
-and requires neither `newData.exists()` nor `!data.exists()`.
+Reports a `.write` with a disjunct that lets a client in (`true`, or `auth != null` without
+`auth.uid` or `auth.token`) and doesn't require `!data.exists()`. That client can replace what
+exists: overwrite it, or delete it with a write of `null`, which `.validate` doesn't run on.
 
 A `.write` on a parent covers everything below it, so `auth != null` on a queue lets any
 signed-in client empty the queue. Anonymous sign-in counts as signed in.

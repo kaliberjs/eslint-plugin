@@ -176,7 +176,8 @@ function identifier(node, folding) {
   if (bound) return bound
 
   const definition = variable?.defs[0]
-  const isConstant = definition?.type === 'Variable' && definition.node.id.type === 'Identifier'
+  const isConstant = definition?.type === 'Variable' && definition.parent.kind === 'const' &&
+    definition.node.id.type === 'Identifier'
   const init = isConstant ? definition.node.init : null
 
   return init ? resolve(init, folding) : unresolvable
