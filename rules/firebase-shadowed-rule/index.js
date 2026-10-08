@@ -7,8 +7,8 @@ const {
 // access away (https://firebase.google.com/docs/database/security/core-syntax). A narrower rule
 // further down reads like a restriction and has no effect.
 
-/** @type {Record<Access, number>} */
-const reach = { anyone: 2, 'signed-in': 1 }
+/** @type {(Access | null)[]} from narrowest to widest */
+const reaches = [null, 'signed-in', 'anyone']
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
@@ -35,15 +35,15 @@ module.exports = {
       if (unresolved) return
 
       const ancestors = rule.above().filter(ancestor => !ancestor.unresolved)
-      const grant = widestUnconditionalGrant(ancestors)
+      const [widest] = ancestors.toSorted((a, b) => reachOf(b.value) - reachOf(a.value))
 
-      if (grant && reachOf(unconditionalAccessOf(value)) < reachOf(grant.access)) {
-        const { rule: ancestor, access } = grant
+      if (widest && reachOf(value) < reachOf(widest.value)) {
+        const who = audienceOf(unconditionalAccessOf(widest.value))
 
         context.report({
           node,
           messageId: 'shadowed',
-          data: { key, path: location, ancestor: ancestor.location, who: audienceOf(access) },
+          data: { key, path: location, ancestor: widest.location, who },
         })
         return
       }
@@ -66,29 +66,18 @@ module.exports = {
   },
 }
 
-/**
- * @param {AccessRule[]} rules
- * @returns {Grant | undefined} the rule that grants the widest access unconditionally
- */
-function widestUnconditionalGrant(rules) {
-  return rules
-    .map(rule => ({ rule, access: unconditionalAccessOf(rule.value) }))
-    .filter(/** @returns {grant is Grant} */ grant => grant.access !== null)
-    .sort((a, b) => reachOf(b.access) - reachOf(a.access))[0]
-}
-
 /** @param {unknown} value - a folded rule value */
 function unconditionalAccessOf(value) {
   return accessOf(value, { unconditional: true })
 }
 
 /**
- * 2 for anyone, 1 for any signed-in client, 0 for less.
+ * How far the rule reaches unconditionally: 2 for anyone, 1 for any signed-in client, 0 for less.
  *
- * @param {Access | null} access
+ * @param {unknown} value - a folded rule value
  */
-function reachOf(access) {
-  return access ? reach[access] : 0
+function reachOf(value) {
+  return reaches.indexOf(unconditionalAccessOf(value))
 }
 
 /**
@@ -101,5 +90,3 @@ function isClosed(value) {
 }
 
 /** @typedef {import('../../machinery/firebase-rules').Access} Access */
-/** @typedef {import('../../machinery/firebase-rules').AccessRule} AccessRule */
-/** @typedef {{ rule: AccessRule, access: Access }} Grant */

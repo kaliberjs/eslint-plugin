@@ -108,7 +108,7 @@ function isOpenToClients(value) {
 /**
  * Who the access reaches, for a report message.
  *
- * @param {Access} access
+ * @param {Access | null} access
  */
 function audienceOf(access) {
   return access === 'anyone' ? 'anyone' : 'any signed-in client'
@@ -186,7 +186,7 @@ function unwrapParentheses(text) {
  * @param {SourceCode} sourceCode
  */
 function pathOf(node, sourceCode) {
-  const keys = ancestorsOf(node)
+  const keys = ancestorsOf(node, sourceCode)
     .filter(ancestor => ancestor.type === 'Property')
     .map(property => keyOf(property, sourceCode) ?? '?')
     .reverse()
@@ -203,7 +203,8 @@ function pathOf(node, sourceCode) {
  * @param {SourceCode} sourceCode
  */
 function rulesAbove(node, key, sourceCode) {
-  return ancestorsOf(node.parent ?? node)
+  return ancestorsOf(node, sourceCode)
+    .slice(1)
     .flatMap(ancestor => ancestor.type === 'ObjectExpression' ? ancestor.properties : [])
     .filter(property => property.type === 'Property' && keyOf(property, sourceCode) === key)
     .map(property => /** @type {RuleProperty} */ (property))
@@ -212,14 +213,13 @@ function rulesAbove(node, key, sourceCode) {
 /**
  * The nodes enclosing `node`, nearest first, up to the nearest function.
  *
- * @param {RuleNode} node
+ * @param {Node} node
+ * @param {SourceCode} sourceCode
  */
-function ancestorsOf(node) {
-  const ancestors = []
+function ancestorsOf(node, sourceCode) {
+  const ancestors = sourceCode.getAncestors(node)
 
-  for (let x = node.parent; x && !isFunctionNode(x); x = x.parent) ancestors.push(x)
-
-  return ancestors
+  return ancestors.slice(ancestors.findLastIndex(isFunctionNode) + 1).reverse()
 }
 
 /**

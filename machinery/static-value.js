@@ -92,9 +92,6 @@ function template(node, folding) {
   return { value: text }
 }
 
-/** @type {Record<string, (a: any, b: any) => unknown>} */
-const operators = { '+': add, '===': isSame, '!==': isDifferent }
-
 /**
  * @param {import('estree').BinaryExpression} node
  * @param {Folding} folding
@@ -105,37 +102,16 @@ function binary(node, folding) {
 
   const left = resolve(node.left, folding)
   const right = resolve(node.right, folding)
-  const operator = operators[node.operator]
 
   if (left.unresolved) return left
   if (right.unresolved) return right
-  if (!operator) return { unresolved: 'other' }
 
-  return { value: operator(left.value, right.value) }
-}
-
-/**
- * @param {any} a
- * @param {any} b
- */
-function add(a, b) {
-  return a + b
-}
-
-/**
- * @param {unknown} a
- * @param {unknown} b
- */
-function isSame(a, b) {
-  return a === b
-}
-
-/**
- * @param {unknown} a
- * @param {unknown} b
- */
-function isDifferent(a, b) {
-  return a !== b
+  switch (node.operator) {
+    case '+': return { value: /** @type {any} */ (left.value) + right.value }
+    case '===': return { value: left.value === right.value }
+    case '!==': return { value: left.value !== right.value }
+    default: return { unresolved: 'other' }
+  }
 }
 
 /**
@@ -256,23 +232,15 @@ function call(node, folding) {
 }
 
 /**
- * The variable `node` refers to, from the innermost scope out.
+ * The variable `node` refers to, as ESLint's scope analysis resolved it.
  *
  * @param {import('estree').Identifier} node
  * @param {SourceCode} sourceCode
  */
 function variableOf(node, sourceCode) {
-  /** @type {import('eslint').Scope.Scope | null} */
-  let scope = sourceCode.getScope(node)
+  const { references } = sourceCode.getScope(node)
 
-  while (scope) {
-    const variable = scope.set.get(node.name)
-
-    if (variable) return variable
-    scope = scope.upper
-  }
-
-  return null
+  return references.find(reference => reference.identifier === node)?.resolved ?? null
 }
 
 /**

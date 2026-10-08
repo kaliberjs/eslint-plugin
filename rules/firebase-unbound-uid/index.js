@@ -56,16 +56,5 @@ function isOwnerField(name) {
 
 /** @param {unknown} validation - a folded field rule, often `{ '.validate': '…' }` */
 function checksAuthUid(validation) {
-  return stringsOf(validation).some(text => text.includes('auth.uid'))
-}
-
-/**
- * @param {unknown} value
- * @returns {string[]} every string in `value`, searched through nested objects
- */
-function stringsOf(value) {
-  if (typeof value === 'string') return [value]
-  if (value && typeof value === 'object') return Object.values(value).flatMap(stringsOf)
-
-  return []
+  return JSON.stringify(validation).includes('auth.uid')
 }
