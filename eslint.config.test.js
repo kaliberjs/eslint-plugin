@@ -38,7 +38,7 @@ test('the shared config enables bound-instance-methods', () => {
   ])
 })
 
-// Same reason as above, for the four Firebase rules-file rules.
+// Same reason as above, for the Firebase rules-file rules.
 test('the shared config enables the Firebase rules', () => {
   const messages = new Linter().verify(
     `module.exports = () => ({ rules: {
@@ -57,7 +57,7 @@ test('the shared config enables the Firebase rules', () => {
 
   assert.deepEqual(results.map(message => message.ruleId).sort(), [
     '@kaliber/firebase-client-deletable-write',
-    '@kaliber/firebase-client-writable-trust-path',
+    '@kaliber/firebase-other-required',
     '@kaliber/firebase-shadowed-rule',
     '@kaliber/firebase-unbound-uid',
   ])

@@ -6,13 +6,14 @@ const { staticValue } = require('./static-value')
 // rule expression.
 
 module.exports = {
-  forEachAccessRule, optionsSchema,
-  accessOf, isOpenToClients, audienceOf, clientDisjunctsOf,
+  forEachAccessRule, forEachShape, optionsSchema,
+  accessOf, isOpenToClients, audienceOf, clientDisjunctsOf, isValidation,
 }
 
 const signedInCheck = /auth\s*!==?\s*null/
 const bareSignedInCheck = /^auth\s*!==?\s*null$/
 const namedClientCheck = /auth\.(uid|token)/
+const validateKey = /['"]\.validate['"]/
 
 /**
  * An ESLint visitor that calls `visit` with every `.read` and `.write` in the file, folded with
@@ -41,15 +42,71 @@ function forEachAccessRule(context, visit) {
 }
 
 /**
+ * An ESLint visitor that calls `visit` with every shape in the file: an object with a data key
+ * whose rule folds to a `.validate`. A file without a `.validate` key is skipped.
+ *
+ * @param {import('eslint').Rule.RuleContext} context
+ * @param {(shape: Shape) => void} visit
+ * @returns {import('eslint').Rule.RuleListener}
+ */
+function forEachShape(context, visit) {
+  const { sourceCode } = context
+  const { env = {} } = context.options[0] ?? {}
+
+  if (!validateKey.test(sourceCode.text)) return {}
+
+  return {
+    ObjectExpression(node) {
+      const keys = keysOf(node, sourceCode)
+      const fields = keys.filter(key => isDataKey(key.name))
+      const wildcards = keys.filter(key => key.name?.startsWith('$'))
+
+      if (!fields.some(field => isValidation(fold(field.node.value).value))) return
+
+      const location = pathOf(node, sourceCode).join('/') || 'the root'
+      const at = node.parent.type === 'Property' ? node.parent.key : node
+      const writes = [node, ...ancestorsOf(node, sourceCode)]
+        .flatMap(object => object.type === 'ObjectExpression' ? keysOf(object, sourceCode) : [])
+        .filter(key => key.name === '.write')
+      const openToClients = writes.some(write => isOpenToClients(fold(write.node.value).value))
+
+      visit({ node, at, location, fields, wildcards, openToClients, fold })
+    },
+  }
+
+  /** @param {Node} node */
+  function fold(node) {
+    return staticValue(node, sourceCode, env)
+  }
+}
+
+/**
+ * Whether a folded value is a rule object with a `.validate`.
+ *
+ * @param {unknown} value
+ */
+function isValidation(value) {
+  return typeof value === 'object' && value !== null && Object.hasOwn(value, '.validate')
+}
+
+/**
  * @param {Record<string, import('json-schema').JSONSchema4>} [properties] - the rule's own
  *   options, beside `env`
- * @returns {import('json-schema').JSONSchema4[]}
+ * @param {string[]} [required] - options the rule can't run without
+ * @returns {import('json-schema').JSONSchema4}
  */
-function optionsSchema(properties = {}) {
+function optionsSchema(properties = {}, required = []) {
   /** @type {import('json-schema').JSONSchema4} */
   const env = { type: 'object', additionalProperties: { type: 'string' } }
+  /** @type {import('json-schema').JSONSchema4} */
+  const options = {
+    type: 'object',
+    properties: { env, ...properties },
+    ...required.length && { required },
+    additionalProperties: false,
+  }
 
-  return [{ type: 'object', properties: { env, ...properties }, additionalProperties: false }]
+  return { type: 'array', items: [options], minItems: required.length ? 1 : 0, maxItems: 1 }
 }
 
 /**
@@ -231,10 +288,18 @@ function ancestorsOf(node, sourceCode) {
 function fieldsOf(node, sourceCode) {
   if (node.parent.type !== 'ObjectExpression') return []
 
-  return node.parent.properties
-    .filter(/** @returns {x is Property} */ x => x.type === 'Property' && x !== node)
+  return keysOf(node.parent, sourceCode).filter(key => key.node !== node && isDataKey(key.name))
+}
+
+/**
+ * @param {import('estree').ObjectExpression} object
+ * @param {SourceCode} sourceCode
+ * @returns {Field[]}
+ */
+function keysOf(object, sourceCode) {
+  return object.properties
+    .filter(/** @returns {x is Property} */ x => x.type === 'Property')
     .map(property => ({ node: property, name: keyOf(property, sourceCode) }))
-    .filter(field => isDataKey(field.name))
 }
 
 /**
@@ -288,4 +353,20 @@ function keyOf(property, sourceCode) {
  *   `location` is the path joined with `/`, or `the root`; `fields` are the data keys beside it;
  *   `fold` folds another node with the same `env`; `above` is the rules with the same key in the
  *   enclosing objects, nearest first
+ */
+/**
+ * An object that validates its fields.
+ *
+ * @typedef {{
+ *   node: import('estree').ObjectExpression,
+ *   at: Node,
+ *   location: string,
+ *   fields: Field[],
+ *   wildcards: Field[],
+ *   openToClients: boolean,
+ *   fold: (node: Node) => Folded,
+ * }} Shape
+ *   `at` is the key that holds the shape, or the object itself, to report at; `fields` are its
+ *   data keys, `wildcards` its `$` keys; `openToClients` whether a `.write` on it or above it lets
+ *   some client in
  */

@@ -6,9 +6,9 @@ it against `auth.uid`. [CWE-639](https://cwe.mitre.org/data/definitions/639.html
 
 ## Rule details
 
-Reports a `uid`, `userUid`, `userId`, `ownerUid` or `ownerId` field whose validation never
-mentions `auth.uid`, beside a `.write` any signed-in client passes. The client can then write a
-task in another user's name, and the worker that reads it acts for that user.
+Reports a field named after Firebase's `auth.uid` (`uid`, or ending in `Uid` like `userUid`) whose
+validation never mentions `auth.uid`, beside a `.write` any signed-in client passes. The client can
+then write a task in another user's name, and the worker that reads it acts for that user.
 
 ```js
 // ✗
@@ -31,6 +31,6 @@ queue: { $key: {
 
 ## Limitations
 
-- Field names are a fixed list; `applicantId` isn't checked.
+- Only `uid` names count; `userId` or `applicantId` aren't checked.
 - A validation that can't be folded, such as an imported helper, is skipped.
 - It can't see whether the worker uses the uid.

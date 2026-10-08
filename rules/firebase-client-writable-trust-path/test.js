@@ -7,7 +7,9 @@ function isCreate() { return \`newData.exists() && !data.exists()\` }
 function validate(x) { return { '.validate': x } }
 `
 
-test('firebase-client-writable-trust-path', {
+const words = ['verified', 'approved', 'confirmed', 'admin', 'employee']
+
+test('firebase-client-writable-trust-path', configured({
   valid: [
     {
       name: 'a signed-in create under a plain queue with plain fields',
@@ -41,6 +43,11 @@ module.exports = () => ({ rules: { services: { mail: { queue: { $key: {
 module.exports = () => ({ rules: { queue: { $key: {
   '.write': 'auth != null && auth.token.employee === true', isEmployee: validate('newData.isBoolean()'),
 } } } })`,
+    },
+    {
+      name: 'a trust name the project did not configure',
+      code: `module.exports = () => ({ rules: { approved: { '.write': true } } })`,
+      options: [{ words: ['employee'] }],
     },
   ],
   invalid: [
@@ -95,4 +102,18 @@ module.exports = () => ({ rules: { applications: { $key: {
       } }],
     },
   ],
-})
+}))
+
+/**
+ * Adds the trust words to every case, beside any options the case has.
+ *
+ * @param {{ valid: any[], invalid: any[] }} tests
+ */
+function configured({ valid, invalid }) {
+  return { valid: valid.map(withWords), invalid: invalid.map(withWords) }
+
+  /** @param {any} testCase */
+  function withWords(testCase) {
+    return { ...testCase, options: [{ words, ...testCase.options?.[0] }] }
+  }
+}

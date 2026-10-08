@@ -5,9 +5,10 @@ const {
 
 // A record any signed-in client can write, with a field that names its owner. Unless a rule
 // ties that field to `auth.uid`, the client can write someone else's uid into it, and whatever
-// reads the record acts for that user.
+// reads the record acts for that user. Owner fields are named after Firebase's own `auth.uid`:
+// `uid`, `userUid`, `ownerUid`.
 
-const ownerFieldNames = ['uid', 'userUid', 'userId', 'ownerUid', 'ownerId']
+const uidName = /^uid$|Uid$/
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
@@ -51,7 +52,7 @@ module.exports = {
  * @returns {name is string} whether the field names the user a record belongs to
  */
 function isOwnerField(name) {
-  return name !== null && ownerFieldNames.includes(name)
+  return name !== null && uidName.test(name)
 }
 
 /** @param {unknown} validation - a folded field rule, often `{ '.validate': '…' }` */

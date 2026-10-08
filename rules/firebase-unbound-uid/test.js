@@ -31,6 +31,11 @@ module.exports = () => ({ rules: { queue: { $key: {
 module.exports = () => ({ rules: { users: { $uid: { '.write': 'auth.uid === $uid', uid: isString() } } } })`,
     },
     {
+      name: 'a uuid is not an owner field',
+      code: `${helpers}
+module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} && \${isCreate()}\`, uuid: isString() } } } })`,
+    },
+    {
       name: 'an id that does not name a user',
       code: `${helpers}
 module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} && \${isCreate()}\`, jobId: isString() } } } })`,
