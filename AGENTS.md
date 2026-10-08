@@ -57,6 +57,10 @@ Before writing a helper, look for it in this order, and take the first that read
 - Derive domain facts from the platform's own documented rules instead of hardcoding lists, and
   link the source beside the code. Example: `isDataKey` follows from Firebase's key rule (keys
   can't contain `.` or `$`) rather than listing `.read`, `.write`, ….
+- A list of names that only the project knows (which fields claim trust, …) is configuration, not
+  a default. Survey the real files first: a word nobody uses is dead weight, and a list fitted to
+  known findings doesn't generalise. Such a rule takes the list as a required option and stays out
+  of the shared config, as `firebase-client-writable-trust-path` does with `words`.
 
 ## JSDoc
 
