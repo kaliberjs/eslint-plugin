@@ -1,15 +1,14 @@
-const { isFunctionNode } = require('./ast')
+const { getPropertyName, isFunctionNode } = require('./ast')
 
 module.exports = { staticValue }
 
 const maxDepth = 30
 
 /**
- * Folds an expression to the value it has when the file is loaded, through
- * ESLint's scope analysis: literals, object literals, templates, `+`, `===`,
- * `!==`, `&&`, `||`, conditionals, `const` bindings, `process.env.X` read from
- * `env`, and same-file helpers whose body is one returned expression, called
- * with their arguments bound to their parameters.
+ * Folds an expression to the value it has when the file is loaded, through ESLint's scope
+ * analysis: literals, object literals, templates, `+`, `===`, `!==`, `&&`, `||`, conditionals,
+ * `const` bindings, `process.env.X` read from `env`, and same-file helpers whose body is one
+ * returned expression, called with their arguments bound to their parameters.
  *
  * @example
  * // const hasAuth = () => `auth != null`
@@ -22,53 +21,50 @@ const maxDepth = 30
  * @returns {Folded} `{ value }`, or `{ unresolved }` with the reason folding stopped
  */
 function staticValue(node, sourceCode, env = {}) {
-  return resolve(node, new Map(), sourceCode, env, 0)
+  return resolve(node, { sourceCode, env, bindings: new Map(), depth: 0 })
 }
 
 /**
  * @param {Node} node
- * @param {Bindings} bindings - parameter values of the helper calls being folded
- * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
+ * @param {Folding} folding
  * @returns {Folded}
  */
-function resolve(node, bindings, sourceCode, env, depth) {
-  if (depth > maxDepth) return { unresolved: 'other' }
+function resolve(node, folding) {
+  if (folding.depth > maxDepth) return { unresolved: 'other' }
+
+  const deeper = { ...folding, depth: folding.depth + 1 }
 
   switch (node.type) {
     case 'Literal': return { value: node.value }
-    case 'TemplateLiteral': return template(node, bindings, sourceCode, env, depth)
-    case 'BinaryExpression': return binary(node, bindings, sourceCode, env, depth)
-    case 'LogicalExpression': return logical(node, bindings, sourceCode, env, depth)
-    case 'ConditionalExpression': return conditional(node, bindings, sourceCode, env, depth)
-    case 'Identifier': return identifier(node, bindings, sourceCode, env, depth)
-    case 'MemberExpression': return member(node, env)
-    case 'CallExpression': return call(node, bindings, sourceCode, env, depth)
-    case 'ObjectExpression': return object(node, bindings, sourceCode, env, depth)
+    case 'TemplateLiteral': return template(node, deeper)
+    case 'BinaryExpression': return binary(node, deeper)
+    case 'LogicalExpression': return logical(node, deeper)
+    case 'ConditionalExpression': return conditional(node, deeper)
+    case 'Identifier': return identifier(node, deeper)
+    case 'MemberExpression': return member(node, folding.env)
+    case 'CallExpression': return call(node, deeper)
+    case 'ObjectExpression': return object(node, deeper)
     default: return { unresolved: 'other' }
   }
 }
 
 /**
  * @param {import('estree').ObjectExpression} node
- * @param {Bindings} bindings
- * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
+ * @param {Folding} folding
  * @returns {Folded}
  */
-function object(node, bindings, sourceCode, env, depth) {
+function object(node, folding) {
   /** @type {Record<string, unknown>} */
   const result = {}
 
   for (const property of node.properties) {
     if (property.type !== 'Property') return { unresolved: 'other' }
 
+    /** @type {Folded} */
     const key = property.computed
-      ? resolve(property.key, bindings, sourceCode, env, depth + 1)
-      : { value: nameOf(property.key) }
-    const value = resolve(property.value, bindings, sourceCode, env, depth + 1)
+      ? resolve(property.key, folding)
+      : { value: getPropertyName(property.key) }
+    const value = resolve(property.value, folding)
 
     if (key.unresolved) return key
     if (value.unresolved) return value
@@ -79,29 +75,15 @@ function object(node, bindings, sourceCode, env, depth) {
 }
 
 /**
- * @param {import('estree').Expression | import('estree').PrivateIdentifier} key - a non-computed property key
- * @returns {unknown} the identifier's name or the literal's value
- */
-function nameOf(key) {
-  if (key.type === 'Identifier') return key.name
-  if (key.type === 'Literal') return key.value
-
-  return undefined
-}
-
-/**
  * @param {import('estree').TemplateLiteral} node
- * @param {Bindings} bindings
- * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
+ * @param {Folding} folding
  * @returns {Folded}
  */
-function template(node, bindings, sourceCode, env, depth) {
+function template(node, folding) {
   let text = node.quasis[0].value.cooked
 
   for (const [i, expression] of node.expressions.entries()) {
-    const part = resolve(expression, bindings, sourceCode, env, depth + 1)
+    const part = resolve(expression, folding)
 
     if (part.unresolved) return part
     text += String(part.value) + node.quasis[i + 1].value.cooked
@@ -110,61 +92,58 @@ function template(node, bindings, sourceCode, env, depth) {
   return { value: text }
 }
 
+/** @type {Record<string, (a: any, b: any) => unknown>} */
+const operators = {
+  '+': (a, b) => a + b,
+  '===': (a, b) => a === b,
+  '!==': (a, b) => a !== b,
+}
+
 /**
  * @param {import('estree').BinaryExpression} node
- * @param {Bindings} bindings
- * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
+ * @param {Folding} folding
  * @returns {Folded}
  */
-function binary(node, bindings, sourceCode, env, depth) {
+function binary(node, folding) {
   if (node.left.type === 'PrivateIdentifier') return { unresolved: 'other' }
 
-  const left = resolve(node.left, bindings, sourceCode, env, depth + 1)
-  const right = resolve(node.right, bindings, sourceCode, env, depth + 1)
+  const left = resolve(node.left, folding)
+  const right = resolve(node.right, folding)
+  const operator = operators[node.operator]
 
   if (left.unresolved) return left
   if (right.unresolved) return right
+  if (!operator) return { unresolved: 'other' }
 
-  /** @type {Record<string, (a: any, b: any) => unknown>} */
-  const operators = { '+': (a, b) => a + b, '===': (a, b) => a === b, '!==': (a, b) => a !== b }
-
-  return node.operator in operators ? { value: operators[node.operator](left.value, right.value) } : { unresolved: 'other' }
+  return { value: operator(left.value, right.value) }
 }
 
 /**
  * @param {import('estree').LogicalExpression} node
- * @param {Bindings} bindings
- * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
+ * @param {Folding} folding
  * @returns {Folded}
  */
-function logical(node, bindings, sourceCode, env, depth) {
-  const left = resolve(node.left, bindings, sourceCode, env, depth + 1)
+function logical(node, folding) {
+  const left = resolve(node.left, folding)
 
   if (left.unresolved) return left
   if (node.operator === '&&' && !left.value) return left
   if (node.operator === '||' && left.value) return left
 
-  return resolve(node.right, bindings, sourceCode, env, depth + 1)
+  return resolve(node.right, folding)
 }
 
 /**
  * @param {import('estree').ConditionalExpression} node
- * @param {Bindings} bindings
- * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
+ * @param {Folding} folding
  * @returns {Folded}
  */
-function conditional(node, bindings, sourceCode, env, depth) {
-  const test = resolve(node.test, bindings, sourceCode, env, depth + 1)
+function conditional(node, folding) {
+  const test = resolve(node.test, folding)
 
   if (test.unresolved) return test
 
-  return resolve(test.value ? node.consequent : node.alternate, bindings, sourceCode, env, depth + 1)
+  return resolve(test.value ? node.consequent : node.alternate, folding)
 }
 
 /**
@@ -177,7 +156,9 @@ function conditional(node, bindings, sourceCode, env, depth) {
 function member(node, env) {
   const { object, property } = node
 
-  if (!isProcessEnv(object) || node.computed || property.type !== 'Identifier') return { unresolved: 'member' }
+  if (!isProcessEnv(object) || node.computed || property.type !== 'Identifier') {
+    return { unresolved: 'member' }
+  }
 
   return { value: env[property.name] }
 }
@@ -194,36 +175,14 @@ function isProcessEnv(node) {
 
 /**
  * @param {import('estree').Identifier} node
- * @param {SourceCode} sourceCode
- * @returns {Variable | null} the variable `node` refers to, from the innermost scope out
- */
-function variableOf(node, sourceCode) {
-  /** @type {Scope | null} */
-  let scope = sourceCode.getScope(node)
-
-  while (scope) {
-    const variable = scope.set.get(node.name)
-
-    if (variable) return variable
-    scope = scope.upper
-  }
-
-  return null
-}
-
-/**
- * @param {import('estree').Identifier} node
- * @param {Bindings} bindings
- * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
+ * @param {Folding} folding
  * @returns {Folded}
  */
-function identifier(node, bindings, sourceCode, env, depth) {
+function identifier(node, folding) {
   if (node.name === 'undefined') return { value: undefined }
 
-  const variable = variableOf(node, sourceCode)
-  const bound = bindings.get(variable)
+  const variable = variableOf(node, folding.sourceCode)
+  const bound = folding.bindings.get(variable)
 
   if (bound) return bound
 
@@ -234,13 +193,68 @@ function identifier(node, bindings, sourceCode, env, depth) {
   if (definition.type === 'ImportBinding') return { unresolved: 'import' }
   if (definition.type !== 'Variable') return { unresolved: 'other' }
 
-  const { node: declarator } = definition
+  const { id, init } = definition.node
 
-  if (declarator.id.type !== 'Identifier') return { unresolved: isImported(declarator.init, sourceCode) ? 'import' : 'other' }
-  if (!declarator.init) return { unresolved: 'other' }
-  if (isRequire(declarator.init)) return { unresolved: 'import' }
+  if (id.type !== 'Identifier') {
+    return { unresolved: isImported(init, folding.sourceCode) ? 'import' : 'other' }
+  }
+  if (!init) return { unresolved: 'other' }
+  if (isRequire(init)) return { unresolved: 'import' }
 
-  return resolve(declarator.init, bindings, sourceCode, env, depth + 1)
+  return resolve(init, folding)
+}
+
+/**
+ * @param {import('estree').CallExpression} node
+ * @param {Folding} folding
+ * @returns {Folded}
+ */
+function call(node, folding) {
+  if (node.callee.type !== 'Identifier') return { unresolved: 'member call' }
+
+  const definition = variableOf(node.callee, folding.sourceCode)?.defs[0]
+
+  if (!definition) return { unresolved: 'other' }
+  if (definition.type === 'Parameter') return { unresolved: 'option' }
+  if (isImportedFunction(definition, folding.sourceCode)) return { unresolved: 'import' }
+
+  const helper = functionOf(definition)
+  const returnedExpression = helper && returnedOf(helper)
+
+  if (!helper || !returnedExpression) return { unresolved: 'other' }
+
+  const helperScope = folding.sourceCode.getScope(helper)
+  const bindings = new Map(folding.bindings)
+
+  for (const [i, parameter] of helper.params.entries()) {
+    if (parameter.type !== 'Identifier') return { unresolved: 'other' }
+
+    const argument = node.arguments[i]
+    const argumentValue = argument ? resolve(argument, folding) : { value: undefined }
+
+    bindings.set(helperScope.set.get(parameter.name) ?? null, argumentValue)
+  }
+
+  return resolve(returnedExpression, { ...folding, bindings })
+}
+
+/**
+ * @param {import('estree').Identifier} node
+ * @param {SourceCode} sourceCode
+ * @returns {Variable | null} the variable `node` refers to, from the innermost scope out
+ */
+function variableOf(node, sourceCode) {
+  /** @type {import('eslint').Scope.Scope | null} */
+  let scope = sourceCode.getScope(node)
+
+  while (scope) {
+    const variable = scope.set.get(node.name)
+
+    if (variable) return variable
+    scope = scope.upper
+  }
+
+  return null
 }
 
 /**
@@ -268,52 +282,26 @@ function isImported(node, sourceCode) {
 function isRequire(node) {
   const call = node?.type === 'MemberExpression' ? node.object : node
 
-  return call?.type === 'CallExpression' && call.callee.type === 'Identifier' && call.callee.name === 'require'
+  return call?.type === 'CallExpression' &&
+    call.callee.type === 'Identifier' && call.callee.name === 'require'
 }
 
 /**
- * @param {import('estree').CallExpression} node
- * @param {Bindings} bindings
+ * @param {Definition} definition
  * @param {SourceCode} sourceCode
- * @param {Env} env
- * @param {number} depth
- * @returns {Folded}
+ * @returns {boolean}
  */
-function call(node, bindings, sourceCode, env, depth) {
-  if (node.callee.type !== 'Identifier') return { unresolved: 'member call' }
+function isImportedFunction(definition, sourceCode) {
+  if (definition.type === 'ImportBinding') return true
+  if (definition.type !== 'Variable') return false
 
-  const variable = variableOf(node.callee, sourceCode)
-  const definition = variable?.defs[0]
+  const { id, init } = definition.node
 
-  if (!definition) return { unresolved: 'other' }
-  if (definition.type === 'Parameter') return { unresolved: 'option' }
-  if (isImportedFunction(definition, sourceCode)) return { unresolved: 'import' }
-
-  const helper = functionOf(definition)
-
-  if (!helper) return { unresolved: 'other' }
-
-  const returnedExpression = returnedOf(helper)
-
-  if (!returnedExpression) return { unresolved: 'other' }
-
-  const helperScope = sourceCode.getScope(helper)
-  const argumentBindings = new Map(bindings)
-
-  for (const [i, parameter] of helper.params.entries()) {
-    if (parameter.type !== 'Identifier') return { unresolved: 'other' }
-
-    const argument = node.arguments[i]
-    const argumentValue = argument ? resolve(argument, bindings, sourceCode, env, depth + 1) : { value: undefined }
-
-    argumentBindings.set(helperScope.set.get(parameter.name) ?? null, argumentValue)
-  }
-
-  return resolve(returnedExpression, argumentBindings, sourceCode, env, depth + 1)
+  return isRequire(init) || (id.type === 'ObjectPattern' && isImported(init, sourceCode))
 }
 
 /**
- * @param {import('eslint').Scope.Definition} definition
+ * @param {Definition} definition
  * @returns {import('estree').Function | null} the function a declaration or `const` defines
  */
 function functionOf(definition) {
@@ -323,20 +311,6 @@ function functionOf(definition) {
     null
 
   return declared && isFunctionNode(declared) ? declared : null
-}
-
-/**
- * @param {import('eslint').Scope.Definition} definition
- * @param {SourceCode} sourceCode
- * @returns {boolean}
- */
-function isImportedFunction(definition, sourceCode) {
-  if (definition.type === 'ImportBinding') return true
-  if (definition.type !== 'Variable') return false
-
-  const declarator = definition.node
-
-  return isRequire(declarator.init) || (declarator.id.type === 'ObjectPattern' && isImported(declarator.init, sourceCode))
 }
 
 /**
@@ -356,8 +330,13 @@ function returnedOf(fn) {
 /** @typedef {import('estree').Node} Node */
 /** @typedef {import('eslint').SourceCode} SourceCode */
 /** @typedef {import('eslint').Scope.Variable} Variable */
-/** @typedef {import('eslint').Scope.Scope} Scope */
+/** @typedef {import('eslint').Scope.Definition} Definition */
 /** @typedef {Record<string, string | undefined>} Env */
 /** @typedef {'option' | 'import' | 'member' | 'member call' | 'other'} Reason */
 /** @typedef {{ value?: unknown, unresolved?: Reason }} Folded */
 /** @typedef {Map<Variable | null, Folded>} Bindings */
+/**
+ * What folding carries down: the parameter values of the helpers being folded, and its depth.
+ *
+ * @typedef {{ sourceCode: SourceCode, env: Env, bindings: Bindings, depth: number }} Folding
+ */

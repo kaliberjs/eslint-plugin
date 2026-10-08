@@ -1,12 +1,11 @@
 const docsUrl = require('../../machinery/docsUrl')
-const { isFunctionNode } = require('../../machinery/ast')
-const { staticValue } = require('../../machinery/static-value')
-const { keyOf, pathOf, accessOf, audienceOf } = require('../../machinery/firebase-rules')
+const {
+  forEachAccessRule, optionsSchema, accessOf, audienceOf,
+} = require('../../machinery/firebase-rules')
 
-// `.read` and `.write` cascade: once an ancestor grants access, nothing below
-// it can take that access away
-// (https://firebase.google.com/docs/database/security/core-syntax). A narrower
-// rule further down reads like a restriction and has no effect.
+// `.read` and `.write` cascade: once an ancestor grants access, nothing below it can take that
+// access away (https://firebase.google.com/docs/database/security/core-syntax). A narrower rule
+// further down reads like a restriction and has no effect.
 
 /** @type {Record<Access, number>} */
 const reach = { anyone: 2, 'signed-in': 1 }
@@ -16,153 +15,66 @@ module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow a Firebase `.read` or `.write` that narrows what an ancestor already grants, which has no effect (CWE-284, OWASP A01:2025)',
+      description: 'Disallow a Firebase `.read` or `.write` that narrows what an ancestor ' +
+        'already grants, which has no effect (CWE-284, OWASP A01:2025)',
       url: docsUrl(__dirname),
     },
     messages: {
-      shadowed: '`{{key}}` at {{path}} has no effect: `{{key}}` at {{ancestor}} already grants {{who}} access to everything below it.',
-      revokesNothing: '`{{key}}: false` at {{path}} has no effect: whenever `{{key}}` at {{ancestor}} grants access, it reaches everything below it: {{condition}}',
+      shadowed: '`{{key}}` at {{path}} has no effect: `{{key}}` at {{ancestor}} already grants ' +
+        '{{who}} access to everything below it.',
+      revokesNothing: '`{{key}}: false` at {{path}} has no effect: whenever `{{key}}` at ' +
+        '{{ancestor}} grants access, it reaches everything below it: {{condition}}',
     },
-    schema: [
-      {
-        type: 'object',
-        properties: {
-          env: { type: 'object', additionalProperties: { type: 'string' } },
-        },
-        additionalProperties: false,
-      },
-    ],
+    schema: optionsSchema(),
   },
 
   create(context) {
-    const { env = {} } = context.options[0] ?? {}
-    const { sourceCode } = context
+    return forEachAccessRule(context, rule => {
+      const { node, key, value, unresolved, location } = rule
 
-    return {
-      Property(node) {
-        const key = keyOf(node, sourceCode)
+      if (unresolved) return
 
-        if (key !== '.read' && key !== '.write') return
+      const ancestors = rule.above().filter(ancestor => !ancestor.unresolved)
+      const grant = widestUnconditionalGrant(ancestors)
 
-        const rule = staticValue(node.value, sourceCode, env)
-
-        if (rule.unresolved) return
-
-        const path = pathOf(node, sourceCode).join('/')
-        const grant = widestGrantAbove(node, key, sourceCode, env)
-
-        if (grant && grantsLessThan(rule.value, grant.access)) {
-          context.report({
-            node,
-            messageId: 'shadowed',
-            data: { key, path, ancestor: locationOf(grant.rule, sourceCode), who: audienceOf(grant.access) },
-          })
-          return
-        }
-
-        if (!isClosed(rule.value)) return
-
-        const conditionalGrant = nearestConditionalGrantAbove(node, key, sourceCode, env)
-
-        if (!conditionalGrant) return
+      if (grant && reachOf(unconditionalAccessOf(value)) < reachOf(grant.access)) {
+        const { rule: ancestor, access } = grant
 
         context.report({
           node,
-          messageId: 'revokesNothing',
-          data: { key, path, ancestor: locationOf(conditionalGrant.rule, sourceCode), condition: String(conditionalGrant.value) },
+          messageId: 'shadowed',
+          data: { key, path: location, ancestor: ancestor.location, who: audienceOf(access) },
         })
-      },
-    }
+        return
+      }
+
+      const conditionalGrant = ancestors.find(ancestor => !isClosed(ancestor.value))
+
+      if (!isClosed(value) || !conditionalGrant) return
+
+      context.report({
+        node,
+        messageId: 'revokesNothing',
+        data: {
+          key,
+          path: location,
+          ancestor: conditionalGrant.location,
+          condition: String(conditionalGrant.value),
+        },
+      })
+    })
   },
 }
 
 /**
- * The rule with the same key above `node` that grants the widest access unconditionally.
- *
- * @param {import('eslint').Rule.Node} node - a `.read` or `.write` property
- * @param {'.read' | '.write'} key
- * @param {import('eslint').SourceCode} sourceCode
- * @param {Record<string, string>} env
- * @returns {Grant | null}
+ * @param {AccessRule[]} rules
+ * @returns {Grant | undefined} the rule that grants the widest access unconditionally
  */
-function widestGrantAbove(node, key, sourceCode, env) {
-  return rulesAbove(node, key, sourceCode)
-    .map(rule => ({ rule, access: unconditionalAccessOf(staticValue(rule.value, sourceCode, env).value) }))
-    .filter(isGrant)
-    .sort((a, b) => reachOf(b.access) - reachOf(a.access))[0] ?? null
-}
-
-/**
- * The nearest rule with the same key above `node` that folds to something other than `false`.
- *
- * @param {import('eslint').Rule.Node} node
- * @param {'.read' | '.write'} key
- * @param {import('eslint').SourceCode} sourceCode
- * @param {Record<string, string>} env
- * @returns {{ rule: RuleProperty, value: unknown } | null}
- */
-function nearestConditionalGrantAbove(node, key, sourceCode, env) {
-  for (const rule of rulesAbove(node, key, sourceCode)) {
-    const folded = staticValue(rule.value, sourceCode, env)
-
-    if (!folded.unresolved && !isClosed(folded.value)) return { rule, value: folded.value }
-  }
-
-  return null
-}
-
-/**
- * @param {unknown} value - a folded rule value
- * @returns {boolean} whether the rule is `false`, granting nothing
- */
-function isClosed(value) {
-  return value === false || value === 'false'
-}
-
-/**
- * @param {RuleProperty} rule
- * @param {import('eslint').SourceCode} sourceCode
- * @returns {string} the rule's path, or `the root`
- */
-function locationOf(rule, sourceCode) {
-  return pathOf(rule, sourceCode).join('/') || 'the root'
-}
-
-/**
- * @param {import('eslint').Rule.Node} node
- * @param {'.read' | '.write'} key
- * @param {import('eslint').SourceCode} sourceCode
- * @returns {RuleProperty[]} the rules with the same key in the objects enclosing `node`, nearest first, up to the nearest function
- */
-function rulesAbove(node, key, sourceCode) {
-  const rules = []
-
-  for (let ancestor = node.parent?.parent; ancestor && !isFunctionNode(ancestor); ancestor = ancestor.parent) {
-    if (ancestor.type !== 'ObjectExpression') continue
-
-    const rule = ancestor.properties.find(property => property.type === 'Property' && keyOf(property, sourceCode) === key)
-
-    if (rule) rules.push(/** @type {RuleProperty} */ (rule))
-  }
-
+function widestUnconditionalGrant(rules) {
   return rules
-}
-
-/**
- * @param {{ rule: RuleProperty, access: Access | null }} candidate
- * @returns {candidate is Grant}
- */
-function isGrant(candidate) {
-  return candidate.access !== null
-}
-
-/**
- * @param {unknown} value - a folded rule value
- * @param {Access} access - what an ancestor grants
- * @returns {boolean}
- */
-function grantsLessThan(value, access) {
-  return reachOf(unconditionalAccessOf(value)) < reachOf(access)
+    .map(rule => ({ rule, access: unconditionalAccessOf(rule.value) }))
+    .filter(/** @returns {grant is Grant} */ grant => grant.access !== null)
+    .sort((a, b) => reachOf(b.access) - reachOf(a.access))[0]
 }
 
 /**
@@ -181,6 +93,14 @@ function reachOf(access) {
   return access ? reach[access] : 0
 }
 
+/**
+ * @param {unknown} value - a folded rule value
+ * @returns {boolean} whether the rule is `false`, granting nothing
+ */
+function isClosed(value) {
+  return value === false || value === 'false'
+}
+
 /** @typedef {import('../../machinery/firebase-rules').Access} Access */
-/** @typedef {import('../../machinery/firebase-rules').RuleProperty} RuleProperty */
-/** @typedef {{ rule: RuleProperty, access: Access }} Grant */
+/** @typedef {import('../../machinery/firebase-rules').AccessRule} AccessRule */
+/** @typedef {{ rule: AccessRule, access: Access }} Grant */
