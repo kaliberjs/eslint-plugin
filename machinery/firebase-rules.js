@@ -25,8 +25,6 @@ const namedClientCheck = /auth\.(uid|token)/
 function forEachAccessRule(context, visit) {
   const { sourceCode } = context
   const { env = {} } = context.options[0] ?? {}
-  /** @param {Node} node */
-  const fold = node => staticValue(node, sourceCode, env)
 
   return {
     Property(node) {
@@ -34,6 +32,11 @@ function forEachAccessRule(context, visit) {
 
       if (key === '.read' || key === '.write') visit(accessRule(node, key, sourceCode, fold))
     },
+  }
+
+  /** @param {Node} node */
+  function fold(node) {
+    return staticValue(node, sourceCode, env)
   }
 }
 
@@ -61,11 +64,13 @@ function accessRule(node, key, sourceCode, fold) {
   const path = pathOf(node, sourceCode)
 
   return {
-    node, key, value, unresolved, path, fold,
+    node, key, value, unresolved, path, fold, above,
     location: path.join('/') || 'the root',
     fields: fieldsOf(node, sourceCode),
-    above: () => rulesAbove(node, key, sourceCode)
-      .map(rule => accessRule(rule, key, sourceCode, fold)),
+  }
+
+  function above() {
+    return rulesAbove(node, key, sourceCode).map(rule => accessRule(rule, key, sourceCode, fold))
   }
 }
 

@@ -21,7 +21,9 @@ rules-overview.md        one row per rule
 
 - CommonJS, no semicolons, two-space indent, single quotes, trailing commas in multiline.
 - Lines stay within 100 columns. Wrap long strings with `+`, imports with destructuring.
-- Named `function` declarations below the export, not `const fn = () =>` at module scope.
+- Named `function` declarations, not functions bound to a `const` or a property
+  (`const fold = node => …`). At module scope they go below the export; inside a function, after
+  its `return`. Inline callbacks (`.map(rule => …)`) stay arrows.
 - Read like prose: conditions become named predicates (`canDelete`, `isOwnerField`), regexes
   become named constants (`writesSomething`), variables get domain names, never `x` or `fn`.
   Guard clauses first, then the happy path.

@@ -12,7 +12,7 @@ const maxDepth = 30
  * or `{ unresolved }` with the reason folding stopped.
  *
  * @example
- * // const hasAuth = () => `auth != null`
+ * // function hasAuth() { return `auth != null` }
  * staticValue(parse('`${hasAuth()} && newData.exists()`'), sourceCode)
  * // => { value: 'auth != null && newData.exists()' }
  *
@@ -93,11 +93,7 @@ function template(node, folding) {
 }
 
 /** @type {Record<string, (a: any, b: any) => unknown>} */
-const operators = {
-  '+': (a, b) => a + b,
-  '===': (a, b) => a === b,
-  '!==': (a, b) => a !== b,
-}
+const operators = { '+': add, '===': isSame, '!==': isDifferent }
 
 /**
  * @param {import('estree').BinaryExpression} node
@@ -116,6 +112,30 @@ function binary(node, folding) {
   if (!operator) return { unresolved: 'other' }
 
   return { value: operator(left.value, right.value) }
+}
+
+/**
+ * @param {any} a
+ * @param {any} b
+ */
+function add(a, b) {
+  return a + b
+}
+
+/**
+ * @param {unknown} a
+ * @param {unknown} b
+ */
+function isSame(a, b) {
+  return a === b
+}
+
+/**
+ * @param {unknown} a
+ * @param {unknown} b
+ */
+function isDifferent(a, b) {
+  return a !== b
 }
 
 /**
