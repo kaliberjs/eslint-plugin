@@ -3,19 +3,15 @@ const { test } = require('../../machinery/test')
 // Written reductions of the rules-file shapes; no client code.
 const helpers = `
 function hasAuth() { return \`auth != null\` }
-function isCreate() { return \`newData.exists() && !data.exists()\` }
+function isCreate() { return \`newData.exists() && newData.exists() && !data.exists()\` }
 `
 
-test('firebase-client-deletable-write', {
+test('firebase-client-create-only', {
   valid: [
     {
       name: 'a signed-in create into an empty node',
       code: `${helpers}
 module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} && \${isCreate()}\` } } } })`,
-    },
-    {
-      name: 'a signed-in write that cannot replace what exists',
-      code: `module.exports = () => ({ rules: { events: { $key: { '.write': "(auth.uid === 'eventService') || (!data.exists() && auth != null)" } } } })`,
     },
     {
       name: 'a write only the owner passes',
@@ -53,11 +49,11 @@ module.exports = () => ({ rules: { 'poll-processing': {
   entries: { '.write': \`(\${hasAuth()} && \${isCreate()})\` },
 } } })`,
       errors: [{
-        messageId: 'deletable',
+        messageId: 'notCreateOnly',
         data: { path: 'poll-processing', who: 'any signed-in user', value: 'auth != null' },
         suggestions: [{ messageId: 'createOnly', output: `${helpers}
 module.exports = () => ({ rules: { 'poll-processing': {
-  '.write': \`(\${hasAuth()}) && !data.exists()\`,
+  '.write': \`(\${hasAuth()}) && newData.exists() && !data.exists()\`,
   entries: { '.write': \`(\${hasAuth()} && \${isCreate()})\` },
 } } })` }],
       }],
@@ -70,7 +66,7 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
   '.write': \`\${isNotificationService} || \${hasAuth()}\`,
 } } } } })`,
       errors: [{
-        messageId: 'deletable',
+        messageId: 'notCreateOnly',
         data: {
           path: 'services/job-alert-notification-service/processedJobIds', who: 'any signed-in user',
           value: "(auth.uid === 'job-alert-notification-service') || auth != null",
@@ -78,7 +74,7 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
         suggestions: [{ messageId: 'createOnly', output: `${helpers}
 const isNotificationService = "(auth.uid === 'job-alert-notification-service')"
 module.exports = () => ({ rules: { services: { 'job-alert-notification-service': { processedJobIds: {
-  '.write': \`(\${isNotificationService} || \${hasAuth()}) && !data.exists()\`,
+  '.write': \`(\${isNotificationService} || \${hasAuth()}) && newData.exists() && !data.exists()\`,
 } } } } })` }],
       }],
     },
@@ -86,35 +82,46 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
       name: 'a public write under a key that does not resolve',
       code: `module.exports = ({ externalId }) => ({ rules: { external: { [externalId]: { '.write': true } } } })`,
       errors: [{
-        messageId: 'deletable',
+        messageId: 'notCreateOnly',
         data: { path: 'external/?', who: 'anyone', value: 'true' },
-        suggestions: [{ messageId: 'createOnly', output: `module.exports = ({ externalId }) => ({ rules: { external: { [externalId]: { '.write': '!data.exists()' } } } })` }],
+        suggestions: [{ messageId: 'createOnly', output: `module.exports = ({ externalId }) => ({ rules: { external: { [externalId]: { '.write': 'newData.exists() && !data.exists()' } } } })` }],
       }],
     },
     {
       name: 'a signed-in check written as auth.uid !== null',
       code: `module.exports = () => ({ rules: { queue: { '.write': 'auth.uid !== null' } } })`,
       errors: [{
-        messageId: 'deletable',
+        messageId: 'notCreateOnly',
         data: { path: 'queue', who: 'any signed-in user', value: 'auth.uid !== null' },
-        suggestions: [{ messageId: 'createOnly', output: `module.exports = () => ({ rules: { queue: { '.write': '(auth.uid !== null) && !data.exists()' } } })` }],
+        suggestions: [{ messageId: 'createOnly', output: `module.exports = () => ({ rules: { queue: { '.write': '(auth.uid !== null) && newData.exists() && !data.exists()' } } })` }],
+      }],
+    },
+    {
+      name: 'a signed-in write into an empty node that writes nothing',
+      code: `module.exports = () => ({ rules: { events: { $key: { '.write': '!data.exists() && auth != null' } } } })`,
+      errors: [{
+        messageId: 'notCreateOnly',
+        suggestions: [{
+          messageId: 'createOnly',
+          output: `module.exports = () => ({ rules: { events: { $key: { '.write': '(!data.exists() && auth != null) && newData.exists() && !data.exists()' } } } })`,
+        }],
       }],
     },
     {
       name: 'a signed-in write that overwrites what exists',
       code: `module.exports = () => ({ rules: { queue: { $key: { '.write': 'auth != null && newData.exists()' } } } })`,
       errors: [{
-        messageId: 'deletable',
+        messageId: 'notCreateOnly',
         data: { path: 'queue/$key', who: 'any signed-in user', value: 'auth != null && newData.exists()' },
-        suggestions: [{ messageId: 'createOnly', output: `module.exports = () => ({ rules: { queue: { $key: { '.write': '(auth != null && newData.exists()) && !data.exists()' } } } })` }],
+        suggestions: [{ messageId: 'createOnly', output: `module.exports = () => ({ rules: { queue: { $key: { '.write': '(auth != null && newData.exists()) && newData.exists() && !data.exists()' } } } })` }],
       }],
     },
     {
       name: 'a signed-in write that only allows deletes',
       code: `module.exports = () => ({ rules: { queue: { $key: { '.write': 'auth != null && !newData.exists()' } } } })`,
       errors: [{
-        messageId: 'deletable',
-        suggestions: [{ messageId: 'createOnly', output: `module.exports = () => ({ rules: { queue: { $key: { '.write': '(auth != null && !newData.exists()) && !data.exists()' } } } })` }],
+        messageId: 'notCreateOnly',
+        suggestions: [{ messageId: 'createOnly', output: `module.exports = () => ({ rules: { queue: { $key: { '.write': '(auth != null && !newData.exists()) && newData.exists() && !data.exists()' } } } })` }],
       }],
     },
     {
@@ -123,9 +130,9 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
   '.write': process.env.CONFIG_ENV === 'dev' ? false : 'auth != null',
 } } })`,
       errors: [{
-        messageId: 'deletable',
+        messageId: 'notCreateOnly',
         suggestions: [{ messageId: 'createOnly', output: `module.exports = () => ({ rules: { queue: {
-  '.write': \`(\${process.env.CONFIG_ENV === 'dev' ? false : 'auth != null'}) && !data.exists()\`,
+  '.write': \`(\${process.env.CONFIG_ENV === 'dev' ? false : 'auth != null'}) && newData.exists() && !data.exists()\`,
 } } })` }],
       }],
     },

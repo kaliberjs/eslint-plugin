@@ -88,8 +88,7 @@ module.exports = [
       '@kaliber/data-x-sectioning-elements': 'warn',
       '@kaliber/data-x-form-naming': 'warn',
 
-      '@kaliber/firebase-client-deletable-write': 'error',
-      '@kaliber/firebase-client-writable-trust-path': 'error',
+      '@kaliber/firebase-client-create-only': 'error',
       '@kaliber/firebase-shadowed-rule': 'error',
       '@kaliber/firebase-unbound-uid': 'error',
       '@kaliber/firebase-other-required': 'error',

@@ -13,15 +13,10 @@ const bareSignedInCheck = /^auth(\.uid)?\s*!==?\s*null$/
 const namedClientCheck = /auth\.uid\s*===?|===?\s*auth\.uid|auth\.token/
 const validateKey = /['"]\.validate['"]/
 const accessKey = /['"]\.(read|write)['"]/
-const camelCaseBoundary = /([a-z0-9])([A-Z])/g
-const nonAlphanumerics = /[^a-z0-9]+/
-
-// The words Kaliber's rules files use for data a worker trusts (`verified-queue`, `isEmployee`).
-const trustWords = ['verified', 'employee']
 
 module.exports = {
   forEachAccessRule, forEachShape, forEachRulesKey,
-  audienceOf, isValidation, ruleText, addProperty, trustWords, trustClaimsOf, uidCheckOf,
+  audienceOf, isValidation, ruleText, addProperty,
 }
 
 /**
@@ -344,24 +339,6 @@ function forEachRulesKey(context, visit) {
       visit({ node, name, path, location: path.join('/'), service: serviceOf(path, sourceCode) })
     },
   }
-}
-
-/**
- * The trust words in a name, split on camelCase and non-alphanumerics.
- *
- * @example
- * trustClaimsOf('verified-queue', trustWords) // ['verified']
- * trustClaimsOf('isEmployee', trustWords)     // ['employee']
- *
- * @param {string} name - a path segment or field key
- * @param {string[]} words - lowercase trust words
- */
-function trustClaimsOf(name, words) {
-  return name
-    .replace(camelCaseBoundary, '$1 $2')
-    .toLowerCase()
-    .split(nonAlphanumerics)
-    .filter(word => words.includes(word))
 }
 
 /**

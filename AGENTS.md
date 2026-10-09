@@ -61,11 +61,10 @@ Before writing a helper, look for it in this order, and take the first that read
 - Derive domain facts from the platform's own documented rules instead of hardcoding lists, and
   link the source beside the code. Example: `isDataKey` follows from Firebase's key rule (keys
   can't contain `.` or `$`) rather than listing `.read`, `.write`, ….
-- A list of names (which fields claim trust, …) is configurable, and its default holds only what
-  real code shows. Survey the real files first: every default word must occur there and add no
-  noise; a word nobody uses is dead weight. Don't grow the list to chase each new finding: when the
-  names keep changing, the signal is elsewhere (`firebase-client-writable-trust-path` defaults to
-  `['verified', 'employee']`; the queue that trusts an unchecked id is a worker-side problem).
+- Don't detect by what a key is called (`verified-queue`, `isEmployee`): names are fragile, a
+  list of them only fits the findings it was made from, and the same flaw under another name goes
+  unseen. Detect by structure (who a rule lets in, what a shape allows) or by data flow (a worker
+  that puts an unchecked task id in a path).
 
 ## JSDoc
 

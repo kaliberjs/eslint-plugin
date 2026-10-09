@@ -41,9 +41,10 @@ test('the shared config enables bound-instance-methods', () => {
 // Same reason as above, for the Firebase rules-file rules.
 test('the shared config enables the Firebase rules', () => {
   const messages = new Linter().verify(
-    `module.exports = () => ({ rules: {
+    `const isMailService = "auth.uid === 'mail-service'"
+    module.exports = () => ({ rules: {
       static: { '.read': true, private: { '.read': false } },
-      'verified-queue': { '.write': "auth.uid === 'serve'" },
+      services: { 'mail-service': { queue: { $key: { '.write': isMailService } } } },
       queue: { $key: {
         '.write': 'auth != null',
         isEmployee: { '.validate': 'newData.isBoolean()' },
@@ -58,8 +59,7 @@ test('the shared config enables the Firebase rules', () => {
 
   assert.deepEqual(results.map(message => message.ruleId).sort(), [
     '@kaliber/firebase-children-required',
-    '@kaliber/firebase-client-deletable-write',
-    '@kaliber/firebase-client-writable-trust-path',
+    '@kaliber/firebase-client-create-only',
     '@kaliber/firebase-notes',
     '@kaliber/firebase-other-required',
     '@kaliber/firebase-shadowed-rule',

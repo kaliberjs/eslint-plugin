@@ -9,30 +9,26 @@ const isSubscriptionService = "(auth.uid === 'subscription-service')"
 test('firebase-notes', {
   valid: [
     {
-      name: 'a trust word without rules below it',
-      code: `module.exports = () => ({ rules: { stats: { verifiedCount: { '.read': true } } } })`,
-    },
-    {
       name: 'a service without a named check',
       code: `module.exports = () => ({ rules: { services: { mail: {
-  queue: { '.write': false },
+  queue: { $key: { '.write': false } },
+} } } })`,
+    },
+    {
+      name: 'a service with a named check but no records',
+      code: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': {
+  lastRun: { '.write': isSubscriptionService },
 } } } })`,
     },
     {
       name: 'a plain object outside a rules file',
-      code: `const user = { verified: { name: 'x' } }`,
+      code: `const services = { mail: { $key: { name: 'x' } } }`,
     },
   ],
   invalid: [
     {
-      name: 'a trust word with writes below it',
-      code: `module.exports = () => ({ rules: { 'verified-queue': { $key: {
-  '.write': 'auth != null && newData.exists() && !data.exists()',
-} } } })`,
-      errors: [{ messageId: 'trusted', data: { name: 'verified-queue', words: 'verified' } }],
-    },
-    {
-      name: 'a service node with a named check',
+      name: 'a service node with a named check and records',
       code: `${helpers}
 module.exports = () => ({ rules: { services: { 'subscription-service': {
   '.write': isSubscriptionService,
@@ -45,12 +41,6 @@ module.exports = () => ({ rules: { services: { 'subscription-service': {
         messageId: 'serviceOwned',
         data: { name: 'subscription-service', check: 'isSubscriptionService' },
       }],
-    },
-    {
-      name: 'a configured trust word',
-      code: `module.exports = () => ({ rules: { approved: { '.write': "auth.uid === 'x'" } } })`,
-      options: [{ words: ['approved'] }],
-      errors: [{ messageId: 'trusted', data: { name: 'approved', words: 'approved' } }],
     },
   ],
 })
