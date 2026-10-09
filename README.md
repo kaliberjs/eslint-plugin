@@ -29,6 +29,13 @@ module.exports = [
 | [`position-center`](rules/position-center/readme.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
 | [`stable-query-client`](rules/stable-query-client/readme.md) | A QueryClient created in a component body loses the whole query cache on every re-render |
 | [`todo-ticket-reference`](rules/todo-ticket-reference/readme.md) | Require TODO comments to reference a Jira ticket |
+| [`firebase-client-create-only`](rules/firebase-client-create-only/readme.md) | Firebase rules: a `.write` that lets any signed-in user in must be create-only (`newData.exists() && !data.exists()`) |
+| [`firebase-service-shape`](rules/firebase-service-shape/readme.md) | Firebase rules: best practice for data only our own code writes, `$other` and `hasChildren()` as warnings |
+| [`firebase-shadowed-rule`](rules/firebase-shadowed-rule/readme.md) | Firebase rules: no `.read`/`.write` narrower than what an ancestor already grants — rules cascade, so it does nothing |
+| [`firebase-children-required`](rules/firebase-children-required/readme.md) | Firebase rules: validated objects a client can write need `newData.hasChildren()`, or a primitive skips every field rule |
+| [`firebase-notes`](rules/firebase-notes/readme.md) | Firebase rules: notes on service nodes that change how `$other` is checked below them; shown as `info` in the editor |
+| [`firebase-other-required`](rules/firebase-other-required/readme.md) | Firebase rules: validated fields need a `$other` rule that limits every other key |
+| [`firebase-unbound-uid`](rules/firebase-unbound-uid/readme.md) | Firebase rules: a `uid` field any signed-in client writes must be checked against `auth.uid` |
 
 ### Tracking rules (data-x)
 

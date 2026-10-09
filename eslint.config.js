@@ -88,6 +88,14 @@ module.exports = [
       '@kaliber/data-x-sectioning-elements': 'warn',
       '@kaliber/data-x-form-naming': 'warn',
 
+      '@kaliber/firebase-client-create-only': 'error',
+      '@kaliber/firebase-shadowed-rule': 'error',
+      '@kaliber/firebase-unbound-uid': 'error',
+      '@kaliber/firebase-other-required': 'error',
+      '@kaliber/firebase-children-required': 'error',
+      '@kaliber/firebase-notes': 'warn',
+      '@kaliber/firebase-service-shape': 'warn',
+
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
       '@stylistic/indent': ['warn', 2, {
