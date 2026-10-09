@@ -8,7 +8,9 @@ const espree = require(require.resolve('espree', { paths: [require.resolve('esli
 // object. Rule values are folded with staticValue, then parsed as the JavaScript expressions they
 // are.
 
-module.exports = { forEachAccessRule, forEachShape, audienceOf, isValidation }
+module.exports = {
+  forEachAccessRule, forEachShape, audienceOf, isValidation, ruleText, addProperty,
+}
 
 const signedInCheck = /auth(\.uid)?\s*!==?\s*null/
 const bareSignedInCheck = /^auth(\.uid)?\s*!==?\s*null$/
@@ -35,8 +37,8 @@ function forEachAccessRule(context, visit) {
 }
 
 /**
- * An ESLint visitor that calls `visit` with every shape in the file. A file without a `.validate`
- * key is skipped.
+ * An ESLint visitor that calls `visit` with every shape in the file: an object with validated
+ * fields, or with an `$other`. A file without a `.validate` key is skipped.
  *
  * @param {import('eslint').Rule.RuleContext} context
  * @param {(shape: Shape) => void} visit
@@ -92,19 +94,149 @@ function accessRule(node, key, sourceCode) {
 function shapeOf(node, sourceCode) {
   const keys = keysOf(node, sourceCode)
   const fields = keys.filter(key => isDataKey(key.name))
+  const validatesFields = fields.some(field => isValidated(field, sourceCode))
 
-  if (!fields.some(field => isValidated(field, sourceCode))) return null
+  if (!validatesFields && !keys.some(key => key.name === '$other')) return null
 
   const writes = rulesIn([node, ...ancestorsOf(node, sourceCode)], '.write', sourceCode)
+  const path = pathOf(node, sourceCode)
 
   return {
-    node, fields,
+    node, fields, validatesFields,
     wildcards: keys.filter(key => key.name?.startsWith('$')),
     validate: keys.find(key => key.name === '.validate') ?? null,
     at: node.parent.type === 'Property' ? node.parent.key : node,
-    location: pathOf(node, sourceCode).join('/') || 'the root',
+    location: path.join('/') || 'the root',
     openToClients: writes.some(write => write.access),
+    level: levelOf(path),
+    service: serviceOf(path, sourceCode),
   }
+}
+
+/**
+ * `record` for the first `$` wildcard in the path (a queue task, a subscription), `data` for an
+ * object a record holds, `null` above any record.
+ *
+ * @param {string[]} path
+ * @returns {'record' | 'data' | null}
+ */
+function levelOf(path) {
+  const record = path.findIndex(key => key.startsWith('$'))
+
+  if (record === -1) return null
+
+  return record === path.length - 1 ? 'record' : 'data'
+}
+
+/**
+ * The service a shape sits under, `services/<name>`, with the check named after it when the file
+ * defines one; `null` outside `services`.
+ *
+ * @param {string[]} path
+ * @param {SourceCode} sourceCode
+ * @returns {Service | null}
+ */
+function serviceOf(path, sourceCode) {
+  const name = path[path.indexOf('services') + 1]
+
+  if (!path.includes('services') || !name) return null
+
+  return { name, check: serviceCheckOf(name, sourceCode) }
+}
+
+/**
+ * The `const` in the file whose rule is exactly `auth.uid === '<name>'`.
+ *
+ * @param {string} name - a service name
+ * @param {SourceCode} sourceCode
+ */
+function serviceCheckOf(name, sourceCode) {
+  const constants = sourceCode.ast.body
+    .flatMap(statement => statement.type === 'VariableDeclaration' && statement.kind === 'const'
+      ? statement.declarations
+      : [])
+
+  for (const { id, init } of constants) {
+    if (id.type !== 'Identifier' || !init) continue
+
+    const { value } = staticValue(init, sourceCode)
+
+    if (typeof value !== 'string' || !isUidCheck(value, name)) continue
+
+    return { identifier: id.name, rule: value }
+  }
+
+  return null
+}
+
+/**
+ * @param {string} rule
+ * @param {string} name
+ */
+function isUidCheck(rule, name) {
+  return withoutParentheses(rule) === `auth.uid === '${name}'` ||
+    withoutParentheses(rule) === `auth.uid == '${name}'`
+}
+
+/** @param {string} rule */
+function withoutParentheses(rule) {
+  return rule.trim().replace(/^\((.*)\)$/, '$1').trim()
+}
+
+/**
+ * The source text for a rule object with `.validate` set to `expression`: the file's own
+ * `validate(…)` helper when it has one, an object literal otherwise.
+ *
+ * @param {string} expression - source text, e.g. `false` or `isJobAlertSubscriptionService`
+ * @param {Node} at - a node in the scope that will hold the text
+ * @param {SourceCode} sourceCode
+ */
+function ruleText(expression, at, sourceCode) {
+  const helper = findVariable(sourceCode.getScope(at), 'validate')
+
+  return helper ? `validate(${expression})` : `{ '.validate': ${expression} }`
+}
+
+/**
+ * @param {import('eslint').Scope.Scope | null} scope
+ * @param {string} name
+ */
+function findVariable(scope, name) {
+  for (let current = scope; current; current = current.upper) {
+    const variable = current.set.get(name)
+
+    if (variable) return variable
+  }
+
+  return null
+}
+
+/**
+ * A fix that adds `text` as the last property of `object`, on its own line when the object spans
+ * lines.
+ *
+ * @param {import('eslint').Rule.RuleFixer} fixer
+ * @param {import('estree').ObjectExpression} object
+ * @param {string} text - a property, e.g. `'$other': validate(false)`
+ * @param {SourceCode} sourceCode
+ */
+function addProperty(fixer, object, text, sourceCode) {
+  const last = object.properties.at(-1)
+  const closing = /** @type {import('eslint').AST.Token} */ (sourceCode.getLastToken(object))
+
+  if (!last) return fixer.insertTextBefore(closing, ` ${text} `)
+
+  const afterLast = /** @type {import('eslint').AST.Token} */ (sourceCode.getTokenAfter(last))
+  const hasComma = afterLast.value === ','
+  const isMultiline = (last.loc?.end.line ?? 0) < (closing.loc?.start.line ?? 0)
+  const indent = /^\s*/.exec(sourceCode.lines[(last.loc?.start.line ?? 1) - 1])?.[0] ?? ''
+
+  if (!isMultiline && hasComma) return fixer.insertTextAfter(afterLast, ` ${text}`)
+  if (!isMultiline) return fixer.insertTextAfter(last, `, ${text}`)
+
+  return hasComma
+    ? fixer.insertTextAfter(afterLast, `\n${indent}${text},`)
+    : fixer.insertTextAfter(last, `,\n${indent}${text}`)
 }
 
 /**
@@ -338,11 +470,24 @@ function keyOf(property, sourceCode) {
  *   at: Node,
  *   location: string,
  *   fields: Field[],
+ *   validatesFields: boolean,
  *   wildcards: Field[],
  *   validate: Field | null,
  *   openToClients: boolean,
+ *   level: 'record' | 'data' | null,
+ *   service: Service | null,
  * }} Shape
  *   `at` is the key that holds the shape, or the object itself, to report at; `fields` are its
- *   data keys, `wildcards` its `$` keys, `validate` its own `.validate`; `openToClients` whether a
- *   `.write` on it or above it lets some client in
+ *   data keys, `validatesFields` whether one of them has a `.validate` (else the shape is only
+ *   visited for its `$other`), `wildcards` its `$` keys, `validate` its own `.validate`;
+ *   `openToClients` whether a `.write` on it or above it lets some client in; `level` whether it's
+ *   a record (the first `$` wildcard) or data inside one
+ */
+/**
+ * @typedef {{
+ *   name: string,
+ *   check: { identifier: string, rule: string } | null,
+ * }} Service
+ *   `check` is the `const` named after the service, `isJobAlertSubscriptionService` for
+ *   `auth.uid === 'job-alert-subscription-service'`
  */

@@ -25,6 +25,9 @@ queue: { $key: {
 } }
 ```
 
+An editor suggestion, not an automatic fix, replaces the field's rule with
+`newData.val() === auth.uid`: it changes what the field accepts.
+
 ## Limitations
 
 - Only `uid` names count; `userId` or `applicantId` aren't checked.

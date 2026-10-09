@@ -23,10 +23,13 @@ $key: { '.write': 'auth != null && newData.exists() && !data.exists()', email: i
 // ✓
 $key: {
   '.write': 'auth != null && newData.exists() && !data.exists()',
-  '.validate': "newData.hasChildren(['email'])",
+  '.validate': 'newData.hasChildren()',
   email: isString(),
 }
 ```
+
+Fixable: `--fix` adds `'.validate': 'newData.hasChildren()'` to an object without a `.validate`
+of its own. One that has a `.validate` is reported, not changed.
 
 ## Limitations
 

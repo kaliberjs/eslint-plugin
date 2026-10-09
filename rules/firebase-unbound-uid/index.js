@@ -1,5 +1,5 @@
 const docsUrl = require('../../machinery/docsUrl')
-const { forEachAccessRule } = require('../../machinery/firebase-rules')
+const { forEachAccessRule, ruleText } = require('../../machinery/firebase-rules')
 const { staticValue } = require('../../machinery/static-value')
 
 // A record any signed-in client can write, with a field that names its owner. Unless a rule
@@ -8,12 +8,14 @@ const { staticValue } = require('../../machinery/static-value')
 // `uid`, `userUid`, `ownerUid`.
 
 const uidName = /^uid$|Uid$/
+const ownUid = "'newData.val() === auth.uid'"
 const bindsToAuthUid = /newData\.val\(\)\s*===?\s*auth\.uid|auth\.uid\s*===?\s*newData\.val\(\)/
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
   meta: {
     type: 'problem',
+    hasSuggestions: true,
     docs: {
       description: 'Disallow a uid field, beside a Firebase `.write` any signed-in client ' +
         'passes, that is never checked against `auth.uid` (CWE-639, OWASP A01:2025)',
@@ -22,6 +24,7 @@ module.exports = {
     messages: {
       unboundUid: '`{{field}}` at {{path}} is written by any signed-in client and never checked ' +
         'against `auth.uid`, so a client can write it in another user\'s name.',
+      bindToAuthUid: 'Validate `{{field}}` as `newData.val() === auth.uid`.',
     },
     schema: [],
   },
@@ -37,10 +40,18 @@ module.exports = {
 
         if (validation.unresolved || isBoundToAuthUid(validation.value)) continue
 
+        const value = field.node.value
+        const bound = ruleText(ownUid, value, context.sourceCode)
+
         context.report({
           node: field.node,
           messageId: 'unboundUid',
           data: { field: field.name, path: location },
+          suggest: [{
+            messageId: 'bindToAuthUid',
+            data: { field: field.name },
+            fix: fixer => fixer.replaceText(value, bound),
+          }],
         })
       }
     })

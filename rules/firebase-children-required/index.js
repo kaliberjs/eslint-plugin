@@ -1,5 +1,5 @@
 const docsUrl = require('../../machinery/docsUrl')
-const { forEachShape } = require('../../machinery/firebase-rules')
+const { forEachShape, addProperty } = require('../../machinery/firebase-rules')
 const { staticValue } = require('../../machinery/static-value')
 
 // Field rules only run on children that exist. A string or number written in place of the object
@@ -8,11 +8,13 @@ const { staticValue } = require('../../machinery/static-value')
 // (https://firebase.google.com/docs/database/security/rules-conditions).
 
 const requiresChildren = /newData\.hasChildren\(/
+const requireObject = `'.validate': 'newData.hasChildren()'`
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description: 'Require `newData.hasChildren()` on validated Firebase objects a client can ' +
         'write, so a primitive written in their place doesn\'t skip every field rule (CWE-20)',
@@ -20,18 +22,28 @@ module.exports = {
     },
     messages: {
       childrenRequired: 'The fields at {{path}} are validated, but a string or number written ' +
-        'in their place passes: add `\'.validate\': "newData.hasChildren([…])"` with the ' +
-        'required fields.',
+        'in their place passes: add `\'.validate\': \'newData.hasChildren()\'`.',
     },
     schema: [],
   },
 
   create(context) {
-    return forEachShape(context, ({ node, at, location, validate, openToClients }) => {
-      if (!openToClients) return
-      if (validationsOf(node, validate, context.sourceCode).some(requiresObject)) return
+    const { sourceCode } = context
 
-      context.report({ node: at, messageId: 'childrenRequired', data: { path: location } })
+    return forEachShape(context, shape => {
+      const { node, at, location, validate, validatesFields, openToClients } = shape
+      const validations = validationsOf(node, validate, sourceCode)
+
+      if (!validatesFields || !openToClients || validations.some(requiresObject)) return
+
+      context.report({
+        node: at,
+        messageId: 'childrenRequired',
+        data: { path: location },
+        fix: validations.some(isPresent)
+          ? null
+          : fixer => addProperty(fixer, node, requireObject, sourceCode),
+      })
     })
   },
 }
@@ -51,6 +63,15 @@ function validationsOf(node, validate, sourceCode) {
     .map(({ value, unresolved }) => ({ value: Object(value)['.validate'], unresolved }))
 
   return validate ? [staticValue(validate.node.value, sourceCode), ...spreads] : spreads
+}
+
+/**
+ * Whether there is a `.validate` at all: one that folds, or one that doesn't.
+ *
+ * @param {import('../../machinery/static-value').Folded} validation
+ */
+function isPresent({ value, unresolved }) {
+  return unresolved || value !== undefined
 }
 
 /**

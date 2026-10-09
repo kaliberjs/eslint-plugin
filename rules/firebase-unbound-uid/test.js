@@ -54,7 +54,10 @@ module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} &&
 module.exports = () => ({ rules: { services: { 'application-processing-service': { queue: { $key: {
   '.write': \`(\${hasAuth()} && \${isCreate()})\`, jobId: isString(), uid: isString(),
 } } } } } })`,
-      errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'services/application-processing-service/queue/$key' } }],
+      errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'services/application-processing-service/queue/$key' } , suggestions: [{ messageId: 'bindToAuthUid', output: `${helpers}
+module.exports = () => ({ rules: { services: { 'application-processing-service': { queue: { $key: {
+  '.write': \`(\${hasAuth()} && \${isCreate()})\`, jobId: isString(), uid: validate('newData.val() === auth.uid'),
+} } } } } })` }] }],
     },
     {
       name: 'a validation that mentions auth.uid without binding the uid to it',
@@ -62,13 +65,17 @@ module.exports = () => ({ rules: { services: { 'application-processing-service':
 module.exports = () => ({ rules: { queue: { $key: {
   '.write': \`\${hasAuth()} && \${isCreate()}\`, uid: validate('auth.uid != null && newData.isString()'),
 } } } })`,
-      errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'queue/$key' } }],
+      errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'queue/$key' } , suggestions: [{ messageId: 'bindToAuthUid', output: `${helpers}
+module.exports = () => ({ rules: { queue: { $key: {
+  '.write': \`\${hasAuth()} && \${isCreate()}\`, uid: validate('newData.val() === auth.uid'),
+} } } })` }] }],
     },
     {
       name: 'a userUid any client sets',
       code: `${helpers}
 module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} && \${isCreate()}\`, userUid: isString() } } } })`,
-      errors: [{ messageId: 'unboundUid', data: { field: 'userUid', path: 'queue/$key' } }],
+      errors: [{ messageId: 'unboundUid', data: { field: 'userUid', path: 'queue/$key' } , suggestions: [{ messageId: 'bindToAuthUid', output: `${helpers}
+module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} && \${isCreate()}\`, userUid: validate('newData.val() === auth.uid') } } } })` }] }],
     },
     {
       name: 'an update that checks the old uid, not the new one',
@@ -76,7 +83,10 @@ module.exports = () => ({ rules: { queue: { $key: { '.write': \`\${hasAuth()} &&
 module.exports = () => ({ rules: { feedback: { entries: { $key: {
   '.write': \`(\${hasAuth()} && (\${isCreate()}) || (\${isUpdate()}))\`, uid: isString(),
 } } } } })`,
-      errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'feedback/entries/$key' } }],
+      errors: [{ messageId: 'unboundUid', data: { field: 'uid', path: 'feedback/entries/$key' } , suggestions: [{ messageId: 'bindToAuthUid', output: `${helpers}
+module.exports = () => ({ rules: { feedback: { entries: { $key: {
+  '.write': \`(\${hasAuth()} && (\${isCreate()}) || (\${isUpdate()}))\`, uid: validate('newData.val() === auth.uid'),
+} } } } })` }] }],
     },
   ],
 })

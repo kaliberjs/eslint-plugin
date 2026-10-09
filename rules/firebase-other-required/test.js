@@ -1,39 +1,38 @@
 const { test } = require('../../machinery/test')
 
-// Written reductions of the rules-file shapes; no client code.
+// Written reductions of the rules-file shapes; no client code. The good shape follows a job-alert
+// subscription: the record closed to its own service, the data inside it closed to everyone.
 const helpers = `
 function validate(x) { return { '.validate': x } }
 function isString() { return validate('newData.isString()') }
+const isSubscriptionService = "(auth.uid === 'subscription-service')"
 `
 
 test('firebase-other-required', {
   valid: [
     {
-      name: 'validated fields closed by $other',
+      name: 'a queue record closed to its service, the data inside it closed to everyone',
       code: `${helpers}
-module.exports = () => ({ rules: { queue: { $key: {
-  '.write': 'auth != null', email: isString(), '$other': validate(false),
-} } } })`,
+module.exports = () => ({ rules: { services: { 'subscription-service': { 'subscribing-queue': {
+  $key: {
+    '.write': 'auth != null && newData.exists() && !data.exists()',
+    '.validate': 'newData.hasChildren()',
+    language: isString(),
+    formValues: { email: isString(), '$other': validate(false) },
+    '$other': validate(isSubscriptionService),
+  },
+} } } } })`,
     },
     {
-      name: '$other that only a service may write',
+      name: 'a subscription record the service and site write',
       code: `${helpers}
-const isService = "auth.uid === 'service'"
-module.exports = () => ({ rules: { subscribed: { $id: {
-  language: isString(), '$other': validate(isService),
-} } } })`,
-    },
-    {
-      name: 'a nested shape closed at both levels',
-      code: `${helpers}
-module.exports = () => ({ rules: { entries: { $key: {
+const isSite = "(auth.uid === 'serve')"
+module.exports = () => ({ rules: { jobAlert: { subscribed: { $subscriptionId: {
+  '.write': \`\${isSubscriptionService} || \${isSite}\`,
+  language: isString(),
   formValues: { email: isString(), '$other': validate(false) },
-  '$other': validate(false),
-} } } })`,
-    },
-    {
-      name: 'a path tree, not a shape: children carry .read and .write',
-      code: `module.exports = () => ({ rules: { static: { skills: { '.read': true } } } })`,
+  '$other': validate(isSubscriptionService),
+} } } } })`,
     },
     {
       name: 'a $other that does not fold gets the benefit of the doubt',
@@ -55,20 +54,54 @@ module.exports = () => ({ rules: { statusInfo: {
   ],
   invalid: [
     {
-      name: 'validated fields with nothing for other keys',
+      name: 'a queue record without $other gets its service check',
+      code: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  email: isString(),
+} } } } } })`,
+      output: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  email: isString(),
+  '$other': validate(isSubscriptionService),
+} } } } } })`,
+      errors: [{ messageId: 'otherRequired', data: { path: 'services/subscription-service/queue/$key' } }],
+    },
+    {
+      name: 'a record whose service has no named check is reported, not fixed',
       code: `${helpers}
 module.exports = () => ({ rules: { services: { mail: { queue: { $key: {
   '.write': 'auth != null', email: isString(),
 } } } } } })`,
+      output: null,
       errors: [{ messageId: 'otherRequired', data: { path: 'services/mail/queue/$key' } }],
     },
     {
-      name: 'a nested shape left open',
+      name: 'data inside a record left open gets validate(false)',
       code: `${helpers}
 module.exports = () => ({ rules: { entries: { $key: {
   '.write': 'auth != null && newData.exists()',
   formValues: { email: isString() },
   '$other': validate(false),
+} } } })`,
+      output: `${helpers}
+module.exports = () => ({ rules: { entries: { $key: {
+  '.write': 'auth != null && newData.exists()',
+  formValues: { email: isString(), '$other': validate(false) },
+  '$other': validate(false),
+} } } })`,
+      errors: [{ messageId: 'otherRequired', data: { path: 'entries/$key/formValues' } }],
+    },
+    {
+      name: 'without a validate helper the fix writes the rule object',
+      code: `module.exports = () => ({ rules: { entries: { $key: {
+  '.write': 'auth != null', '$other': { '.validate': false },
+  formValues: { email: { '.validate': 'newData.isString()' } },
+} } } })`,
+      output: `module.exports = () => ({ rules: { entries: { $key: {
+  '.write': 'auth != null', '$other': { '.validate': false },
+  formValues: { email: { '.validate': 'newData.isString()' }, '$other': { '.validate': false } },
 } } } })`,
       errors: [{ messageId: 'otherRequired', data: { path: 'entries/$key/formValues' } }],
     },
@@ -78,7 +111,64 @@ module.exports = () => ({ rules: { entries: { $key: {
 module.exports = () => ({ rules: { queue: { '.write': 'auth != null', $key: {
   email: isString(), '$other': { '.read': true },
 } } } })`,
+      output: null,
       errors: [{ messageId: 'otherRequired', data: { path: 'queue/$key' } }],
+    },
+    {
+      name: 'data a client writes, opened to the service',
+      code: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  filters: { jobFamily: isString(), '$other': validate(isSubscriptionService) },
+  '$other': validate(isSubscriptionService),
+} } } } } })`,
+      output: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  filters: { jobFamily: isString(), '$other': validate(false) },
+  '$other': validate(isSubscriptionService),
+} } } } } })`,
+      errors: [{
+        messageId: 'otherClosed',
+        data: { path: 'services/subscription-service/queue/$key/filters', service: 'subscription-service', expected: 'validate(false)' },
+      }],
+    },
+    {
+      name: 'filters with only wildcards inside, opened to the service',
+      code: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  email: isString(),
+  filters: { jobFamily: { '$index': isString() }, '$other': validate(isSubscriptionService) },
+  '$other': validate(isSubscriptionService),
+} } } } } })`,
+      output: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  email: isString(),
+  filters: { jobFamily: { '$index': isString() }, '$other': validate(false) },
+  '$other': validate(isSubscriptionService),
+} } } } } })`,
+      errors: [{ messageId: 'otherClosed' }],
+    },
+    {
+      name: 'a queue record closed to everyone, its own worker included',
+      code: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  email: isString(),
+  '$other': validate(false),
+} } } } } })`,
+      output: `${helpers}
+module.exports = () => ({ rules: { services: { 'subscription-service': { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()',
+  email: isString(),
+  '$other': validate(isSubscriptionService),
+} } } } } })`,
+      errors: [{
+        messageId: 'otherService',
+        data: { path: 'services/subscription-service/queue/$key', service: 'subscription-service', expected: 'validate(isSubscriptionService)' },
+      }],
     },
   ],
 })

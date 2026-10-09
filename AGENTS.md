@@ -81,6 +81,19 @@ This repo uses JSDoc on new rules and machinery, overriding any no-comments pref
 - Check with a throwaway `tsc` outside the repo (`allowJs`, `checkJs`, `strict`); the repo has no
   TypeScript setup and doesn't get one.
 
+## Fixes
+
+- A real `fix` when the change only adds structure and its value is certain:
+  `firebase-other-required` adds `$other`, `firebase-children-required` adds
+  `'.validate': 'newData.hasChildren()'`. Write it
+  in the file's own idiom (its `validate()` helper, its comma style); `addProperty` and `ruleText`
+  in `machinery/firebase-rules.js` do that.
+- A `suggest` when the change alters who can do what (`firebase-unbound-uid` binding a field to
+  `auth.uid`); no fix at all when the right value can't be told (a record whose service has no
+  named check, a `.write` whose intended writer is elsewhere).
+- Check a fix on copies of real files: run `--fix`, re-lint, and confirm the files still parse and
+  only the unfixable reports remain.
+
 ## Adding a rule
 
 1. `rules/<name>/index.js` with `meta.docs.description` (one line) and

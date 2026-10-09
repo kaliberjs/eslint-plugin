@@ -11,19 +11,31 @@ write `isAdmin` beside them. A `$` wildcard with a `.validate` covers every key 
 listed. Firebase calls it
 [`$other`](https://firebase.google.com/docs/database/security/rules-conditions).
 
-Reports an object with at least one validated field and no `$` key whose rule has a `.validate`,
-when a `.write` on it or above it lets some client in. Nodes only a service writes, and objects
-without validated fields (path trees with `.read` and `.write`), aren't checked.
+Reports an object with validated fields a client can write and no `$` key whose rule has a
+`.validate`. Inside `services/<name>` it also checks what `$other` lets in:
+
+- the task record (the first `$` wildcard, a queue's `$key`): only that service, so its worker
+  can write its own keys such as `_state`. It uses the `const` named after the service,
+  `isJobAlertSubscriptionService` for `auth.uid === 'job-alert-subscription-service'`;
+- data inside the record (`formValues`, `filters`): nobody, `validate(false)`.
+
+A job-alert subscription shows the shape:
 
 ```js
-// ✗
-$key: { email: isString(), language: isString() }
-
 // ✓
-$key: { email: isString(), language: isString(), '$other': validate(false) }
+$subscriptionId: {
+  language: isString(),
+  formValues: { email: isString(), '$other': validate(false) },
+  '$other': validate(isJobAlertSubscriptionService),
+}
+
+// ✗ data the client writes, opened to the service
+filters: { jobFamily: isString(), '$other': validate(isJobAlertSubscriptionService) }
 ```
 
-`validate(isService)` instead of `validate(false)` lets only that service write other keys.
+Fixable: `--fix` adds or corrects `$other`, using the file's `validate()` helper when it has one.
+It leaves a record without a named service check alone, because `false` there would also lock out
+the worker that processes it.
 
 ## Limitations
 

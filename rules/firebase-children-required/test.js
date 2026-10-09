@@ -69,6 +69,11 @@ module.exports = () => ({ rules: { statusInfo: {
 module.exports = () => ({ rules: { services: { mail: { queue: { $key: {
   '.write': 'auth != null && newData.exists() && !data.exists()', email: isString(),
 } } } } } })`,
+      output: `${helpers}
+module.exports = () => ({ rules: { services: { mail: { queue: { $key: {
+  '.write': 'auth != null && newData.exists() && !data.exists()', email: isString(),
+  '.validate': 'newData.hasChildren()',
+} } } } } })`,
       errors: [{ messageId: 'childrenRequired', data: { path: 'services/mail/queue/$key' } }],
     },
     {
@@ -77,6 +82,7 @@ module.exports = () => ({ rules: { services: { mail: { queue: { $key: {
 module.exports = () => ({ rules: { queue: { $key: {
   '.write': 'auth != null', '.validate': 'newData.exists()', email: isString(),
 } } } })`,
+      output: null,
       errors: [{ messageId: 'childrenRequired', data: { path: 'queue/$key' } }],
     },
     {
@@ -86,6 +92,12 @@ const shared = { '.indexOn': 'email' }
 module.exports = () => ({ rules: { queue: { $key: {
   '.write': 'auth != null', ...shared, email: isString(),
 } } } })`,
+      output: `${helpers}
+const shared = { '.indexOn': 'email' }
+module.exports = () => ({ rules: { queue: { $key: {
+  '.write': 'auth != null', ...shared, email: isString(),
+  '.validate': 'newData.hasChildren()',
+} } } })`,
       errors: [{ messageId: 'childrenRequired', data: { path: 'queue/$key' } }],
     },
     {
@@ -94,6 +106,11 @@ module.exports = () => ({ rules: { queue: { $key: {
 module.exports = () => ({ rules: { queue: { '.write': 'auth != null', $key: {
   '.validate': "newData.hasChildren(['formValues'])",
   formValues: { email: isString() },
+} } } })`,
+      output: `${helpers}
+module.exports = () => ({ rules: { queue: { '.write': 'auth != null', $key: {
+  '.validate': "newData.hasChildren(['formValues'])",
+  formValues: { email: isString(), '.validate': 'newData.hasChildren()' },
 } } } })`,
       errors: [{ messageId: 'childrenRequired', data: { path: 'queue/$key/formValues' } }],
     },
