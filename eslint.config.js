@@ -94,7 +94,6 @@ module.exports = [
       '@kaliber/firebase-unbound-uid': 'error',
       '@kaliber/firebase-other-required': 'error',
       '@kaliber/firebase-children-required': 'error',
-      '@kaliber/firebase-email-unverified': 'error',
 
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],

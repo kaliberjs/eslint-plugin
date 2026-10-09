@@ -66,12 +66,11 @@ function forEachShape(context, visit) {
  */
 function accessRule(node, key, sourceCode) {
   const { value, unresolved } = staticValue(node.value, sourceCode)
-  const disjuncts = disjunctsIn(value)
-  const clientDisjuncts = disjuncts.filter(letsClientIn)
+  const clientDisjuncts = disjunctsIn(value).filter(letsClientIn)
   const path = pathOf(node, sourceCode)
 
   return {
-    node, key, value, unresolved, path, disjuncts, clientDisjuncts, above,
+    node, key, value, unresolved, path, clientDisjuncts, above,
     access: accessOf(clientDisjuncts),
     unconditionalAccess: accessOf(clientDisjuncts.filter(isUnconditional)),
     location: path.join('/') || 'the root',
@@ -323,15 +322,13 @@ function keyOf(property, sourceCode) {
  *   path: string[],
  *   location: string,
  *   fields: Field[],
- *   disjuncts: string[],
  *   clientDisjuncts: string[],
  *   access: Access | null,
  *   unconditionalAccess: Access | null,
  *   above: () => AccessRule[],
  * }} AccessRule
  *   `location` is the path joined with `/`, or `the root`; `fields` are the data keys beside it;
- *   `disjuncts` its top-level `||` branches, `clientDisjuncts` those that let a client in without
- *   naming it; `access` who they
+ *   `clientDisjuncts` the `||` branches that let a client in without naming it; `access` who they
  *   let in, `unconditionalAccess` who they let in on every request; `above` is the rules with the
  *   same key in the enclosing objects, nearest first
  */

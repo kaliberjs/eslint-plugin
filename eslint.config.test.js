@@ -43,7 +43,6 @@ test('the shared config enables the Firebase rules', () => {
   const messages = new Linter().verify(
     `module.exports = () => ({ rules: {
       static: { '.read': true, private: { '.read': false } },
-      office: { '.read': "auth.token.email.endsWith('@example.com')" },
       queue: { $key: {
         '.write': 'auth != null',
         isEmployee: { '.validate': 'newData.isBoolean()' },
@@ -60,7 +59,6 @@ test('the shared config enables the Firebase rules', () => {
     '@kaliber/firebase-children-required',
     '@kaliber/firebase-client-deletable-write',
     '@kaliber/firebase-client-writable-trust-path',
-    '@kaliber/firebase-email-unverified',
     '@kaliber/firebase-other-required',
     '@kaliber/firebase-shadowed-rule',
     '@kaliber/firebase-unbound-uid',
