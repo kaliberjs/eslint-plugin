@@ -44,7 +44,9 @@ test('the shared config enables the Firebase rules', () => {
     `const isMailService = "auth.uid === 'mail-service'"
     module.exports = () => ({ rules: {
       static: { '.read': true, private: { '.read': false } },
-      services: { 'mail-service': { queue: { $key: { '.write': isMailService } } } },
+      services: { 'mail-service': { queue: { $key: {
+        '.write': isMailService, sentAt: { '.validate': 'newData.isNumber()' },
+      } } } },
       queue: { $key: {
         '.write': 'auth != null',
         isEmployee: { '.validate': 'newData.isBoolean()' },
@@ -57,11 +59,12 @@ test('the shared config enables the Firebase rules', () => {
   )
   const results = messages.filter(message => message.ruleId.startsWith('@kaliber/firebase-'))
 
-  assert.deepEqual(results.map(message => message.ruleId).sort(), [
+  assert.deepEqual([...new Set(results.map(message => message.ruleId))].sort(), [
     '@kaliber/firebase-children-required',
     '@kaliber/firebase-client-create-only',
     '@kaliber/firebase-notes',
     '@kaliber/firebase-other-required',
+    '@kaliber/firebase-service-shape',
     '@kaliber/firebase-shadowed-rule',
     '@kaliber/firebase-unbound-uid',
   ])

@@ -40,6 +40,7 @@ const plugin = {
     'firebase-other-required': require('./rules/firebase-other-required'),
     'firebase-children-required': require('./rules/firebase-children-required'),
     'firebase-notes': require('./rules/firebase-notes'),
+    'firebase-service-shape': require('./rules/firebase-service-shape'),
   },
 
   configs: {},
