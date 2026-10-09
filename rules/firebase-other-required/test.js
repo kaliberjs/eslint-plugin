@@ -66,7 +66,7 @@ module.exports = () => ({ rules: { services: { 'subscription-service': { queue: 
   email: isString(),
   '$other': validate(isSubscriptionService),
 } } } } } })`,
-      errors: [{ messageId: 'otherRequired', data: { path: 'services/subscription-service/queue/$key' } }],
+      errors: [{ messageId: 'otherRequired', data: { path: 'services/subscription-service/queue/$key', closing: 'validate(isSubscriptionService)' } }],
     },
     {
       name: 'a record whose service has no named check is reported, not fixed',
@@ -75,7 +75,7 @@ module.exports = () => ({ rules: { services: { mail: { queue: { $key: {
   '.write': 'auth != null', email: isString(),
 } } } } } })`,
       output: null,
-      errors: [{ messageId: 'otherRequired', data: { path: 'services/mail/queue/$key' } }],
+      errors: [{ messageId: 'otherRequired', data: { path: 'services/mail/queue/$key', closing: 'validate(<the service that writes it>)' } }],
     },
     {
       name: 'data inside a record left open gets validate(false)',
@@ -91,7 +91,7 @@ module.exports = () => ({ rules: { entries: { $key: {
   formValues: { email: isString(), '$other': validate(false) },
   '$other': validate(false),
 } } } })`,
-      errors: [{ messageId: 'otherRequired', data: { path: 'entries/$key/formValues' } }],
+      errors: [{ messageId: 'otherRequired', data: { path: 'entries/$key/formValues', closing: 'validate(false)' } }],
     },
     {
       name: 'without a validate helper the fix writes the rule object',
@@ -103,7 +103,7 @@ module.exports = () => ({ rules: { entries: { $key: {
   '.write': 'auth != null', '$other': { '.validate': false },
   formValues: { email: { '.validate': 'newData.isString()' }, '$other': { '.validate': false } },
 } } } })`,
-      errors: [{ messageId: 'otherRequired', data: { path: 'entries/$key/formValues' } }],
+      errors: [{ messageId: 'otherRequired', data: { path: 'entries/$key/formValues', closing: "{ '.validate': false }" } }],
     },
     {
       name: 'a $other without .validate limits nothing',
@@ -112,7 +112,7 @@ module.exports = () => ({ rules: { queue: { '.write': 'auth != null', $key: {
   email: isString(), '$other': { '.read': true },
 } } } })`,
       output: null,
-      errors: [{ messageId: 'otherRequired', data: { path: 'queue/$key' } }],
+      errors: [{ messageId: 'otherRequired', data: { path: 'queue/$key', closing: 'validate(<the service that writes it>)' } }],
     },
     {
       name: 'data a client writes, opened to the service',

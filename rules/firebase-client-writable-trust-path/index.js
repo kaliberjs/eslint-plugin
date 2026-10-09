@@ -1,14 +1,9 @@
 const docsUrl = require('../../machinery/docsUrl')
-const { forEachAccessRule } = require('../../machinery/firebase-rules')
+const { forEachAccessRule, trustWords, trustClaimsOf } = require('../../machinery/firebase-rules')
 
 // A `.write` that any signed-in client passes lets that client create the node itself. When the
 // node's path or its sibling fields claim trust (`verified-queue`, `isEmployee`), a worker that
-// reads it may act on a claim nobody checked. The default words are the ones Kaliber's rules files
-// actually use for such claims; a project replaces them with `words`.
-
-const trustWords = ['verified', 'employee']
-const camelCaseBoundary = /([a-z0-9])([A-Z])/g
-const nonAlphanumerics = /[^a-z0-9]+/
+// reads it may act on a claim nobody checked. A project replaces the default words with `words`.
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
@@ -20,8 +15,8 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      trustPath: '`.write` at {{path}} lets any signed-in client create data under a ' +
-        'trust-claiming name ({{names}}): {{value}}',
+      trustPath: '`{{path}}` looks trusted ({{names}}), but any signed-in user can create it ' +
+        '(`{{value}}`). Let only the server or a service write here.',
     },
     schema: [{
       type: 'object',
@@ -41,7 +36,9 @@ module.exports = {
       if (key !== '.write' || !access) return
 
       const names = [...path, ...fields.map(field => field.name)]
-      const trustClaimingNames = names.filter(name => name !== null && claimsTrust(name, words))
+      const trustClaimingNames = names
+        .filter(name => name !== null)
+        .filter(name => trustClaimsOf(name, words).length > 0)
 
       if (trustClaimingNames.length === 0) return
 
@@ -52,31 +49,4 @@ module.exports = {
       })
     })
   },
-}
-
-/**
- * Whether one of the name's words is a trust word.
- *
- * @param {string} name - a path segment or field key
- * @param {string[]} words - lowercase trust words
- */
-function claimsTrust(name, words) {
-  return wordsOf(name).some(word => words.includes(word))
-}
-
-/**
- * The name's lowercase words, split on camelCase and non-alphanumerics.
- *
- * @example
- * wordsOf('isEmployee')     // ['is', 'employee']
- * wordsOf('verified-queue') // ['verified', 'queue']
- *
- * @param {string} name
- */
-function wordsOf(name) {
-  return name
-    .replace(camelCaseBoundary, '$1 $2')
-    .toLowerCase()
-    .split(nonAlphanumerics)
-    .filter(Boolean)
 }

@@ -22,9 +22,9 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      unboundUid: '`{{field}}` at {{path}} is written by any signed-in client and never checked ' +
-        'against `auth.uid`, so a client can write it in another user\'s name.',
-      bindToAuthUid: 'Validate `{{field}}` as `newData.val() === auth.uid`.',
+      unboundUid: '`{{path}}`: any signed-in user can set `{{field}}` to another user\'s uid. ' +
+        'Check it with `newData.val() === auth.uid`.',
+      bindToAuthUid: 'Check `{{field}}` against `auth.uid`.',
     },
     schema: [],
   },

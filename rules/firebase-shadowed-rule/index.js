@@ -18,10 +18,10 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      shadowed: '`{{key}}` at {{path}} has no effect: `{{key}}` at {{ancestor}} already grants ' +
-        '{{who}} access to everything below it.',
-      revokesNothing: '`{{key}}: false` at {{path}} has no effect: whenever `{{key}}` at ' +
-        '{{ancestor}} grants access, it reaches everything below it: {{condition}}',
+      shadowed: '`{{path}}`: this `{{key}}` does nothing, `{{ancestor}}` already lets {{who}} ' +
+        '{{verb}} everything below it. Restrict the parent or remove this rule.',
+      revokesNothing: '`{{path}}`: `false` blocks nothing here, `{{ancestor}}` grants {{verb}} ' +
+        'access below it whenever `{{condition}}`. Restrict the parent instead.',
     },
     schema: [],
   },
@@ -41,7 +41,7 @@ module.exports = {
         context.report({
           node,
           messageId: 'shadowed',
-          data: { key, path: location, ancestor: widest.location, who },
+          data: { key, verb: verbOf(key), path: location, ancestor: widest.location, who },
         })
         return
       }
@@ -55,6 +55,7 @@ module.exports = {
         messageId: 'revokesNothing',
         data: {
           key,
+          verb: verbOf(key),
           path: location,
           ancestor: conditionalGrant.location,
           condition: String(conditionalGrant.value),
@@ -71,6 +72,11 @@ module.exports = {
  */
 function reachOf(rule) {
   return reaches.indexOf(rule.unconditionalAccess)
+}
+
+/** @param {'.read' | '.write'} key */
+function verbOf(key) {
+  return key === '.read' ? 'read' : 'write'
 }
 
 /**

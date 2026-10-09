@@ -21,11 +21,11 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      otherRequired: 'The fields at {{path}} are validated, but nothing limits other keys: add ' +
-        '`\'$other\'` with a `.validate`.',
-      otherService: '`$other` at {{path}} should let only {{service}} write other keys: ' +
+      otherRequired: '`{{path}}`: users can add keys you didn\'t list. Add ' +
+        '`\'$other\': {{closing}}`.',
+      otherService: '`{{path}}`: only {{service}} should add unlisted keys to this record. Use ' +
         '`{{expected}}`.',
-      otherClosed: '`$other` at {{path}} sits in data a client writes; let nobody add keys: ' +
+      otherClosed: '`{{path}}`: users write this data, so nobody should add unlisted keys. Use ' +
         '`{{expected}}`.',
     },
     schema: [],
@@ -47,7 +47,7 @@ module.exports = {
         context.report({
           node: at,
           messageId: 'otherRequired',
-          data: { path: location },
+          data: { path: location, closing: closing ?? 'validate(<the service that writes it>)' },
           fix: closing ? fixer => closeOtherKeys(fixer, node, other, closing, sourceCode) : null,
         })
         return

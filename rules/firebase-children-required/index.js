@@ -21,8 +21,8 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      childrenRequired: 'The fields at {{path}} are validated, but a string or number written ' +
-        'in their place passes: add `\'.validate\': \'newData.hasChildren()\'`.',
+      childrenRequired: '`{{path}}`: a plain string or number written here skips every field ' +
+        'rule. Add `\'.validate\': \'newData.hasChildren()\'`.',
     },
     schema: [],
   },

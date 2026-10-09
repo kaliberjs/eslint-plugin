@@ -8,14 +8,21 @@ const espree = require(require.resolve('espree', { paths: [require.resolve('esli
 // object. Rule values are folded with staticValue, then parsed as the JavaScript expressions they
 // are.
 
-module.exports = {
-  forEachAccessRule, forEachShape, audienceOf, isValidation, ruleText, addProperty,
-}
-
 const signedInCheck = /auth(\.uid)?\s*!==?\s*null/
 const bareSignedInCheck = /^auth(\.uid)?\s*!==?\s*null$/
 const namedClientCheck = /auth\.uid\s*===?|===?\s*auth\.uid|auth\.token/
 const validateKey = /['"]\.validate['"]/
+const accessKey = /['"]\.(read|write)['"]/
+const camelCaseBoundary = /([a-z0-9])([A-Z])/g
+const nonAlphanumerics = /[^a-z0-9]+/
+
+// The words Kaliber's rules files use for data a worker trusts (`verified-queue`, `isEmployee`).
+const trustWords = ['verified', 'employee']
+
+module.exports = {
+  forEachAccessRule, forEachShape, forEachRulesKey,
+  audienceOf, isValidation, ruleText, addProperty, trustWords, trustClaimsOf,
+}
 
 /**
  * An ESLint visitor that calls `visit` with every `.read` and `.write` in the file.
@@ -308,7 +315,52 @@ function accessOf(clientDisjuncts) {
  * @param {Access | null} access
  */
 function audienceOf(access) {
-  return access === 'anyone' ? 'anyone' : 'any signed-in client'
+  return access === 'anyone' ? 'anyone' : 'any signed-in user'
+}
+
+/**
+ * An ESLint visitor that calls `visit` with every key in a rules file that holds an object of
+ * rules, with its path and the service it sits under. A file without `.read` or `.write` is
+ * skipped.
+ *
+ * @param {import('eslint').Rule.RuleContext} context
+ * @param {(key: RulesKey) => void} visit
+ * @returns {import('eslint').Rule.RuleListener}
+ */
+function forEachRulesKey(context, visit) {
+  const { sourceCode } = context
+
+  if (!accessKey.test(sourceCode.text)) return {}
+
+  return {
+    Property(node) {
+      const name = keyOf(node, sourceCode)
+
+      if (!name || !isDataKey(name) || node.value.type !== 'ObjectExpression') return
+
+      const path = [...pathOf(node, sourceCode), name]
+
+      visit({ node, name, path, location: path.join('/'), service: serviceOf(path, sourceCode) })
+    },
+  }
+}
+
+/**
+ * The trust words in a name, split on camelCase and non-alphanumerics.
+ *
+ * @example
+ * trustClaimsOf('verified-queue', trustWords) // ['verified']
+ * trustClaimsOf('isEmployee', trustWords)     // ['employee']
+ *
+ * @param {string} name - a path segment or field key
+ * @param {string[]} words - lowercase trust words
+ */
+function trustClaimsOf(name, words) {
+  return name
+    .replace(camelCaseBoundary, '$1 $2')
+    .toLowerCase()
+    .split(nonAlphanumerics)
+    .filter(word => words.includes(word))
 }
 
 /**
@@ -445,6 +497,15 @@ function keyOf(property, sourceCode) {
 /** @typedef {'anyone' | 'signed-in'} Access */
 /** @typedef {'.read' | '.write'} AccessKey */
 /** @typedef {{ node: Property, name: string | null }} Field */
+/**
+ * @typedef {{
+ *   node: Property,
+ *   name: string,
+ *   path: string[],
+ *   location: string,
+ *   service: Service | null,
+ * }} RulesKey
+ */
 /**
  * @typedef {{
  *   node: RuleProperty,

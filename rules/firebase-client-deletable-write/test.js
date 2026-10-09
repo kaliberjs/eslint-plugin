@@ -52,7 +52,7 @@ module.exports = () => ({ rules: { 'poll-processing': {
   '.write': hasAuth(),
   entries: { '.write': \`(\${hasAuth()} && \${isCreate()})\` },
 } } })`,
-      errors: [{ messageId: 'deletable', data: { path: 'poll-processing', who: 'any signed-in client', value: 'auth != null' } }],
+      errors: [{ messageId: 'deletable', data: { path: 'poll-processing', who: 'any signed-in user', value: 'auth != null' } }],
     },
     {
       name: 'a service or any signed-in client',
@@ -62,7 +62,7 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
   '.write': \`\${isNotificationService} || \${hasAuth()}\`,
 } } } } })`,
       errors: [{ messageId: 'deletable', data: {
-        path: 'services/job-alert-notification-service/processedJobIds', who: 'any signed-in client',
+        path: 'services/job-alert-notification-service/processedJobIds', who: 'any signed-in user',
         value: "(auth.uid === 'job-alert-notification-service') || auth != null",
       } }],
     },
@@ -74,12 +74,12 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
     {
       name: 'a signed-in check written as auth.uid !== null',
       code: `module.exports = () => ({ rules: { queue: { '.write': 'auth.uid !== null' } } })`,
-      errors: [{ messageId: 'deletable', data: { path: 'queue', who: 'any signed-in client', value: 'auth.uid !== null' } }],
+      errors: [{ messageId: 'deletable', data: { path: 'queue', who: 'any signed-in user', value: 'auth.uid !== null' } }],
     },
     {
       name: 'a signed-in write that overwrites what exists',
       code: `module.exports = () => ({ rules: { queue: { $key: { '.write': 'auth != null && newData.exists()' } } } })`,
-      errors: [{ messageId: 'deletable', data: { path: 'queue/$key', who: 'any signed-in client', value: 'auth != null && newData.exists()' } }],
+      errors: [{ messageId: 'deletable', data: { path: 'queue/$key', who: 'any signed-in user', value: 'auth != null && newData.exists()' } }],
     },
     {
       name: 'a signed-in write that only allows deletes',

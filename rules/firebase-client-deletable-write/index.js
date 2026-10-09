@@ -17,8 +17,8 @@ module.exports = {
       url: docsUrl(__dirname),
     },
     messages: {
-      deletable: '`.write` at {{path}} lets {{who}} delete or overwrite this node and ' +
-        'everything under it: {{value}}',
+      deletable: '`{{path}}`: {{who}} can delete or overwrite this (`{{value}}`). Allow creates ' +
+        'only with `!data.exists()`, or limit it to a user or service.',
     },
     schema: [],
   },
