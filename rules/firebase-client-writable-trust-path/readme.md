@@ -27,6 +27,10 @@ same-file helpers that return one expression. `process.env` is unset, so a
 'verified-queue': { $key: { '.write': 'auth.token.service === true' } }
 ```
 
+When the file defines a server check (a `const` for `auth.uid === 'serve'`, `isSite` by
+convention), an editor suggestion replaces the `.write` with it. It's a suggestion, not a fix:
+whether the server is the one that writes here lives in the site code.
+
 ## Options
 
 - `words`: lowercase whole words that claim trust. Defaults to `['verified', 'employee']`, the

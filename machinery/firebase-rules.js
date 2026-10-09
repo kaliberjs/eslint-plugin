@@ -21,7 +21,7 @@ const trustWords = ['verified', 'employee']
 
 module.exports = {
   forEachAccessRule, forEachShape, forEachRulesKey,
-  audienceOf, isValidation, ruleText, addProperty, trustWords, trustClaimsOf,
+  audienceOf, isValidation, ruleText, addProperty, trustWords, trustClaimsOf, uidCheckOf,
 }
 
 /**
@@ -148,16 +148,17 @@ function serviceOf(path, sourceCode) {
 
   if (!path.includes('services') || !name) return null
 
-  return { name, check: serviceCheckOf(name, sourceCode) }
+  return { name, check: uidCheckOf(name, sourceCode) }
 }
 
 /**
- * The `const` in the file whose rule is exactly `auth.uid === '<name>'`.
+ * The `const` in the file whose rule is exactly `auth.uid === '<name>'`: a service's check, or
+ * `isSite` for the server's `'serve'`.
  *
- * @param {string} name - a service name
+ * @param {string} name - a uid: a service name, or `serve`
  * @param {SourceCode} sourceCode
  */
-function serviceCheckOf(name, sourceCode) {
+function uidCheckOf(name, sourceCode) {
   const constants = sourceCode.ast.body
     .flatMap(statement => statement.type === 'VariableDeclaration' && statement.kind === 'const'
       ? statement.declarations

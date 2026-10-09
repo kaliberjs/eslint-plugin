@@ -113,6 +113,19 @@ test('firebase-client-writable-trust-path', {
   ],
   invalid: [
     {
+      name: 'a file with a server check suggests it',
+      code: `const isSite = "(auth.uid === 'serve')"
+module.exports = () => ({ rules: { 'verified-queue': { $key: { '.write': 'auth != null' } } } })`,
+      errors: [{
+        messageId: 'trustPath',
+        suggestions: [{
+          messageId: 'serverOnly',
+          output: `const isSite = "(auth.uid === 'serve')"
+module.exports = () => ({ rules: { 'verified-queue': { $key: { '.write': isSite } } } })`,
+        }],
+      }],
+    },
+    {
       name: 'the default words: verified',
       code: `module.exports = () => ({ rules: { 'verified-queue': { $key: {
   '.write': 'auth != null && newData.exists() && !data.exists()',

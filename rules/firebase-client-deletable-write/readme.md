@@ -26,6 +26,10 @@ signed-in client empty the queue. Anonymous sign-in counts as signed in.
 }
 ```
 
+An editor suggestion, not an automatic fix, allows creates only by wrapping the rule as
+`(…) && !data.exists()`. Right for a queue, wrong where something deletes on purpose (a dashboard
+that clears a list), so you choose.
+
 ## Limitations
 
 - A public webhook endpoint (`.write: true`) is reported even when public writes are intended;
