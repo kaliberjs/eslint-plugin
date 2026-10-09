@@ -4,7 +4,8 @@ const { otherFindingOf, childrenFindingOf } = require('../../machinery/firebase-
 
 // Data only our own code writes (a service, or the server as `serve`) can't be abused by users,
 // so its shape is best practice rather than a hole: the same checks as firebase-other-required
-// and firebase-children-required, as a warning, with the same fixes.
+// and firebase-children-required, as a warning, with the same fixes. An object with a `.validate`
+// of its own has been validated on purpose, so it gets no `hasChildren()` notice.
 
 /** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
@@ -35,7 +36,10 @@ module.exports = {
     return forEachShape(context, shape => {
       if (shape.openToClients) return
 
-      const findings = [otherFindingOf(shape, sourceCode), childrenFindingOf(shape, sourceCode)]
+      const findings = [
+        otherFindingOf(shape, sourceCode),
+        shape.validate ? null : childrenFindingOf(shape, sourceCode),
+      ]
 
       for (const finding of findings) if (finding) context.report(finding)
     })

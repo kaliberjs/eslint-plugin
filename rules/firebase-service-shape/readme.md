@@ -12,7 +12,9 @@ writes just as freely. This rule runs the checks of
 [firebase-children-required](../firebase-children-required/readme.md) on that data, as a warning:
 
 - an `$other` with a `.validate`: the service's own check on its records, `false` inside them;
-- `'.validate': 'newData.hasChildren()'` on objects with validated fields.
+- `'.validate': 'newData.hasChildren()'` on objects with validated fields and no `.validate` of
+  their own; one that has its own (`isService || (isSite && isDelete())`) was validated on
+  purpose and is left alone.
 
 Data a `.write` opens to users is left to those two rules, as errors.
 

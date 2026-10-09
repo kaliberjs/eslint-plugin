@@ -25,6 +25,16 @@ module.exports = () => ({ rules: { jobAlert: { subscribed: { $subscriptionId: {
 } } } } })`,
     },
     {
+      name: 'a record with its own .validate, as a subscription the service and server write',
+      code: `${helpers}
+module.exports = () => ({ rules: { jobAlert: { unconfirmed: { $subscriptionId: {
+  '.write': \`\${isSubscriptionService} || \${isSite}\`,
+  '.validate': \`\${isSubscriptionService} || (\${isSite} && !newData.exists())\`,
+  language: isString(),
+  '$other': validate(isSubscriptionService),
+} } } } })`,
+    },
+    {
       name: 'data users write is left to the rules for users',
       code: `${helpers}
 module.exports = () => ({ rules: { queue: { $key: {
