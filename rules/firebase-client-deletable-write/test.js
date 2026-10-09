@@ -72,6 +72,11 @@ module.exports = () => ({ rules: { services: { 'job-alert-notification-service':
       errors: [{ messageId: 'deletable', data: { path: 'external/?', who: 'anyone', value: 'true' } }],
     },
     {
+      name: 'a signed-in check written as auth.uid !== null',
+      code: `module.exports = () => ({ rules: { queue: { '.write': 'auth.uid !== null' } } })`,
+      errors: [{ messageId: 'deletable', data: { path: 'queue', who: 'any signed-in client', value: 'auth.uid !== null' } }],
+    },
+    {
       name: 'a signed-in write that overwrites what exists',
       code: `module.exports = () => ({ rules: { queue: { $key: { '.write': 'auth != null && newData.exists()' } } } })`,
       errors: [{ messageId: 'deletable', data: { path: 'queue/$key', who: 'any signed-in client', value: 'auth != null && newData.exists()' } }],

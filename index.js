@@ -40,6 +40,7 @@ const plugin = {
     'firebase-unbound-uid': require('./rules/firebase-unbound-uid'),
     'firebase-other-required': require('./rules/firebase-other-required'),
     'firebase-children-required': require('./rules/firebase-children-required'),
+    'firebase-email-unverified': require('./rules/firebase-email-unverified'),
   },
 
   configs: {},

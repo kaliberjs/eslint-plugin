@@ -33,6 +33,7 @@ module.exports = [
 | [`firebase-client-deletable-write`](rules/firebase-client-deletable-write/readme.md) | Firebase rules: no `.write` that lets anyone, or any signed-in client, delete or overwrite a node |
 | [`firebase-shadowed-rule`](rules/firebase-shadowed-rule/readme.md) | Firebase rules: no `.read`/`.write` narrower than what an ancestor already grants — rules cascade, so it does nothing |
 | [`firebase-children-required`](rules/firebase-children-required/readme.md) | Firebase rules: validated objects a client can write need `newData.hasChildren()`, or a primitive skips every field rule |
+| [`firebase-email-unverified`](rules/firebase-email-unverified/readme.md) | Firebase rules: a check on `auth.token.email` must also require `auth.token.email_verified` |
 | [`firebase-other-required`](rules/firebase-other-required/readme.md) | Firebase rules: validated fields need a `$other` rule that limits every other key |
 | [`firebase-unbound-uid`](rules/firebase-unbound-uid/readme.md) | Firebase rules: a `uid` field any signed-in client writes must be checked against `auth.uid` |
 

@@ -10,9 +10,9 @@ const espree = require(require.resolve('espree', { paths: [require.resolve('esli
 
 module.exports = { forEachAccessRule, forEachShape, audienceOf, isValidation }
 
-const signedInCheck = /auth\s*!==?\s*null/
-const bareSignedInCheck = /^auth\s*!==?\s*null$/
-const namedClientCheck = /auth\.(uid|token)/
+const signedInCheck = /auth(\.uid)?\s*!==?\s*null/
+const bareSignedInCheck = /^auth(\.uid)?\s*!==?\s*null$/
+const namedClientCheck = /auth\.uid\s*===?|===?\s*auth\.uid|auth\.token/
 const validateKey = /['"]\.validate['"]/
 
 /**
@@ -66,11 +66,12 @@ function forEachShape(context, visit) {
  */
 function accessRule(node, key, sourceCode) {
   const { value, unresolved } = staticValue(node.value, sourceCode)
-  const clientDisjuncts = clientDisjunctsOf(value)
+  const disjuncts = disjunctsIn(value)
+  const clientDisjuncts = disjuncts.filter(letsClientIn)
   const path = pathOf(node, sourceCode)
 
   return {
-    node, key, value, unresolved, path, clientDisjuncts, above,
+    node, key, value, unresolved, path, disjuncts, clientDisjuncts, above,
     access: accessOf(clientDisjuncts),
     unconditionalAccess: accessOf(clientDisjuncts.filter(isUnconditional)),
     location: path.join('/') || 'the root',
@@ -108,16 +109,15 @@ function shapeOf(node, sourceCode) {
 }
 
 /**
- * The `||` branches of a folded rule that let a client in without naming it: `true`, or
- * `auth != null` without `auth.uid` or `auth.token`.
+ * The top-level `||` branches of a folded rule, as text.
  *
  * @param {unknown} value - a folded rule value
  */
-function clientDisjunctsOf(value) {
+function disjunctsIn(value) {
   if (value === true) return ['true']
   if (typeof value !== 'string') return []
 
-  return disjunctsOf(value).filter(letsClientIn)
+  return disjunctsOf(value)
 }
 
 /**
@@ -137,14 +137,20 @@ function disjunctsOf(expression) {
   }
 }
 
-/** @param {string} disjunct */
+/**
+ * A branch that lets a client in without naming it: `true`, or a signed-in check (`auth != null`,
+ * `auth.uid != null`) that doesn't compare `auth.uid` or read a token claim.
+ *
+ * @param {string} disjunct
+ */
 function letsClientIn(disjunct) {
   return disjunct === 'true' ||
     (signedInCheck.test(disjunct) && !namedClientCheck.test(disjunct))
 }
 
 /**
- * A disjunct that grants every request: `true`, or `auth != null` and nothing else.
+ * A disjunct that grants every request: `true`, or `auth != null` (`auth.uid != null`) and nothing
+ * else.
  *
  * @param {string} disjunct
  */
@@ -317,13 +323,15 @@ function keyOf(property, sourceCode) {
  *   path: string[],
  *   location: string,
  *   fields: Field[],
+ *   disjuncts: string[],
  *   clientDisjuncts: string[],
  *   access: Access | null,
  *   unconditionalAccess: Access | null,
  *   above: () => AccessRule[],
  * }} AccessRule
  *   `location` is the path joined with `/`, or `the root`; `fields` are the data keys beside it;
- *   `clientDisjuncts` the `||` branches that let a client in without naming it; `access` who they
+ *   `disjuncts` its top-level `||` branches, `clientDisjuncts` those that let a client in without
+ *   naming it; `access` who they
  *   let in, `unconditionalAccess` who they let in on every request; `above` is the rules with the
  *   same key in the enclosing objects, nearest first
  */
