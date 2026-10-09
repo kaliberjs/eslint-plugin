@@ -8,7 +8,9 @@ const { staticValue } = require('../../machinery/static-value')
 // `uid`, `userUid`, `ownerUid`.
 
 const uidName = /^uid$|Uid$/
-const ownUid = "'newData.val() === auth.uid'"
+// A worker rewrites the whole task (`@kaliber/firebase-queue` claims it in a transaction), and the
+// field is validated again then: an unchanged uid has to pass for it as well.
+const ownUid = "'newData.val() === auth.uid || newData.val() === data.val()'"
 const bindsToAuthUid = /newData\.val\(\)\s*===?\s*auth\.uid|auth\.uid\s*===?\s*newData\.val\(\)/
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -23,7 +25,8 @@ module.exports = {
     },
     messages: {
       unboundUid: '`{{path}}`: any signed-in user can set `{{field}}` to another user\'s uid. ' +
-        'Check it with `newData.val() === auth.uid`.',
+        'Check it with `newData.val() === auth.uid || newData.val() === data.val()`; the second ' +
+        'part lets a queue worker rewrite the task.',
       bindToAuthUid: 'Check `{{field}}` against `auth.uid`.',
     },
     schema: [],

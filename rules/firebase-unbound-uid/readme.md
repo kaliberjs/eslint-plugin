@@ -21,12 +21,18 @@ queue: { $key: {
 // ✓
 queue: { $key: {
   '.write': 'auth != null && newData.exists() && !data.exists()',
-  uid: { '.validate': 'newData.val() === auth.uid' },
+  uid: { '.validate': 'newData.val() === auth.uid || newData.val() === data.val()' },
 } }
 ```
 
 An editor suggestion, not an automatic fix, replaces the field's rule with
-`newData.val() === auth.uid`: it changes what the field accepts.
+`newData.val() === auth.uid || newData.val() === data.val()`: it changes what the field accepts.
+
+The second part matters. `@kaliber/firebase-queue` claims a task by rewriting the whole task in a
+transaction, and Firebase validates every field of it again, `uid` included, with the worker's
+`auth.uid`. With `newData.val() === auth.uid` alone, the worker is denied on every task and the
+queue stops; letting an unchanged value through keeps the worker working and still stops a client
+from setting someone else's uid.
 
 ## Limitations
 
