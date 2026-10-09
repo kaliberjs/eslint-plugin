@@ -88,12 +88,12 @@ module.exports = [
       '@kaliber/data-x-sectioning-elements': 'warn',
       '@kaliber/data-x-form-naming': 'warn',
 
-      '@kaliber/firebase-client-deletable-write': 'warn',
-      '@kaliber/firebase-client-writable-trust-path': 'warn',
-      '@kaliber/firebase-shadowed-rule': 'warn',
-      '@kaliber/firebase-unbound-uid': 'warn',
-      '@kaliber/firebase-other-required': 'warn',
-      '@kaliber/firebase-children-required': 'warn',
+      '@kaliber/firebase-client-deletable-write': 'error',
+      '@kaliber/firebase-client-writable-trust-path': 'error',
+      '@kaliber/firebase-shadowed-rule': 'error',
+      '@kaliber/firebase-unbound-uid': 'error',
+      '@kaliber/firebase-other-required': 'error',
+      '@kaliber/firebase-children-required': 'error',
 
       // ─── @stylistic rules (migrated from deprecated core rules) ──
       '@stylistic/brace-style': ['warn', '1tbs', { allowSingleLine: true }],
