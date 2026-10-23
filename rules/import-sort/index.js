@@ -64,6 +64,40 @@ module.exports = {
       return 0
     }
 
+    function isImportTag(comment) {
+      return comment.type === 'Block' && comment.value.startsWith('*') && /@import\b/.test(comment.value)
+    }
+
+    function getLeadingComments(sourceCode, node, isFirstImport) {
+      const comments = sourceCode.getCommentsBefore(node)
+      const headerLength = isFirstImport ? comments.findLastIndex(isImportTag) + 1 : 0
+      return comments.slice(headerLength).filter(c => !isImportTag(c))
+    }
+
+    function getRemovalRange(text, comment) {
+      const lineStart = text.lastIndexOf('\n', comment.range[0] - 1) + 1
+      const textBefore = text.slice(lineStart, comment.range[0])
+      const isAloneOnLine = !textBefore.trim()
+      if (!isAloneOnLine) return [lineStart + textBefore.trimEnd().length, comment.range[1]]
+
+      const end = comment.range[1] + text.slice(comment.range[1]).match(/^[ \t]*\n?/)[0].length
+      return [lineStart, end]
+    }
+
+    function sliceWithoutImportTags(text, [start, end], importTags) {
+      const removalRanges = importTags
+        .filter(c => c.range[0] >= start && c.range[1] <= end)
+        .map(c => getRemovalRange(text, c))
+
+      let result = ''
+      let position = start
+      for (const [removalStart, removalEnd] of removalRanges) {
+        result += text.slice(position, removalStart)
+        position = removalEnd
+      }
+      return result + text.slice(position, end)
+    }
+
     return {
       'Program': (node) => {
         const sourceCode = context.sourceCode
@@ -76,14 +110,17 @@ module.exports = {
 
         if (imports.length === 0) return
         const hasSideEffectImport = imports.some(n => n.specifiers.length === 0)
+        const importTags = sourceCode.getAllComments().filter(isImportTag)
 
-        const importData = imports.map(n => {
-          const commentsBefore = sourceCode.getCommentsBefore(n)
+        const importData = imports.map((n, i) => {
+          const commentsBefore = getLeadingComments(sourceCode, n, i === 0)
           const start = commentsBefore.length > 0 ? commentsBefore[0].range[0] : n.range[0]
           const end = n.range[1]
           const group = getGroup(n)
 
-          return { node: n, text: sourceCode.text.slice(start, end), group, start, end }
+          const text = sliceWithoutImportTags(sourceCode.text, [start, end], importTags)
+
+          return { node: n, text, group, start, end }
         })
 
         const isSorted = importData.every((data, i) => {
@@ -92,6 +129,11 @@ module.exports = {
           const currentGroupIndex = GROUP_ORDER.indexOf(data.group)
           return currentGroupIndex >= prevGroupIndex
         })
+
+        const firstImport = importData[0]
+        const lastImport = importData[importData.length - 1]
+        const misplacedImportTags = importTags.filter(c => c.range[0] > firstImport.start)
+        const importTagsAfterImports = misplacedImportTags.filter(c => c.range[0] >= lastImport.end)
 
         let hasNewlineIssues = false
         for (let i = 0; i < importData.length - 1; i++) {
@@ -108,10 +150,7 @@ module.exports = {
           }
         }
 
-        if (!isSorted || hasNewlineIssues) {
-          const firstImport = importData[0]
-          const lastImport = importData[importData.length - 1]
-
+        if (!isSorted || hasNewlineIssues || misplacedImportTags.length > 0) {
           context.report({
             loc: {
               start: sourceCode.getLocFromIndex(firstImport.start),
@@ -135,7 +174,13 @@ module.exports = {
                 return acc + separator + groupText
               }, '')
 
-              return fixer.replaceTextRange([firstImport.start, lastImport.end], fixedText)
+              const importTagsText = misplacedImportTags.map(c => sourceCode.getText(c)).join('\n')
+              const fixedTextWithTags = importTagsText ? importTagsText + '\n\n' + fixedText : fixedText
+
+              return [
+                fixer.replaceTextRange([firstImport.start, lastImport.end], fixedTextWithTags),
+                ...importTagsAfterImports.map(c => fixer.removeRange(getRemovalRange(sourceCode.text, c))),
+              ]
             }
           })
         }

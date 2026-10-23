@@ -21,8 +21,108 @@ import config from '@kaliber/config'
 import { ImageText } from '/features/pageOnly/ImageText'
 import Image from '/features/buildingBlocks/Image.universal'
     `,
+    `
+/** @import { X } from './y.ts' */
+
+import config from '@kaliber/config'
+
+import { x } from './y.js'
+    `,
+    `
+// header
+
+/** @import { X } from './y.ts' */
+
+import config from '@kaliber/config'
+    `,
   ],
   invalid: [
+    {
+      // @import tag between a comment and its import
+      code: `
+import React from 'react'
+// about x
+/** @import { X } from './y.ts' */
+import { x } from './y.js'
+      `,
+      output: `
+/** @import { X } from './y.ts' */
+
+import React from 'react'
+
+// about x
+import { x } from './y.js'
+      `,
+      errors: [{ message: messages.unsorted }]
+    },
+    {
+      // @import tag after imports
+      code: `
+import React from 'react'
+
+const a = 1
+/** @import { X } from './y.ts' */
+const b = 2
+      `,
+      output: `
+/** @import { X } from './y.ts' */
+
+import React from 'react'
+
+const a = 1
+const b = 2
+      `,
+      errors: [{ message: messages.unsorted }]
+    },
+    {
+      // @import tag on the same line as code after imports
+      code: `
+import React from 'react'
+
+const a = 1 /** @import { X } from './y.ts' */
+      `,
+      output: `
+/** @import { X } from './y.ts' */
+
+import React from 'react'
+
+const a = 1
+      `,
+      errors: [{ message: messages.unsorted }]
+    },
+    {
+      // @import tag moved along with its import
+      code: `
+/** @import { X } from './y.ts' */
+
+import { x } from './y.js'
+import React from 'react'
+      `,
+      output: `
+/** @import { X } from './y.ts' */
+
+import React from 'react'
+
+import { x } from './y.js'
+      `,
+      errors: [{ message: messages.unsorted }]
+    },
+    {
+      // @import tag between imports
+      code: `
+import React from 'react'
+/** @import { X } from './y.ts' */
+import { x } from './y.js'
+      `,
+      output: `
+/** @import { X } from './y.ts' */
+
+import React from 'react'
+
+import { x } from './y.js'
+      `,
+      errors: [{ message: messages.unsorted }]
+    },
     {
       // Wrong order of components (universal at top)
       code: `
