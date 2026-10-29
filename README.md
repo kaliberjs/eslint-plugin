@@ -26,8 +26,30 @@ module.exports = [
 | [`no-default-export`](rules/no-default-export/readme.md) | Prefer named exports over default exports — except in App, template, and page files |
 | [`no-relative-parent-import`](rules/no-relative-parent-import/readme.md) | Disallow ../ imports — use root-slash imports that survive file moves |
 | [`import-sort`](rules/import-sort/readme.md) | Enforce grouped and ordered import statements with auto-fix support |
+| [`jsx-a11y-alt-text`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/alt-text` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-anchor-has-content`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/anchor-has-content` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-anchor-is-valid`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/anchor-is-valid` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-aria-activedescendant-has-tabindex`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/aria-activedescendant-has-tabindex` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-aria-props`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/aria-props` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-aria-proptypes`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/aria-proptypes` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-aria-role`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/aria-role` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-aria-unsupported-elements`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/aria-unsupported-elements` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-click-events-have-key-events`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/click-events-have-key-events` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-heading-has-content`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/heading-has-content` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-html-has-lang`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/html-has-lang` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-iframe-has-title`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/iframe-has-title` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-img-redundant-alt`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/img-redundant-alt` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-no-access-key`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/no-access-key` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-no-redundant-roles`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/no-redundant-roles` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-no-static-element-interactions`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/no-static-element-interactions` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-role-has-required-aria-props`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/role-has-required-aria-props` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`jsx-a11y-role-supports-aria-props`](rules/expanded-spreads/readme.md) | Runs `jsx-a11y/role-supports-aria-props` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
 | [`jsx-key`](rules/jsx-key/readme.md) | Require key prop in iterators but allow keyless JSX in array-literal DSL patterns |
 | [`position-center`](rules/position-center/readme.md) | Avoid place-content: center — it only aligns tracks and often does nothing |
+| [`react-button-has-type`](rules/expanded-spreads/readme.md) | Runs `react/button-has-type` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`react-jsx-no-duplicate-props`](rules/expanded-spreads/readme.md) | Runs `react/jsx-no-duplicate-props` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`react-no-danger-with-children`](rules/expanded-spreads/readme.md) | Runs `react/no-danger-with-children` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
+| [`react-void-dom-elements-no-children`](rules/expanded-spreads/readme.md) | Runs `react/void-dom-elements-no-children` after expanding static object spreads, so `{...{ onClick }}` counts as `onClick={onClick}` |
 | [`stable-query-client`](rules/stable-query-client/readme.md) | A QueryClient created in a component body loses the whole query cache on every re-render |
 | [`todo-ticket-reference`](rules/todo-ticket-reference/readme.md) | Require TODO comments to reference a Jira ticket |
 
