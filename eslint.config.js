@@ -69,6 +69,7 @@ module.exports = [
       // ─── @kaliber rules ──────────────────────────────────────────
       '@kaliber/component-properties': 'warn',
       '@kaliber/layout-class-name': 'warn',
+      '@kaliber/match-media-query': 'warn',
       '@kaliber/naming-policy': 'warn',
       '@kaliber/no-default-export': 'warn',
       '@kaliber/no-relative-parent-import': 'warn',

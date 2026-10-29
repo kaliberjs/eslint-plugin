@@ -21,6 +21,7 @@ module.exports = [
 |---|---|
 | [`component-properties`](rules/component-properties/readme.md) | Destructure component props, use spread passing for same-name props, and avoid passing state setters as props |
 | [`layout-class-name`](rules/layout-class-name/readme.md) | Components are black boxes — use layoutClassName for positioning instead of className |
+| [`match-media-query`](rules/match-media-query/readme.md) | Media features in `matchMedia` queries must be wrapped in parentheses, or the query never matches |
 | [`naming-policy`](rules/naming-policy/readme.md) | Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs |
 | [`no-default-export`](rules/no-default-export/readme.md) | Prefer named exports over default exports — except in App, template, and page files |
 | [`no-relative-parent-import`](rules/no-relative-parent-import/readme.md) | Disallow ../ imports — use root-slash imports that survive file moves |
