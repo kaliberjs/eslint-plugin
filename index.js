@@ -34,6 +34,8 @@ const plugin = {
     'stable-query-client': require('./rules/stable-query-client'),
 
     'bound-instance-methods': require('./rules/bound-instance-methods'),
+
+    ...require('./rules/expanded-spreads'),
   },
 
   configs: {},
