@@ -19,7 +19,7 @@ module.exports = [
 
 | Rule | Description |
 |---|---|
-| [`component-properties`](rules/component-properties/readme.md) | Destructure component props, use spread passing for same-name props, and avoid passing state setters as props |
+| [`component-properties`](rules/component-properties/readme.md) | Destructure component props and hook parameters, use spread passing for same-name props, and avoid passing state setters as props |
 | [`layout-class-name`](rules/layout-class-name/readme.md) | Components are black boxes — use layoutClassName for positioning instead of className |
 | [`naming-policy`](rules/naming-policy/readme.md) | Enforce naming conventions for components, CSS files, CSS variables, root class names, and refs |
 | [`no-default-export`](rules/no-default-export/readme.md) | Prefer named exports over default exports — except in App, template, and page files |
