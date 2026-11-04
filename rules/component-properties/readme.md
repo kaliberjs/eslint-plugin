@@ -1,6 +1,7 @@
 # Component properties
 
 - [Destructure props](#destructure-props)
+- [Destructure hook parameters](#destructure-hook-parameters)
 - [Variable passing](#variable-passing)
 
 ## Destructure props
@@ -39,6 +40,53 @@ Examples of *incorrect* code for this rule:
 
 ```js
 function Test(props) {}
+```
+
+## Destructure hook parameters
+
+A hook that takes an options object destructures it in the parameter list, as a component does with its props, for the same reason: the editor can see which options exist.
+
+```js
+function useHeadroom(options) {
+  return useScroll(options.offset)
+}
+```
+
+```js
+function useHeadroom({ offset }) {
+  return useScroll(offset)
+}
+```
+
+A parameter is only reported when every use reads a property from it. Passing it on whole (including in a dependency array), calling a method on it, reading a ref's `current` or an array's `length`, indexing it or writing to it keeps it whole.
+
+### Examples
+
+Examples of *correct* code for this rule:
+
+```js
+function useTest({ option }) { return option }
+```
+```js
+function useTest(options) { return useQuery(options) }
+```
+```js
+function useTest(signal$) { return signal$.get() }
+```
+```js
+function useTest(ref) { return ref.current }
+```
+
+Examples of *incorrect* code for this rule:
+
+```js
+function useTest(options) { return options.a }
+```
+```js
+function useTest(options = {}) { const { a } = options; return a }
+```
+```js
+const useTest = options => options.a
 ```
 
 ## Variable passing
