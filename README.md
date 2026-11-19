@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This repository has moved to [Kaliber/kaliber-code-quality](https://github.com/Kaliber/kaliber-code-quality), in `packages/lint-code`. This copy is kept for its history and no longer updated.
+
 # @kaliber/eslint-plugin
 
 Opinionated ESLint plugin enforcing Kaliber's code conventions. Bundles custom rules, curated third-party rules, and formatting conventions into a single shareable configuration.
