@@ -11,6 +11,9 @@ const messages = {
 
   'destructure props':
     'Expected destructured props',
+
+  'destructure hook parameter':
+    'Expected destructured hook parameter',
 }
 
 module.exports = {
@@ -20,14 +23,18 @@ module.exports = {
     type: 'problem',
     fixable: 'code',
     docs: {
-      description: 'Destructure component props, use spread passing for same-name props, and avoid passing state setters as props',
+      description: 'Destructure component props and hook parameters, use spread passing for same-name props, and avoid passing state setters as props',
       url: docsUrl(__dirname),
     },
   },
 
   create(context) {
     return {
-      'FunctionDeclaration': reportNonDestructuredProps,
+      'FunctionDeclaration'(node) {
+        reportNonDestructuredProps(node)
+        reportNonDestructuredHookParameter(node)
+      },
+      'VariableDeclarator > :matches(ArrowFunctionExpression, FunctionExpression)': reportNonDestructuredHookParameter,
       'JSXAttribute'(node) {
         reportIncorrectVariablePassing(node)
         reportSetterProps(node)
@@ -43,6 +50,23 @@ module.exports = {
       context.report({
         message: messages['destructure props'],
         node: props,
+      })
+    }
+
+    function reportNonDestructuredHookParameter(node) {
+      const { id } = node.type === 'FunctionDeclaration' ? node : node.parent
+      const name = id && id.name
+      const [first] = node.params
+      const parameter = first && first.type === 'AssignmentPattern' ? first.left : first
+      if (!isHookName(name) || !parameter || parameter.type !== 'Identifier') return
+
+      const variable = context.sourceCode.getDeclaredVariables(node).find(x => x.name === parameter.name)
+      const uses = variable.references.map(x => x.identifier).filter(x => x !== parameter)
+      if (!uses.length || !uses.every(isPropertyRead)) return
+
+      context.report({
+        message: messages['destructure hook parameter'],
+        node: parameter,
       })
     }
 
@@ -114,6 +138,28 @@ module.exports = {
       })
     }
   }
+}
+
+function isHookName(name) {
+  return /^use[A-Z]/.test(name)
+}
+
+/**
+ * The parameter is only read as an object: `options.a` or `const { a } = options`.
+ * Anything else, such as passing it on, calling a method on it or reading a ref's
+ * `current`, is a reason to keep it whole.
+ */
+function isPropertyRead(identifier) {
+  const { parent } = identifier
+  if (parent.type === 'VariableDeclarator') return parent.init === identifier && parent.id.type === 'ObjectPattern'
+  if (parent.type !== 'MemberExpression' || parent.object !== identifier || parent.computed) return false
+  if (['current', 'length'].includes(parent.property.name)) return false
+
+  const { parent: user } = parent
+  const isCalled = user.type === 'CallExpression' && user.callee === parent
+  const isWritten = (user.type === 'AssignmentExpression' && user.left === parent) || user.type === 'UpdateExpression'
+
+  return !isCalled && !isWritten
 }
 
 function isSetter(name) {

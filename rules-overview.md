@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | **Custom Rules** | | | | |
 | @kaliber/bound-instance-methods | Requires functions on an instance to bind `this`, so they keep working when detached. | Custom | [rules/bound-instance-methods/test.js](rules/bound-instance-methods/test.js) | `"warn"` |
-| @kaliber/component-properties | Enforces prop destructuring and consistent variable passing for components. | Custom | [rules/component-properties/test.js](rules/component-properties/test.js) | `"warn"` |
+| @kaliber/component-properties | Enforces prop and hook parameter destructuring and consistent variable passing for components. | Custom | [rules/component-properties/test.js](rules/component-properties/test.js) | `"warn"` |
 | @kaliber/firebase-children-required | Requires `newData.hasChildren()` in the own `.validate` of validated Firebase objects a client can write, so a primitive written in their place doesn't skip every field rule (CWE-20). Fixable. | Custom | [rules/firebase-children-required/test.js](rules/firebase-children-required/test.js) | `"error"` |
 | @kaliber/firebase-client-create-only | Requires a Firebase rules `.write` that lets anyone (`true`) or any signed-in user in to be create-only: `newData.exists() && !data.exists()` in that branch (CWE-284). Suggests it. | Custom | [rules/firebase-client-create-only/test.js](rules/firebase-client-create-only/test.js) | `"error"` |
 | @kaliber/firebase-notes | Notes, not problems: marks Firebase keys that change how the other Firebase rules treat what's below them (a service node with its own check). Meant to show as `info` in the editor. | Custom | [rules/firebase-notes/test.js](rules/firebase-notes/test.js) | `"warn"` (`info` in the editor) |
