@@ -101,6 +101,10 @@ function isAnonymousFunction(node) {
   return (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression') && !node.id
 }
 
+/**
+ * @param {import('estree').Node} node
+ * @returns {node is import('estree').Function}
+ */
 function isFunctionNode(node) {
   return [
     'FunctionDeclaration',
