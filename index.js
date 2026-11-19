@@ -33,6 +33,14 @@ const plugin = {
     'stable-query-client': require('./rules/stable-query-client'),
 
     'bound-instance-methods': require('./rules/bound-instance-methods'),
+
+    'firebase-client-create-only': require('./rules/firebase-client-create-only'),
+    'firebase-shadowed-rule': require('./rules/firebase-shadowed-rule'),
+    'firebase-unbound-uid': require('./rules/firebase-unbound-uid'),
+    'firebase-other-required': require('./rules/firebase-other-required'),
+    'firebase-children-required': require('./rules/firebase-children-required'),
+    'firebase-notes': require('./rules/firebase-notes'),
+    'firebase-service-shape': require('./rules/firebase-service-shape'),
   },
 
   configs: {},

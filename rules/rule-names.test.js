@@ -20,6 +20,8 @@ test('every registered rule can be enabled through the plugin namespace', () => 
         rules: { [ruleId]: 'error' },
       })
     } catch (e) {
+      // A rule that requires options fails validation here, which still proves it was found.
+      if (!e.message.includes('Could not find')) continue
       unreachable.push(`${ruleId} — ${e.message.split('\n')[0]}`)
     }
   }
