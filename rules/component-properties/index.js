@@ -61,57 +61,50 @@ module.exports = {
       if (!node.argument.properties) return
 
       node.argument.properties
-        .filter(x => x.value)
-        .forEach(x => {
-          if (isSetter(x.value.name)) {
-            context.report({
-              message: messages['no setters'](x.value.name),
-              node,
-            })
-          }
+        .filter(x => x.type === 'Property' && !x.computed)
+        .map(x => publicKeyName(x.key))
+        .filter(isSetter)
+        .forEach(name => {
+          context.report({
+            message: messages['no setters'](name),
+            node,
+          })
         })
     }
 
     function reportIncorrectVariablePassing(node) {
-      const { name } = node.name
-      if (
-        name === 'key' ||
-        !node.value ||
-        node.value.type !== 'JSXExpressionContainer' ||
-        name !== node.value.expression.name
-      ) return
-
       const openingElement = node.parent
-      const sameNameProps = openingElement.attributes.filter(attr =>
-        attr.type === 'JSXAttribute' &&
-        attr.name &&
-        attr.value &&
-        attr.value.type === 'JSXExpressionContainer' &&
-        attr.name.name === attr.value.expression.name &&
-        attr.name.name !== 'key'
-      )
+      const group = groupOf(openingElement, node)
+      if (!group) return
 
       context.report({
-        message: messages['incorrect variable passing'](sameNameProps.map(a => a.name.name).join(', ')),
+        message: messages['incorrect variable passing'](group.map(a => a.name.name).join(', ')),
         node,
         fix(fixer) {
-          const sourceCode = context.sourceCode
-          const names = sameNameProps.map(a => a.name.name)
-          const spread = `{...{ ${names.join(', ')} }}`
+          if (group[0] !== node) return null
 
-          const fixes = []
-          sameNameProps.forEach((attr, i) => {
-            if (i === 0) {
-              fixes.push(fixer.replaceText(attr, spread))
-            } else {
-              const tokenBefore = sourceCode.getTokenBefore(attr)
-              const start = tokenBefore ? tokenBefore.range[1] : attr.range[0]
-              fixes.push(fixer.removeRange([start, attr.range[1]]))
-            }
+          const sourceCode = context.sourceCode
+          const spread = `{...{ ${group.map(a => a.name.name).join(', ')} }}`
+          return group.map((attr, i) => {
+            if (i === 0) return fixer.replaceText(attr, spread)
+            const tokenBefore = sourceCode.getTokenBefore(attr)
+            return fixer.removeRange([tokenBefore ? tokenBefore.range[1] : attr.range[0], attr.range[1]])
           })
-          return fixes
         }
       })
+    }
+
+    function groupOf(openingElement, node) {
+      const duplicated = duplicatedNames(openingElement)
+      let group = []
+      for (const attr of openingElement.attributes) {
+        if (isSameNameProp(attr) && !duplicated.has(attr.name.name)) group.push(attr)
+        else if (!movesSafelyPast(attr)) {
+          if (group.includes(node)) return group
+          group = []
+        }
+      }
+      return group.includes(node) ? group : null
     }
   }
 }
@@ -123,4 +116,40 @@ function isSetter(name) {
     name.startsWith('set') &&
     name[3] === name[3].toUpperCase()
   )
+}
+
+function duplicatedNames(openingElement) {
+  const seen = new Set(), duplicated = new Set()
+  for (const attr of openingElement.attributes) {
+    const name = attr.type === 'JSXAttribute' && attr.name?.type === 'JSXIdentifier' && attr.name.name
+    if (!name) continue
+    if (seen.has(name)) duplicated.add(name)
+    seen.add(name)
+  }
+  return duplicated
+}
+
+function isSameNameProp(attr) {
+  return (
+    attr.type === 'JSXAttribute' &&
+    attr.name?.type === 'JSXIdentifier' &&
+    attr.name.name !== 'key' &&
+    attr.value?.type === 'JSXExpressionContainer' &&
+    attr.value.expression.type === 'Identifier' &&
+    attr.value.expression.name === attr.name.name
+  )
+}
+
+// A spread can overwrite the props we move across, and anything but a plain read can observe the
+// order we move them in. Both make the merge a behavior change, so they end the group instead.
+function movesSafelyPast(attr) {
+  if (attr.type !== 'JSXAttribute') return false
+  if (!attr.value || attr.value.type === 'Literal') return true
+  if (attr.value.type !== 'JSXExpressionContainer') return false
+  const { type } = attr.value.expression
+  return type === 'Literal' || type === 'Identifier'
+}
+
+function publicKeyName(key) {
+  return key.type === 'Identifier' ? key.name : key.type === 'Literal' ? key.value : undefined
 }

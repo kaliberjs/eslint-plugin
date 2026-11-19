@@ -7,10 +7,17 @@ module.exports = {
     '<div {...{ settings }} />',
     '<div settings={test1} />',
     '<div {...someProps} />',
+    // Same public event interface as onChange={setState}
+    '<div {...{ onChange: setState }} />',
+    '<div {...{ [key]: setState }} />',
   ],
   invalid: [
     {
       code: '<div {...{ setState }} />',
+      errors: [ { message: messages['no setters']('setState') }]
+    },
+    {
+      code: `<div {...{ 'setState': test1 }} />`,
       errors: [ { message: messages['no setters']('setState') }]
     },
     {

@@ -1,0 +1,5 @@
+.component { display: grid; }
+
+/* .commentedOut { display: none; } */
+
+.icon::after { content: '.notAClass'; }

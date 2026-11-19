@@ -31,6 +31,9 @@ const plugin = {
     'todo-ticket-reference': require('./rules/todo-ticket-reference'),
 
     'stable-query-client': require('./rules/stable-query-client'),
+
+    'no-undef-css-class': require('./rules/no-undef-css-class'),
+    'no-unused-css-class': require('./rules/no-unused-css-class'),
   },
 
   configs: {},

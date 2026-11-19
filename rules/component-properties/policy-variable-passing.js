@@ -10,6 +10,8 @@ module.exports = {
     `<div test='test' />`,
     `<div test />`,
     `<div key={key} />`,
+    // The last duplicate wins at runtime; merging would pick the wrong one
+    `<div a={a} {...overrides} a={a} />`,
   ],
   invalid: [
     // Single same-name prop
@@ -53,6 +55,43 @@ module.exports = {
       errors: [
         { message: messages['incorrect variable passing']('ref, a') },
         { message: messages['incorrect variable passing']('ref, a') },
+      ]
+    },
+    // An intervening spread can overwrite, so each side merges on its own
+    {
+      code: `<div a={a} {...overrides} b={b} />`,
+      output: `<div {...{ a }} {...overrides} {...{ b }} />`,
+      errors: [
+        { message: messages['incorrect variable passing']('a') },
+        { message: messages['incorrect variable passing']('b') },
+      ]
+    },
+    // An intervening expression that can run code keeps its evaluation order
+    {
+      code: `<div a={a} title={compute()} b={b} />`,
+      output: `<div {...{ a }} title={compute()} {...{ b }} />`,
+      errors: [
+        { message: messages['incorrect variable passing']('a') },
+        { message: messages['incorrect variable passing']('b') },
+      ]
+    },
+    // A getter read is an intervening expression too
+    {
+      code: `<div a={a} title={source.title} b={b} />`,
+      output: `<div {...{ a }} title={source.title} {...{ b }} />`,
+      errors: [
+        { message: messages['incorrect variable passing']('a') },
+        { message: messages['incorrect variable passing']('b') },
+      ]
+    },
+    // Only the merged group is named, not every same-name prop on the element
+    {
+      code: `<div a={a} b={b} {...overrides} c={c} />`,
+      output: `<div {...{ a, b }} {...overrides} {...{ c }} />`,
+      errors: [
+        { message: twoProps },
+        { message: twoProps },
+        { message: messages['incorrect variable passing']('c') },
       ]
     },
   ],

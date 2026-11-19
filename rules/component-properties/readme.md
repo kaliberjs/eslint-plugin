@@ -2,6 +2,7 @@
 
 - [Destructure props](#destructure-props)
 - [Variable passing](#variable-passing)
+- [No setters](#no-setters)
 
 ## Destructure props
 
@@ -84,3 +85,28 @@ Examples of *incorrect* code for this rule:
 ```jsx
 <div test1={test1} />
 ```
+```jsx
+<div a={a} {...overrides} b={b} />
+```
+
+### Grouping limits
+
+Same-name props are merged into one spread only while nothing between them can change the result.
+A spread, a duplicate assignment of the same prop, or an attribute value that can run code (a call,
+a member read that may be a getter) ends the group, and the props on either side merge separately:
+
+```jsx
+<div a={a} {...overrides} b={b} />
+// becomes
+<div {...{ a }} {...overrides} {...{ b }} />
+```
+
+A prop that is assigned twice on the same element has a runtime winner the merge cannot express,
+so it is left alone.
+
+## No setters
+
+A state setter should not be passed as a prop; pass an `onXxx` handler instead. The advice follows
+the public property name, so `onChange={setState}` and `{...{ onChange: setState }}` are both
+accepted, while `setState={...}` and the shorthand `{...{ setState }}` are both reported. A computed
+key has no known public name and is not reported.

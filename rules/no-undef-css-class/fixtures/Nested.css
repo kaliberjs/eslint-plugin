@@ -1,0 +1,19 @@
+.component {
+  display: grid;
+
+  & > .iconWrapperLayout { grid-area: icon; }
+}
+
+.iconContainer {
+  & > .iconLayout { width: 100%; }
+}
+
+@media (min-width: 600px) {
+  .wide { display: flex; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+}
+
+:global(.legacy) { color: red; }
